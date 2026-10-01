@@ -154,7 +154,7 @@ function ImportFromGitHubModalContent({ handleHide }: { handleHide: () => void }
                               variant="primary"
                               onClick={() => handleImport(repo)}
                             >
-                              {t('import_to_sharelatex', { appName: 'Overleaf' })}
+                              {t('import_to_sharelatex', { appName })}
                             </OLButton>
                           </td>
                         </tr>

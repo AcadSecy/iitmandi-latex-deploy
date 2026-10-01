@@ -1,5 +1,6 @@
 import { expressify } from '@overleaf/promise-utils'
 import logger from '@overleaf/logger'
+import Settings from '@overleaf/settings'
 import OError from '@overleaf/o-error'
 import HttpErrorHandler from '../../../../app/src/Features/Errors/HttpErrorHandler.mjs'
 import SessionManager from '../../../../app/src/Features/Authentication/SessionManager.mjs'
@@ -192,7 +193,7 @@ async function gitMerge(req, res) {
   const { project_id: projectId } = req.params
   try {
     const userId = SessionManager.getLoggedInUserId(req.session)
-    const commitMessage =  req.body?.message || 'Updates from Overleaf'
+    const commitMessage =  req.body?.message || `Updates from ${Settings.appName}`
     const claimConflictIsResolved = req.body.claimConflictIsResolved
 
     const mergeResult = await doGitMerge(userId, projectId, commitMessage, claimConflictIsResolved)

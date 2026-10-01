@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import getMeta from '@/utils/meta'
 import useAsync from '@/shared/hooks/use-async'
 import { getJSON } from '@/infrastructure/fetch-json'
 import { OLModalBody, OLModalFooter } from '@/shared/components/ol/ol-modal'
@@ -49,7 +50,7 @@ const GitSyncMergeOverviewModal = ({
   setCommitMessage
 }: GitSyncMergeOverviewModalProps) => {
   const { t } = useTranslation()
-  const appName = 'Overleaf'
+  const { appName } = getMeta('ol-ExposedSettings')
 
   const {
     data,

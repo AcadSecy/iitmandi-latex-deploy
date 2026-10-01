@@ -2,6 +2,7 @@ import { normalize } from 'path/posix'
 import pLimit from 'p-limit'
 import { createHash } from 'crypto'
 import logger from '@overleaf/logger'
+import Settings from '@overleaf/settings'
 import SyncStateManager from './SyncStateManager.mjs'
 import api from './GitHubApiClient.mjs'
 import HistoryManager from './HistoryManager.mjs'
@@ -244,7 +245,7 @@ async function resolveConflictSyncState(
     repoFullName,
     lastSyncVersion: conflictVersion,
     currentVersion,
-    message: '[Updates in Overleaf during conflict resolution]',
+    message: `[Updates in ${Settings.appName} during conflict resolution]`,
     baseCommit: prevOlBranchHead,
   })
 
@@ -419,7 +420,7 @@ async function resolveDetachedSyncState(
     repoFullName,
     parentCommit: defaultBranchHead,
     entries: conflictBaseEntries,
-    message: '[Overleaf GitSync conflict resolution: restore last sync]',
+    message: `[${Settings.appName} GitSync conflict resolution: restore last sync]`,
   })
 
   // H --- B --- GH
@@ -428,7 +429,7 @@ async function resolveDetachedSyncState(
     repoFullName,
     parentCommit: baseCommit,
     entries: conflictRemoteEntries,
-    message: '[Overleaf GitSync conflict resolution: replay repo changes]',
+    message: `[${Settings.appName} GitSync conflict resolution: replay repo changes]`,
   })
 
   // H --- B --- OL

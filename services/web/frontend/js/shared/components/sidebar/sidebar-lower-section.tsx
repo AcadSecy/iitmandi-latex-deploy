@@ -27,6 +27,7 @@ export function SidebarLowerSection({
   children?: React.ReactNode
 }) {
   const { t } = useTranslation()
+  const { appName } = getMeta('ol-ExposedSettings')
   const { showModal: showContactUsModal, modal: contactUsModal } =
     useContactUsModal({
       autofillProjectUrl: false,
@@ -119,7 +120,7 @@ export function SidebarLowerSection({
         </ul>
       </nav>
       <div className="ds-nav-ds-name" translate="no">
-        <span>Overleaf CE+</span>
+        <span>{appName}</span>
       </div>
       <UserProvider>{contactUsModal}</UserProvider>
     </>

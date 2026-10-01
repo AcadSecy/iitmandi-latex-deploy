@@ -214,7 +214,7 @@ async function exportProject(userId, projectId, repoOptions) {
   const tree = await api.createTree(token, repoFullName, blobData)
   const initialCommit = await api.createCommit(token, repoFullName, {
     tree,
-    message: 'Initial Overleaf import',
+    message: `Initial ${Settings.appName} import`,
   })
 
   const force = true
