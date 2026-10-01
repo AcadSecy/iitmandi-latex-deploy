@@ -1,4 +1,4 @@
-# IIT Mandi LaTeX: copy to overleaf-toolkit/config/docker-compose.override.yml.
+# IIT Mandi LaTeX: copy to the Toolkit's config/docker-compose.override.yml.
 # Build the image from this repository first, naming it to match below:
 #   cd server-ce && make build-base
 #   OVERLEAF_TAG=iitmandi/latex:CHANGE_ME make build-community
@@ -6,3 +6,10 @@
 services:
   sharelatex:
     image: iitmandi/latex:CHANGE_ME
+
+  mongo:
+    # By default MongoDB's cache takes half the RAM, which the compile
+    # containers need. 2 GB holds the working set for ~3,500 users; raise it
+    # if the database (db.stats().dataSize) grows past ~10 GB. Keep --replSet
+    # as the Toolkit sets it: the app needs a replica set.
+    command: "--replSet overleaf --wiredTigerCacheSizeGB 2"

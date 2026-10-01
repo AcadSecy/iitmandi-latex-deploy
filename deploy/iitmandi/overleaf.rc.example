@@ -1,6 +1,7 @@
-# IIT Mandi LaTeX: Overleaf Toolkit settings.
+# IIT Mandi LaTeX: settings for the Toolkit's config/overleaf.rc.
 # Run the Toolkit's bin/init first, then change these keys in
-# overleaf-toolkit/config/overleaf.rc. Keys not listed keep their defaults.
+# /opt/iitmandi-latex/toolkit/config/overleaf.rc. Keys not listed keep their
+# defaults.
 
 # Needed by the Toolkit for sandboxed compiles and the Git integration.
 # The image itself is replaced by our build in docker-compose.override.yml.
@@ -19,3 +20,19 @@ GIT_BRIDGE_ENABLED=true
 # Listen on localhost only; the Institute proxy terminates HTTPS.
 OVERLEAF_LISTEN_IP=127.0.0.1
 OVERLEAF_PORT=8080
+
+# All data lives on the SSD volume, outside the Toolkit checkout, so updating
+# the Toolkit never touches it and the backup covers one place.
+OVERLEAF_DATA_PATH=/srv/iitmandi-latex/data/app
+MONGO_DATA_PATH=/srv/iitmandi-latex/data/mongo
+REDIS_DATA_PATH=/srv/iitmandi-latex/data/redis
+GIT_BRIDGE_DATA_PATH=/srv/iitmandi-latex/data/git-bridge
+
+# MongoDB holds accounts, projects, documents and share-link tokens; the app
+# refuses to start on anything older than 8.0. Redis holds logins and edits
+# not yet written to MongoDB, so it must write them to disk (append-only file,
+# synced every second). Never give Redis a memory limit or an eviction policy:
+# an evicted key is a lost edit.
+MONGO_VERSION=8.0
+REDIS_IMAGE=redis:7.4
+REDIS_AOF_PERSISTENCE=true

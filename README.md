@@ -59,7 +59,7 @@ make build-community   # the application image
 
 The image tags default to the upstream names (`sharelatex/sharelatex:<branch>-<commit>`); override them with `OVERLEAF_TAG=...` and `OVERLEAF_BASE_TAG=...`.
 
-The root `docker-compose.yml` is the upstream sample and still pulls the upstream image. The production setup for the DCS server (compose file, HTTPS, backups) will be added with the October milestone.
+The root `docker-compose.yml` is the upstream sample and still pulls the upstream image. The production setup for the DCS server (configuration, databases, secrets, backups) is in [`deploy/iitmandi`](deploy/iitmandi/README.md).
 
 ## Configuration
 
