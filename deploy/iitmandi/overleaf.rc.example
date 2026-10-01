@@ -13,8 +13,10 @@ SERVER_PRO=true
 SIBLING_CONTAINERS_ENABLED=true
 SIBLING_CONTAINERS_PULL=true
 
-# Clone and push projects with git. Set config/version to the upstream release
-# our build is based on (6.3.0) so the matching git-bridge image is used.
+# Clone and push projects with git. The git image is our own (Latex X
+# IIT-Mandi, pinned in docker-compose.override.yml). Keep config/version at the
+# upstream release our build is based on (6.3.0): the Toolkit picks its compose
+# files by it.
 GIT_BRIDGE_ENABLED=true
 
 # Listen on localhost only; the Institute proxy terminates HTTPS.

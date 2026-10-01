@@ -14,6 +14,7 @@ import uk.ac.ic.wlgitbridge.bridge.swap.job.SwapJobConfig;
 import uk.ac.ic.wlgitbridge.bridge.swap.store.SwapStoreConfig;
 import uk.ac.ic.wlgitbridge.snapshot.base.JSONSource;
 import uk.ac.ic.wlgitbridge.util.Instance;
+import uk.ac.ic.wlgitbridge.util.Util;
 
 /*
  * Created by Winston on 05/12/14.
@@ -30,6 +31,8 @@ public class Config implements JSONSource {
         config.apiBaseURL,
         config.postbackURL,
         config.serviceName,
+        config.siteUrl,
+        config.supportEmail,
         config.oauth2Server,
         config.userPasswordEnabled,
         config.repoStore,
@@ -46,6 +49,10 @@ public class Config implements JSONSource {
   private String apiBaseURL;
   private String postbackURL;
   private String serviceName;
+  // Public address of the site (no trailing slash) and a contact address,
+  // used in messages to git users. Either may be empty.
+  private String siteUrl = "";
+  private String supportEmail = "";
   @Nullable private String oauth2Server;
   private boolean userPasswordEnabled;
   @Nullable private RepoStoreConfig repoStore;
@@ -76,6 +83,42 @@ public class Config implements JSONSource {
       SwapStoreConfig swapStore,
       SwapJobConfig swapJob,
       int sqliteHeapLimitBytes) {
+    this(
+        port,
+        bindIp,
+        idleTimeout,
+        rootGitDirectory,
+        allowedCorsOrigins,
+        apiBaseURL,
+        postbackURL,
+        serviceName,
+        "",
+        "",
+        oauth2Server,
+        userPasswordEnabled,
+        repoStore,
+        swapStore,
+        swapJob,
+        sqliteHeapLimitBytes);
+  }
+
+  public Config(
+      int port,
+      String bindIp,
+      int idleTimeout,
+      String rootGitDirectory,
+      String[] allowedCorsOrigins,
+      String apiBaseURL,
+      String postbackURL,
+      String serviceName,
+      String siteUrl,
+      String supportEmail,
+      String oauth2Server,
+      boolean userPasswordEnabled,
+      RepoStoreConfig repoStore,
+      SwapStoreConfig swapStore,
+      SwapJobConfig swapJob,
+      int sqliteHeapLimitBytes) {
     this.port = port;
     this.bindIp = bindIp;
     this.idleTimeout = idleTimeout;
@@ -84,6 +127,8 @@ public class Config implements JSONSource {
     this.apiBaseURL = apiBaseURL;
     this.postbackURL = postbackURL;
     this.serviceName = serviceName;
+    this.siteUrl = siteUrl;
+    this.supportEmail = supportEmail;
     this.oauth2Server = oauth2Server;
     this.userPasswordEnabled = userPasswordEnabled;
     this.repoStore = repoStore;
@@ -105,6 +150,8 @@ public class Config implements JSONSource {
     }
     this.apiBaseURL = apiBaseURL;
     serviceName = getElement(configObject, "serviceName").getAsString();
+    siteUrl = Util.stripTrailingSlashes(getOptionalString(configObject, "siteUrl").trim());
+    supportEmail = getOptionalString(configObject, "supportEmail").trim();
     final String rawAllowedCorsOrigins =
         getOptionalString(configObject, "allowedCorsOrigins").trim();
     if (rawAllowedCorsOrigins.isEmpty()) {
@@ -160,6 +207,14 @@ public class Config implements JSONSource {
 
   public String getServiceName() {
     return serviceName;
+  }
+
+  public String getSiteUrl() {
+    return siteUrl;
+  }
+
+  public String getSupportEmail() {
+    return supportEmail;
   }
 
   public String getPostbackURL() {

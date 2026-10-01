@@ -82,6 +82,8 @@ public class ConfigTest {
             + "  \"apiBaseURL\": \"http://127.0.0.1:60000/api/v0/\",\n"
             + "  \"postbackURL\": \"http://127.0.0.1/\",\n"
             + "  \"serviceName\": \"Overleaf\",\n"
+            + "  \"siteUrl\": \"\",\n"
+            + "  \"supportEmail\": \"\",\n"
             + "  \"oauth2Server\": \"https://www.overleaf.com\",\n"
             + "  \"userPasswordEnabled\": false,\n"
             + "  \"repoStore\": null,\n"
@@ -91,5 +93,44 @@ public class ConfigTest {
             + "}";
     assertEquals(
         "sanitised config did not hide sensitive fields", expected, config.getSanitisedString());
+  }
+
+  @Test
+  public void testSiteUrlAndSupportEmail() {
+    Reader reader =
+        new StringReader(
+            "{\n"
+                + "    \"port\": 80,\n"
+                + "    \"bindIp\": \"127.0.0.1\",\n"
+                + "    \"idleTimeout\": 30000,\n"
+                + "    \"rootGitDirectory\": \"/var/wlgb/git\",\n"
+                + "    \"apiBaseUrl\": \"http://127.0.0.1:60000/api/v0\",\n"
+                + "    \"postbackBaseUrl\": \"http://127.0.0.1\",\n"
+                + "    \"serviceName\": \"Latex X IIT-Mandi\",\n"
+                + "    \"siteUrl\": \" https://latex.example.org/ \",\n"
+                + "    \"supportEmail\": \"help@example.org\"\n"
+                + "}\n");
+    Config config = new Config(reader);
+    assertEquals("Latex X IIT-Mandi", config.getServiceName());
+    assertEquals("https://latex.example.org", config.getSiteUrl());
+    assertEquals("help@example.org", config.getSupportEmail());
+  }
+
+  @Test
+  public void testSiteUrlAndSupportEmailAreOptional() {
+    Reader reader =
+        new StringReader(
+            "{\n"
+                + "    \"port\": 80,\n"
+                + "    \"bindIp\": \"127.0.0.1\",\n"
+                + "    \"idleTimeout\": 30000,\n"
+                + "    \"rootGitDirectory\": \"/var/wlgb/git\",\n"
+                + "    \"apiBaseUrl\": \"http://127.0.0.1:60000/api/v0\",\n"
+                + "    \"postbackBaseUrl\": \"http://127.0.0.1\",\n"
+                + "    \"serviceName\": \"Latex X IIT-Mandi\"\n"
+                + "}\n");
+    Config config = new Config(reader);
+    assertEquals("", config.getSiteUrl());
+    assertEquals("", config.getSupportEmail());
   }
 }

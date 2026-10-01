@@ -1,6 +1,6 @@
 # Production deployment
 
-IIT Mandi LaTeX runs on the DCS server with the upstream [Toolkit](https://github.com/overleaf/toolkit), which starts the app, MongoDB and Redis as Docker containers. Our image replaces the stock one. The files here are templates for the Toolkit's `config/` directory.
+IIT Mandi LaTeX runs on the DCS server with the upstream [Toolkit](https://github.com/overleaf/toolkit), which starts the app, the git service, MongoDB and Redis as Docker containers. The site is `https://latex.iitmandi.ac.in`. The files here are templates for the Toolkit's `config/` directory.
 
 | Template | Copy to (in the Toolkit checkout) |
 | --- | --- |
@@ -8,6 +8,17 @@ IIT Mandi LaTeX runs on the DCS server with the upstream [Toolkit](https://githu
 | `variables.env.example` | `config/variables.env` |
 | `docker-compose.override.yml.example` | `config/docker-compose.override.yml` |
 | [`backup/`](backup/README.md) | Nightly off-host backups, installed separately |
+
+## Images
+
+Both images are built from this repository, on the server or any Linux machine with Docker, and pinned in `docker-compose.override.yml`:
+
+| Image | What it is | Build |
+| --- | --- | --- |
+| `iitmandi/latex` | The web app and all its services | `cd server-ce && make build-base && OVERLEAF_TAG=iitmandi/latex:<tag> make build-community` |
+| `iitmandi/latex-x-iit-mandi` | **Latex X IIT-Mandi**, git access to projects | `docker build -t iitmandi/latex-x-iit-mandi:<tag> services/git-bridge` |
+
+The git image has the same layout as the upstream one, so the Toolkit runs it unchanged. Git users see the name from `GIT_BRIDGE_SERVICE_NAME` ("Latex X IIT-Mandi"). Its error messages link to `OVERLEAF_SITE_URL/learn` and give `OVERLEAF_ADMIN_EMAIL` as the contact. Projects are cloned with `git clone https://git@latex.iitmandi.ac.in/git/<project id>`, using a git authentication token from the account settings as the password.
 
 ## Layout on the server
 
@@ -37,12 +48,12 @@ At this scale (about 3,500 accounts, 50 people editing at once) the database sta
 
 `OVERLEAF_INVITE_TOKEN_SECRET` encrypts the share-link tokens in MongoDB, and `OVERLEAF_SESSION_SECRET` signs login cookies. Generate both once (`openssl rand -hex 32`) and never change them. If the invite secret changes or is lost, every share link and pending invitation stops working. The nightly backup includes the Toolkit config, but also keep an offline copy of both secrets with the backup password, in case the backup itself can't be read.
 
-Share links, invitations and emails contain `OVERLEAF_SITE_URL`. Fix the final hostname before the pilot. If it ever has to change, keep the old name redirecting to the new one so that links already sent keep working.
+Share links, invitations and emails contain `OVERLEAF_SITE_URL`, which is `https://latex.iitmandi.ac.in`. If it ever has to change, keep the old name redirecting to the new one so that links already sent keep working.
 
-Shared links open only after an IIT Mandi login. Opening read-only links without an account (`OVERLEAF_ALLOW_PUBLIC_ACCESS`) is off.
+Shared links open only after an IIT Mandi login. Whether people without an account may open view-only links is not decided yet. If it is approved, set `OVERLEAF_ALLOW_PUBLIC_ACCESS=true`, which also opens pages that need no account (help, licence, templates). Anonymous editing stays off.
 
 ## Upgrades
 
 1. Take a backup (`systemctl start iitmandi-latex-backup.service`) and check that it finished.
-2. Build and tag the new image, set it in `docker-compose.override.yml`, then run `bin/up -d`. Database migrations run when the app starts.
+2. Build and tag the new images, set them in `docker-compose.override.yml`, then run `bin/up -d`. Database migrations run when the app starts.
 3. Upgrade MongoDB one major version at a time. After each step, set `featureCompatibilityVersion` to the new version before taking the next.

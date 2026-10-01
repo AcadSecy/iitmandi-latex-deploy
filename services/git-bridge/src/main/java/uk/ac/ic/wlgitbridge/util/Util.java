@@ -4,6 +4,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.*;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -14,6 +16,8 @@ import java.util.*;
 public class Util {
 
   private static String SERVICE_NAME;
+  private static String SITE_URL = "";
+  private static String SUPPORT_EMAIL = "";
   private static String HOSTNAME;
   private static int PORT;
   private static String POSTBACK_URL;
@@ -71,6 +75,119 @@ public class Util {
 
   public static String getServiceName() {
     return SERVICE_NAME;
+  }
+
+  public static void setSiteUrl(String siteUrl) {
+    SITE_URL = siteUrl == null ? "" : siteUrl;
+  }
+
+  public static String getSiteUrl() {
+    return SITE_URL;
+  }
+
+  public static void setSupportEmail(String supportEmail) {
+    SUPPORT_EMAIL = supportEmail == null ? "" : supportEmail;
+  }
+
+  public static String getSupportEmail() {
+    return SUPPORT_EMAIL;
+  }
+
+  /*
+   * The closing lines of an error message, telling the user where to get help.
+   * leadIn is the start of the sentence, e.g. "If this is unexpected".
+   */
+  public static List<String> getContactLines(String leadIn) {
+    boolean hasEmail = !SUPPORT_EMAIL.isEmpty();
+    boolean hasSite = !SITE_URL.isEmpty();
+    if (hasEmail && hasSite) {
+      return Arrays.asList(
+          leadIn + ", please contact " + SUPPORT_EMAIL + ", or",
+          "see " + getHelpUrl() + " for more information.");
+    }
+    if (hasEmail) {
+      return Arrays.asList(leadIn + ", please contact " + SUPPORT_EMAIL + ".");
+    }
+    if (hasSite) {
+      return Arrays.asList(leadIn + ", see " + getHelpUrl() + " for more information.");
+    }
+    return Arrays.asList(leadIn + ", please contact the " + getServiceNameOr("site") + " team.");
+  }
+
+  /* Lines pointing at the help page, or nothing if the site URL is not configured */
+  public static List<String> getHelpPageLines() {
+    if (SITE_URL.isEmpty()) {
+      return Collections.emptyList();
+    }
+    return Arrays.asList("", "See the help page for more support:", getHelpUrl());
+  }
+
+  public static String getHelpUrl() {
+    return SITE_URL + "/learn";
+  }
+
+  /* Where users manage their git authentication tokens */
+  public static String getAccountSettingsText() {
+    String text = "your " + getServiceNameOr("account") + " account settings";
+    if (SITE_URL.isEmpty()) {
+      return text;
+    }
+    return text + " (" + SITE_URL + "/user/settings)";
+  }
+
+  /*
+   * An example git remote URL, e.g. https://git@example.com/git/<YOUR_PROJECT_ID>
+   * userInfo is the part before the "@", e.g. "git".
+   */
+  public static String getGitUrlExample(String userInfo) {
+    String scheme = "https";
+    String authority = "<YOUR_SITE>";
+    String path = "";
+    try {
+      URI uri = new URI(SITE_URL);
+      if (uri.getScheme() != null && uri.getRawAuthority() != null) {
+        scheme = uri.getScheme();
+        authority = uri.getRawAuthority();
+        path = uri.getRawPath() == null ? "" : stripTrailingSlashes(uri.getRawPath());
+      }
+    } catch (URISyntaxException e) {
+      // fall back to the placeholder
+    }
+    return scheme + "://" + userInfo + "@" + authority + path + "/git/<YOUR_PROJECT_ID>";
+  }
+
+  /*
+   * The email recorded on commits made by anonymous users: the site's host if
+   * known, otherwise a name under the reserved .invalid domain.
+   */
+  public static String getAnonymousEmail() {
+    try {
+      String host = new URI(SITE_URL).getHost();
+      if (host != null && !host.isEmpty()) {
+        return "anonymous@" + host;
+      }
+    } catch (URISyntaxException e) {
+      // fall back to the service name
+    }
+    String slug =
+        getServiceNameOr("")
+            .toLowerCase(Locale.ROOT)
+            .replaceAll("[^a-z0-9]+", "-")
+            .replaceAll("^-+|-+$", "");
+    return "anonymous@" + (slug.isEmpty() ? "localhost" : slug) + ".invalid";
+  }
+
+  /* "https://example.com//" => "https://example.com" */
+  public static String stripTrailingSlashes(String str) {
+    String result = str;
+    while (result.endsWith("/")) {
+      result = result.substring(0, result.length() - 1);
+    }
+    return result;
+  }
+
+  private static String getServiceNameOr(String fallback) {
+    return SERVICE_NAME == null || SERVICE_NAME.isEmpty() ? fallback : SERVICE_NAME;
   }
 
   public static int getPort() {

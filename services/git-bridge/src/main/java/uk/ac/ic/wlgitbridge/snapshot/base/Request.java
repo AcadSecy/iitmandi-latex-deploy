@@ -76,11 +76,10 @@ public abstract class Request<T extends Result> {
           throw new ForbiddenException();
         } else if (sc == HttpStatus.TOO_MANY_REQUESTS_429) {
           throw new MissingRepositoryException(
-              Arrays.asList(
+              MissingRepositoryException.withContactLines(
+                  "If this is unexpected",
                   "Rate-limit exceeded. Please wait a while and try again.",
-                  "",
-                  "If this is unexpected, please contact us at support@overleaf.com, or",
-                  "see https://www.overleaf.com/learn/how-to/Git_integration for more information."));
+                  ""));
         } else if (sc == HttpStatus.CONFLICT_409) {
           try {
             JsonObject json = Instance.gson.fromJson(httpCause.getContent(), JsonObject.class);
@@ -89,7 +88,7 @@ public abstract class Request<T extends Result> {
               throw new MissingRepositoryException(
                   Arrays.asList(
                       "Git access won't work when a project contains a folder named '.git'.",
-                      "Please remove any folder named '.git' from your project in Overleaf and try again."));
+                      "Please remove any folder named '.git' from your project and try again."));
             } else {
               throw new MissingRepositoryException(Arrays.asList("Conflict: 409"));
             }
@@ -128,7 +127,7 @@ public abstract class Request<T extends Result> {
 
           throw new MissingRepositoryException();
         } else if (sc >= 400 && sc < 500) {
-          throw new MissingRepositoryException(MissingRepositoryException.GENERIC_REASON);
+          throw new MissingRepositoryException(MissingRepositoryException.genericReason());
         }
         throw new FailedConnectionException(cause);
       } else {

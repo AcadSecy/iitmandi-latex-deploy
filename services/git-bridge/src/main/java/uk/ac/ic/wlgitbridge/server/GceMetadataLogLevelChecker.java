@@ -4,9 +4,11 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -30,7 +32,12 @@ public class GceMetadataLogLevelChecker {
   public GceMetadataLogLevelChecker(String serviceName, Level defaultLevel) {
     this.appLogger = (Logger) LoggerFactory.getLogger("uk.ac.ic.wlgitbridge");
     this.defaultLevel = defaultLevel;
-    this.metadataUri = URI.create(METADATA_BASE + serviceName + "-setLogLevelEndTime");
+    // The name may contain spaces, which are not allowed in a URI
+    this.metadataUri =
+        URI.create(
+            METADATA_BASE
+                + URLEncoder.encode(serviceName, StandardCharsets.UTF_8).replace("+", "%20")
+                + "-setLogLevelEndTime");
     this.httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
     this.scheduler =
         Executors.newSingleThreadScheduledExecutor(

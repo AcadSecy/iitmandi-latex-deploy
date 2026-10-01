@@ -6,7 +6,9 @@
   "allowedCorsOrigins": "https://localhost",
   "apiBaseUrl": "https://localhost/api/v0",
   "postbackBaseUrl": "https://localhost",
-  "serviceName": "Overleaf",
+  "serviceName": "Latex X IIT-Mandi",
+  "siteUrl": "https://latex.iitmandi.ac.in",
+  "supportEmail": "latex-admin@iitmandi.ac.in",
   "oauth2Server": "https://localhost",
   "repoStore": {
     "maxFileNum": 2000,

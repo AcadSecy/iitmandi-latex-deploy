@@ -49,7 +49,7 @@ Target capacity: about 3,500 registered and 50 simultaneous users, with a 60-sec
 
 ## Building
 
-The platform runs as one Docker image on Linux (Ubuntu 22.04 or 24.04). Building on Windows is not supported; use a Linux machine or VM.
+The platform runs as two Docker images on Linux (Ubuntu 22.04 or 24.04): the app, and the git service "Latex X IIT-Mandi". Building on Windows is not supported; use a Linux machine or VM.
 
 ```sh
 cd server-ce
@@ -58,6 +58,12 @@ make build-community   # the application image
 ```
 
 The image tags default to the upstream names (`sharelatex/sharelatex:<branch>-<commit>`); override them with `OVERLEAF_TAG=...` and `OVERLEAF_BASE_TAG=...`.
+
+The git image is built from `services/git-bridge` (Java 21; its tests run in CI):
+
+```sh
+docker build -t iitmandi/latex-x-iit-mandi:<tag> services/git-bridge
+```
 
 The root `docker-compose.yml` is the upstream sample and still pulls the upstream image. The production setup for the DCS server (configuration, databases, secrets, backups) is in [`deploy/iitmandi`](deploy/iitmandi/README.md).
 

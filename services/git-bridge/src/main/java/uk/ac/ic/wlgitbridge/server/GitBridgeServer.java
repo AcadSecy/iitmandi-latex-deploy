@@ -77,6 +77,8 @@ public class GitBridgeServer {
     apiBaseURL = config.getAPIBaseURL();
     SnapshotAPIRequest.setBaseURL(apiBaseURL);
     Util.setServiceName(config.getServiceName());
+    Util.setSiteUrl(config.getSiteUrl());
+    Util.setSupportEmail(config.getSupportEmail());
     Util.setPostbackURL(config.getPostbackURL());
     Util.setPort(config.getPort());
     String configuredLogLevel = System.getenv().getOrDefault("LOG_LEVEL", "INFO");

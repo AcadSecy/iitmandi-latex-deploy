@@ -409,12 +409,12 @@ public class Bridge {
           ForbiddenException,
           GitUserException,
           CannotAcquireLockException {
-    Log.debug("[{}] pushing to Overleaf", projectName);
+    Log.debug("[{}] pushing to the web app", projectName);
     try (LockGuard __ = lock.lockGuard(projectName)) {
       Log.debug("[{}] got project lock", projectName);
       pushCritical(oauth2, projectName, directoryContents, oldDirectoryContents);
     } catch (SevereSnapshotPostException e) {
-      Log.warn("[" + projectName + "] Failed to put to Overleaf", e);
+      Log.warn("[" + projectName + "] Failed to put to the web app", e);
       throw e;
     } catch (SnapshotPostException e) {
       /* Stack trace should be printed further up */
@@ -511,7 +511,7 @@ public class Bridge {
       Log.debug("[{}] Candidate snapshot created: {}", projectName, candidate);
       PushResult result = snapshotAPI.push(oauth2, candidate, postbackKey);
       if (result.wasSuccessful()) {
-        Log.debug("[{}] Push to Overleaf successful", projectName);
+        Log.debug("[{}] Push to the web app successful", projectName);
         Log.debug("[{}] Waiting for postback...", projectName);
         int versionID = postbackManager.waitForVersionIdOrThrow(projectName);
         Log.debug("[{}] Got version ID for push: {}", projectName, versionID);

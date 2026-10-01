@@ -168,14 +168,13 @@ public class Oauth2Filter implements Filter {
     sendResponse(
         response,
         404,
-        Arrays.asList(
+        lines(
             "Git access via link sharing link is not supported.",
             "",
             "You can find the project's git remote url by opening it in your browser",
             "and selecting Git from the left sidebar in the project view.",
             "",
-            "If this is unexpected, please contact us at support@overleaf.com, or",
-            "see https://www.overleaf.com/learn/how-to/Git_integration for more information."));
+            Util.getContactLines("If this is unexpected")));
   }
 
   private void handleBadProjectId(
@@ -185,11 +184,10 @@ public class Oauth2Filter implements Filter {
     sendResponse(
         response,
         404,
-        Arrays.asList(
-            "This Overleaf project does not exist.",
+        lines(
+            "This " + Util.getServiceName() + " project does not exist.",
             "",
-            "If this is unexpected, please contact us at support@overleaf.com, or",
-            "see https://www.overleaf.com/learn/how-to/Git_integration for more information."));
+            Util.getContactLines("If this is unexpected")));
   }
 
   private void handleRateLimit(
@@ -208,15 +206,13 @@ public class Oauth2Filter implements Filter {
     sendResponse(
         response,
         401,
-        Arrays.asList(
+        lines(
             "Log in with the username 'git' and enter your Git authentication token",
             "when prompted for a password.",
             "",
             "You can generate and manage your Git authentication tokens in",
-            "your Overleaf Account Settings.",
-            "",
-            "See our help page for more support:",
-            "https://www.overleaf.com/learn/how-to/Git_integration"));
+            Util.getAccountSettingsText() + ".",
+            Util.getHelpPageLines()));
   }
 
   private void handleBadAccessToken(
@@ -226,14 +222,12 @@ public class Oauth2Filter implements Filter {
     sendResponse(
         response,
         401,
-        Arrays.asList(
+        lines(
             "Enter your Git authentication token when prompted for a password.",
             "",
             "You can generate and manage your Git authentication tokens in",
-            "your Overleaf Account Settings.",
-            "",
-            "See our help page for more support:",
-            "https://www.overleaf.com/learn/how-to/Git_integration"));
+            Util.getAccountSettingsText() + ".",
+            Util.getHelpPageLines()));
   }
 
   private void handleExpiredAccessToken(
@@ -243,10 +237,11 @@ public class Oauth2Filter implements Filter {
     sendResponse(
         response,
         401,
-        Arrays.asList(
-            "Your Overleaf Git authentication token has expired.",
+        lines(
+            "Your " + Util.getServiceName() + " Git authentication token has expired.",
             "",
-            "Generate a new authentication token in your Overleaf Account Settings,",
+            "Generate a new authentication token in",
+            Util.getAccountSettingsText() + ",",
             "then run the git command again."));
   }
 
@@ -314,20 +309,42 @@ public class Oauth2Filter implements Filter {
       throws IOException {
     if (username.contains("@")) {
       Log.debug("[{}] Password authentication deprecated, ip={}", projectId, getClientIp(request));
-      sendResponse(
-          response,
-          403,
-          Arrays.asList(
-              "Overleaf now only supports Git authentication tokens to access git. See: https://www.overleaf.com/learn/how-to/Git_integration_authentication_tokens"));
+      sendResponse(response, 403, lines(tokensOnlyMessage(), Util.getHelpPageLines()));
     } else {
       Log.debug("[{}] Wrong git URL format, ip={}", projectId, getClientIp(request));
       sendResponse(
           response,
           403,
-          Arrays.asList(
-              "Overleaf now only supports Git authentication tokens to access git. See: https://www.overleaf.com/learn/how-to/Git_integration_authentication_tokens",
-              "Please make sure your Git URL is correctly formatted. For example: https://git@git.overleaf.com/<YOUR_PROJECT_ID> or https://git:<AUTHENTICATION_TOKEN>@git.overleaf.com/<YOUR_PROJECT_ID>"));
+          lines(
+              tokensOnlyMessage(),
+              "Please make sure your Git URL is correctly formatted. For example:",
+              "  " + Util.getGitUrlExample("git"),
+              "or",
+              "  " + Util.getGitUrlExample("git:<AUTHENTICATION_TOKEN>"),
+              Util.getHelpPageLines()));
     }
+  }
+
+  private static String tokensOnlyMessage() {
+    return Util.getServiceName() + " only supports Git authentication tokens to access git.";
+  }
+
+  /*
+   * Builds the lines of a response. Each part is either a String (one line)
+   * or a List of lines.
+   */
+  static List<String> lines(Object... parts) {
+    List<String> result = new ArrayList<>();
+    for (Object part : parts) {
+      if (part instanceof List<?> list) {
+        for (Object line : list) {
+          result.add(String.valueOf(line));
+        }
+      } else {
+        result.add(String.valueOf(part));
+      }
+    }
+    return result;
   }
 
   /*

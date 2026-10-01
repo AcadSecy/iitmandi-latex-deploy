@@ -6,7 +6,9 @@
   "allowedCorsOrigins": "${GIT_BRIDGE_ALLOWED_CORS_ORIGINS:-https://localhost}",
   "apiBaseUrl": "${GIT_BRIDGE_API_BASE_URL:-https://localhost/api/v0}",
   "postbackBaseUrl": "${GIT_BRIDGE_POSTBACK_BASE_URL:-https://localhost}",
-  "serviceName": "${GIT_BRIDGE_SERVICE_NAME:-Overleaf}",
+  "serviceName": "${GIT_BRIDGE_SERVICE_NAME:-Latex X IIT-Mandi}",
+  "siteUrl": "${GIT_BRIDGE_SITE_URL}",
+  "supportEmail": "${GIT_BRIDGE_SUPPORT_EMAIL}",
   "oauth2Server": "${GIT_BRIDGE_OAUTH2_SERVER:-https://localhost}",
   "userPasswordEnabled": ${GIT_BRIDGE_USER_PASSWORD_ENABLED:-false},
   "repoStore": {

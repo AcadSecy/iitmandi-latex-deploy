@@ -1,5 +1,12 @@
 #!/bin/sh
 
+# The site address and contact shown in messages to git users. By default they
+# are the web app's own settings, which the Toolkit passes in variables.env.
+GIT_BRIDGE_SITE_URL="${GIT_BRIDGE_SITE_URL:-${OVERLEAF_SITE_URL:-}}"
+GIT_BRIDGE_SITE_URL="${GIT_BRIDGE_SITE_URL%/}"
+GIT_BRIDGE_SUPPORT_EMAIL="${GIT_BRIDGE_SUPPORT_EMAIL:-${OVERLEAF_ADMIN_EMAIL:-}}"
+export GIT_BRIDGE_SITE_URL GIT_BRIDGE_SUPPORT_EMAIL
+
 /opt/envsubst < /envsubst_template.json > /conf/runtime.json
 
 VERSION=$(date +%y%m%d%H%M%S)

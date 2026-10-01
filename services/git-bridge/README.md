@@ -1,24 +1,38 @@
-# writelatex-git-bridge
+# Latex X IIT-Mandi (git bridge)
+
+Lets people clone, pull and push IIT Mandi LaTeX projects with git. The Maven
+artifact keeps its historical name, `writelatex-git-bridge`.
 
 ## Docker
 
-The `Dockerfile` contains all the requirements for building and running the
-writelatex-git-bridge.
+The `Dockerfile` builds the jar and the runtime image. Its layout matches the
+upstream git-bridge image, so the Toolkit runs it unchanged: as root with
+`/server-pro-start.sh`, which prepares the data directory and then runs as
+`node`. From the repository root:
 
 ```bash
-# build the image
-docker build -t writelatex-git-bridge .
-
-# run it with the demo config
-docker run -v `pwd`/conf/local.json:/conf/runtime.json writelatex-git-bridge
+docker build -t iitmandi/latex-x-iit-mandi:<tag> services/git-bridge
 ```
+
+At start, `start.sh` renders `/conf/runtime.json` from
+`conf/envsubst_template.json` using `GIT_BRIDGE_*` environment variables. These
+decide what git users see:
+
+| Variable | Default | Used for |
+| --- | --- | --- |
+| `GIT_BRIDGE_SERVICE_NAME` | `Latex X IIT-Mandi` | The name in messages |
+| `GIT_BRIDGE_SITE_URL` | `OVERLEAF_SITE_URL` without a trailing `/` | Links to the help page (`/learn`), account settings and example git URLs |
+| `GIT_BRIDGE_SUPPORT_EMAIL` | `OVERLEAF_ADMIN_EMAIL` | The contact address in error messages |
+
+Values are inserted into JSON strings as they are, so they must not contain
+`"` or `\`.
 
 ## Native install
 
 ### Required packages
 
 - `maven` (for building, running tests and packaging)
-- `jdk-8` (for compiling and running)
+- JDK 21 (for compiling and running)
 
 ### Commands
 
@@ -50,10 +64,7 @@ Install dependencies:
 
 ```
 sudo apt-get update
-sudo apt-get install -y maven
-sudo apt-get install -y openjdk-8-jdk
-sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
-sudo update-alternatives --set javac /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/javac
+sudo apt-get install -y maven openjdk-21-jdk
 ```
 
 Create a config file according to the format below.
@@ -74,8 +85,12 @@ The configuration file is in `.json` format.
         "username" (string, optional): username for http basic auth,
         "password" (string, optional): password for http basic auth,
         "postbackBaseUrl" (string): the postback url,
-        "serviceName" (string): current name of writeLaTeX
-                                in case it ever changes,
+        "serviceName" (string): the name shown to git users,
+        "siteUrl" (string, optional): public address of the site,
+                                      without trailing slash; used for
+                                      help and settings links,
+        "supportEmail" (string, optional): contact address shown in
+                                           error messages,
         "oauth2Server" (string): oauth2 server,
                                  with protocol and
                                  without trailing slash,
@@ -126,7 +141,7 @@ db.oauthApplications.insert({
     "password"
   ],
   "id" : "264c723c925c13590880751f861f13084934030c13b4452901e73bdfab226edc",
-  "name" : "Overleaf Git Bridge",
+  "name" : "Git Bridge",
   "redirectUris" : [],
   "scopes" : [
     "git_bridge"
