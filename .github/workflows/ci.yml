@@ -50,7 +50,7 @@ jobs:
           # dependencies are cached below; the automatic cache needs Corepack first
           package-manager-cache: false
       - run: corepack enable
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: .yarn/cache
           key: yarn-cache-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
@@ -58,6 +58,10 @@ jobs:
 
       - name: Install dependencies
         run: yarn workspaces focus @overleaf/web
+
+      # The LaTeX and BibTeX parsers are built from their grammars (not committed)
+      - name: Generate editor parsers
+        run: yarn workspace @overleaf/web run lezer-latex:generate
 
       - name: Type-check frontend
         run: yarn workspace @overleaf/web run type-check
