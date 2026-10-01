@@ -3,11 +3,11 @@
 :root {
   // Basics
   --navbar-item-spacing-horizontal: var(--spacing-06);
-  --navbar-bg: var(--bg-dark-primary);
+  --navbar-bg: var(--iitm-navy);
   --navbar-border: transparent;
   --navbar-padding-h: var(--spacing-05);
   --navbar-padding: 0 var(--navbar-padding-h);
-  --navbar-brand-width: 130px;
+  --navbar-brand-width: 184px; // the wordmark is about 6:1, so it renders 30px tall
   --navbar-brand-image-url: var(
     --navbar-brand-image-default-url,
     url('../../../public/img/ol-brand/overleaf-white.svg')
@@ -55,7 +55,7 @@
   --navbar-toggler-expanded-bg: var(--blue-60);
 
   // Mobile view
-  --navbar-hamburger-submenu-bg: var(--bg-dark-secondary);
+  --navbar-hamburger-submenu-bg: var(--brand-70);
   --navbar-hamburger-submenu-item-color: var(--navbar-link-color);
   --navbar-hamburger-submenu-item-hover-color: var(--navbar-link-color);
   --navbar-hamburger-submenu-item-hover-bg: var(--navbar-link-hover-bg);

@@ -21,16 +21,49 @@ $neutral-80: #2f3a4c;
 $neutral-85: #252e3c;
 $neutral-90: #1b222c;
 
-/* Green */
-$green-10: #eaf6ef;
-$green-15: #daede2;
-$green-20: #b8dbc8;
-$green-30: #86caa5;
-$green-40: #53b57f;
-$green-50: #098842;
-$green-60: #1e6b41;
-$green-65: #1c623b;
-$green-70: #195936;
+/* IIT Mandi institutional colours (from the institute website) */
+$iitm-navy: #00237d;
+$iitm-orange: #ff652f;
+
+/* Brand accent: IIT Mandi blue.
+   Built on the hue of $iitm-navy. Steps 10-40 keep the perceptual lightness
+   of the upstream accent scale, so contrast against white and dark surfaces
+   is unchanged; steps 50-70 are deeper so they read as IIT Mandi navy.
+   White text on $brand-50 has a contrast ratio of 6.1:1. */
+$brand-10: #edf3fe;
+$brand-15: #dee8fb;
+$brand-20: #bfd2f4;
+$brand-30: #96b8f9;
+$brand-40: #6f9cf6;
+$brand-50: #2b5cc7;
+$brand-60: #1b48aa;
+$brand-65: #133fa0;
+$brand-70: #093495;
+
+/* Green
+   Upstream styles use the green scale as the brand accent (primary buttons,
+   selected items, active tabs, ...), so these names point at the brand
+   scale. Use $positive-* for success states. */
+$green-10: $brand-10;
+$green-15: $brand-15;
+$green-20: $brand-20;
+$green-30: $brand-30;
+$green-40: $brand-40;
+$green-50: $brand-50;
+$green-60: $brand-60;
+$green-65: $brand-65;
+$green-70: $brand-70;
+
+/* Positive (success states) */
+$positive-10: #eaf6ef;
+$positive-15: #daede2;
+$positive-20: #b8dbc8;
+$positive-30: #86caa5;
+$positive-40: #53b57f;
+$positive-50: #098842;
+$positive-60: #1e6b41;
+$positive-65: #1c623b;
+$positive-70: #195936;
 
 /* Blue */
 $blue-10: #f1f4f9;
@@ -68,9 +101,9 @@ $bg-dark-primary: $neutral-90;
 $bg-dark-secondary: $neutral-80;
 $bg-dark-tertiary: $neutral-70;
 $bg-dark-disabled: $neutral-70;
-$bg-accent-01: $green-50;
-$bg-accent-02: $green-60;
-$bg-accent-03: $green-10;
+$bg-accent-01: $brand-50;
+$bg-accent-02: $brand-60;
+$bg-accent-03: $brand-10;
 $bg-danger-01: $red-50;
 $bg-danger-02: $red-60;
 $bg-danger-03: $red-10;
@@ -86,7 +119,7 @@ $content-disabled: $neutral-40;
 $content-placeholder: $neutral-60;
 $content-danger: $red-50;
 $content-warning: $yellow-50;
-$content-positive: $green-50;
+$content-positive: $positive-50;
 $content-info: $blue-50;
 $border-primary: $neutral-60;
 $border-hover: $neutral-70;
@@ -94,9 +127,9 @@ $border-disabled: $neutral-20;
 $border-active: $blue-50;
 $border-danger: $red-50;
 $border-divider: $neutral-20;
-$link-web: $green-60;
-$link-web-hover: $green-70;
-$link-web-visited: $green-60;
+$link-web: $brand-60;
+$link-web-hover: $brand-70;
+$link-web-visited: $brand-60;
 $link-ui: $blue-50;
 $link-ui-hover: $blue-60;
 $link-ui-visited: $blue-60;
@@ -106,7 +139,7 @@ $content-disabled-dark: $neutral-60;
 $content-placeholder-dark: $neutral-50;
 $content-danger-dark: $red-40;
 $content-warning-dark: $yellow-40;
-$content-positive-dark: $green-40;
+$content-positive-dark: $positive-40;
 $content-info-dark: $blue-30;
 $border-primary-dark: $neutral-30;
 $border-hover-dark: $neutral-20;
@@ -114,9 +147,9 @@ $border-disabled-dark: $neutral-80;
 $border-active-dark: $blue-30;
 $border-danger-dark: $red-40;
 $border-divider-dark: $neutral-80;
-$link-web-dark: $green-30;
-$link-web-hover-dark: $green-40;
-$link-web-visited-dark: $green-40;
+$link-web-dark: $brand-30;
+$link-web-hover-dark: $brand-40;
+$link-web-visited-dark: $brand-40;
 $link-ui-dark: $blue-30;
 $link-ui-hover-dark: $blue-40;
 $link-ui-visited-dark: $blue-40;
@@ -137,7 +170,33 @@ $link-ui-visited-dark: $blue-40;
   --neutral-85: #{$neutral-85};
   --neutral-90: #{$neutral-90};
 
-  /* Green */
+  /* IIT Mandi institutional colours */
+  --iitm-navy: #{$iitm-navy};
+  --iitm-orange: #{$iitm-orange};
+
+  /* Brand accent: IIT Mandi blue */
+  --brand-10: #{$brand-10};
+  --brand-15: #{$brand-15};
+  --brand-20: #{$brand-20};
+  --brand-30: #{$brand-30};
+  --brand-40: #{$brand-40};
+  --brand-50: #{$brand-50};
+  --brand-60: #{$brand-60};
+  --brand-65: #{$brand-65};
+  --brand-70: #{$brand-70};
+
+  /* Positive (success states) */
+  --positive-10: #{$positive-10};
+  --positive-15: #{$positive-15};
+  --positive-20: #{$positive-20};
+  --positive-30: #{$positive-30};
+  --positive-40: #{$positive-40};
+  --positive-50: #{$positive-50};
+  --positive-60: #{$positive-60};
+  --positive-65: #{$positive-65};
+  --positive-70: #{$positive-70};
+
+  /* Green (aliases of the brand scale, see the Sass variables above) */
   --green-10: #{$green-10};
   --green-15: #{$green-15};
   --green-20: #{$green-20};
@@ -184,9 +243,9 @@ $link-ui-visited-dark: $blue-40;
   --bg-dark-secondary: var(--neutral-80);
   --bg-dark-tertiary: var(--neutral-70);
   --bg-dark-disabled: var(--neutral-70);
-  --bg-accent-01: var(--green-50);
-  --bg-accent-02: var(--green-60);
-  --bg-accent-03: var(--green-10);
+  --bg-accent-01: var(--brand-50);
+  --bg-accent-02: var(--brand-60);
+  --bg-accent-03: var(--brand-10);
   --bg-danger-01: var(--red-50);
   --bg-danger-02: var(--red-60);
   --bg-danger-03: var(--red-10);
@@ -202,7 +261,7 @@ $link-ui-visited-dark: $blue-40;
   --content-placeholder: var(--neutral-60);
   --content-danger: var(--red-50);
   --content-warning: var(--yellow-50);
-  --content-positive: var(--green-50);
+  --content-positive: var(--positive-50);
   --content-info: var(--blue-50);
   --border-primary: var(--neutral-60);
   --border-hover: var(--neutral-70);
@@ -211,9 +270,9 @@ $link-ui-visited-dark: $blue-40;
   --border-danger: var(--red-50);
   --border-divider: var(--neutral-20);
   --border-dark-divider: var(--neutral-70);
-  --link-web: var(--green-60);
-  --link-web-hover: var(--green-70);
-  --link-web-visited: var(--green-60);
+  --link-web: var(--brand-60);
+  --link-web-hover: var(--brand-70);
+  --link-web-visited: var(--brand-60);
   --link-ui: var(--blue-50);
   --link-ui-hover: var(--blue-60);
   --link-ui-visited: var(--blue-60);
@@ -223,7 +282,7 @@ $link-ui-visited-dark: $blue-40;
   --content-placeholder-dark: var(--neutral-50);
   --content-danger-dark: var(--red-40);
   --content-warning-dark: var(--yellow-40);
-  --content-positive-dark: var(--green-40);
+  --content-positive-dark: var(--positive-40);
   --content-info-dark: var(--blue-30);
   --border-primary-dark: var(--neutral-30);
   --border-hover-dark: var(--neutral-20);
@@ -231,9 +290,9 @@ $link-ui-visited-dark: $blue-40;
   --border-active-dark: var(--blue-30);
   --border-danger-dark: var(--red-40);
   --border-divider-dark: var(--neutral-80);
-  --link-web-dark: var(--green-30);
-  --link-web-hover-dark: var(--green-40);
-  --link-web-visited-dark: var(--green-40);
+  --link-web-dark: var(--brand-30);
+  --link-web-hover-dark: var(--brand-40);
+  --link-web-visited-dark: var(--brand-40);
   --link-ui-dark: var(--blue-30);
   --link-ui-hover-dark: var(--blue-40);
   --link-ui-visited-dark: var(--blue-40);

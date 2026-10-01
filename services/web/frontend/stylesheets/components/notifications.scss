@@ -1,16 +1,16 @@
 @mixin light-notification {
   --notification-bg-info: var(--bg-info-03);
-  --notification-bg-success: var(--bg-accent-03);
+  --notification-bg-success: var(--positive-10);
   --notification-bg-warning: var(--bg-warning-03);
   --notification-bg-error: var(--bg-danger-03);
   --notification-bg-offer: var(--bg-light-primary);
   --notification-border-info: var(--blue-20);
-  --notification-border-success: var(--green-20);
+  --notification-border-success: var(--positive-20);
   --notification-border-warning: var(--yellow-20);
   --notification-border-error: var(--red-20);
   --notification-border-offer: var(--neutral-20);
   --notification-icon-info: var(--blue-50);
-  --notification-icon-success: var(--green-50);
+  --notification-icon-success: var(--positive-50);
   --notification-icon-warning: var(--yellow-40);
   --notification-icon-error: var(--red-50);
   --notification-icon-offer: var(--neutral-50);
@@ -24,17 +24,17 @@
 
 @mixin dark-notification {
   --notification-bg-info: var(--blue-70);
-  --notification-bg-success: var(--green-70);
+  --notification-bg-success: var(--positive-70);
   --notification-bg-warning: var(--yellow-70);
   --notification-bg-error: var(--red-70);
   --notification-bg-offer: var(--neutral-70);
   --notification-border-info: var(--blue-60);
-  --notification-border-success: var(--green-60);
+  --notification-border-success: var(--positive-60);
   --notification-border-warning: var(--yellow-60);
   --notification-border-error: var(--red-60);
   --notification-border-offer: var(--neutral-60);
   --notification-icon-info: var(--blue-30);
-  --notification-icon-success: var(--green-30);
+  --notification-icon-success: var(--positive-30);
   --notification-icon-warning: var(--yellow-20);
   --notification-icon-error: var(--red-20);
   --notification-icon-offer: var(--neutral-20);

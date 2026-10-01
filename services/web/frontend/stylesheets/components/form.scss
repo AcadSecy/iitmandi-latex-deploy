@@ -519,7 +519,7 @@ input[type='range'] {
 
 // Feedback states
 .has-success {
-  @include form-control-validation($bg-accent-01);
+  @include form-control-validation($positive-50);
 }
 
 .has-warning {

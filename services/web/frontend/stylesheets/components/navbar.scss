@@ -279,20 +279,21 @@
 @mixin navbar-dark() {
   --navbar-title-color: var(--content-primary-dark);
   --navbar-title-color-hover: var(--content-secondary-dark);
+  // The dark navbar is IIT Mandi navy, so it needs the white wordmark
   --navbar-brand-image-url: var(
-    --navbar-brand-image-redesign-url,
-    url('../../../frontend/js/shared/svgs/overleaf-green.svg')
+    --navbar-brand-image-default-url,
+    url('../../../frontend/js/shared/svgs/overleaf-white.svg')
   );
   --navbar-subdued-color: var(--content-primary-dark);
-  --navbar-subdued-hover-bg: var(--bg-dark-secondary);
+  --navbar-subdued-hover-bg: var(--brand-70);
   --navbar-subdued-hover-color: var(--content-primary-dark);
-  --navbar-bg: var(--bg-dark-primary);
+  --navbar-bg: var(--iitm-navy);
 
   // Navbar links
   --navbar-link-color: var(--content-primary-dark);
   --navbar-link-border-color: var(--border-primary-dark);
   --navbar-link-hover-color: var(--navbar-link-color);
-  --navbar-link-hover-bg: var(--bg-dark-tertiary);
+  --navbar-link-hover-bg: var(--brand-60);
   --navbar-link-hover-border-color: var(--navbar-link-border-color);
 
   // Toggler
@@ -300,10 +301,10 @@
   --navbar-toggler-expanded-color: var(--content-secondary-dark);
 
   // Mobile view
-  --navbar-hamburger-submenu-bg: var(--bg-dark-primary);
+  --navbar-hamburger-submenu-bg: var(--iitm-navy);
   --navbar-hamburger-submenu-item-color: var(--navbar-link-color);
   --navbar-hamburger-submenu-item-hover-color: var(--content-primary-dark);
-  --navbar-hamburger-submenu-item-hover-bg: var(--bg-dark-secondary);
+  --navbar-hamburger-submenu-item-hover-bg: var(--brand-70);
 }
 
 .website-redesign-navbar,

@@ -22,7 +22,7 @@ export default _.template(`\
 
 <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 32px 0;">
   <tr>
-    <td bgcolor="${colors.ctaGreen}" style="background-color: ${colors.ctaGreen}; border-radius: 9999px; padding: 6px 16px; text-align: center;">
+    <td bgcolor="${colors.ctaBackground}" style="background-color: ${colors.ctaBackground}; border-radius: 9999px; padding: 6px 16px; text-align: center;">
       <a href="<%= ctaURL %>" style="color: ${colors.ctaText}; display: block; font-family: ${fontFamily}; font-size: 16px; font-weight: 600; line-height: 24px; text-align: center; text-decoration: none; -webkit-hyphens: none; -ms-hyphens: none; hyphens: none;">
         <%= ctaText %>
       </a>
@@ -42,7 +42,7 @@ export default _.template(`\
   If the button above does not appear, please copy and paste this link into your browser's address bar:
 </p>
 <p style="margin: 0; font-size: 14px; line-height: 20px; word-break: break-all;">
-  <a href="<%= ctaURL %>" style="color: ${colors.linkGreen}; text-decoration: none;"><%= ctaURL %></a>
+  <a href="<%= ctaURL %>" style="color: ${colors.link}; text-decoration: none;"><%= ctaURL %></a>
 </p>
 
 <% if (gmailGoToAction) { %>

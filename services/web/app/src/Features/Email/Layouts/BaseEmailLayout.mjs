@@ -5,7 +5,7 @@ import { fontFamily, colors } from '../emailStyles.mjs'
 const _isSaas = settings.env === 'saas'
 const _imageBase = settings.cdn?.web?.host || settings.siteUrl || null
 
-let _logoHtml = `<span style="font-family: ${fontFamily}; font-size: 30px; font-weight: bold; color: ${colors.logoGreen};">${settings.appName}</span>`
+let _logoHtml = `<span style="font-family: ${fontFamily}; font-size: 30px; font-weight: bold; color: ${colors.logo};">${settings.appName}</span>`
 let _taglineHtml = ''
 if (_isSaas && _imageBase) {
   _logoHtml = `
@@ -62,7 +62,7 @@ export default _.template(`\
 
     .force-overleaf-style a,
     .force-overleaf-style a[href] {
-      color: ${colors.linkGreen} !important;
+      color: ${colors.link} !important;
       text-decoration: underline !important;
       -moz-hyphens: none;
       -ms-hyphens: none;
@@ -70,7 +70,7 @@ export default _.template(`\
       hyphens: none;
     }
     .force-overleaf-style a:visited,
-    .force-overleaf-style a[href]:visited { color: ${colors.linkGreen}; }
+    .force-overleaf-style a[href]:visited { color: ${colors.link}; }
     .force-overleaf-style a:hover,
     .force-overleaf-style a[href]:hover { color: ${colors.linkHover}; }
 
