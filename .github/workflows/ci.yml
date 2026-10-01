@@ -28,6 +28,8 @@ jobs:
           package-manager-cache: false
       - name: Locale strings use __appName__
         run: node tools/branding/rebrand-locales.mjs --check
+      - name: Help links stay on the platform
+        run: node tools/branding/rewrite-help-links.mjs --check
       - name: Compile the main stylesheet
         run: |
           mkdir -p "$RUNNER_TEMP/sass"

@@ -40,14 +40,14 @@ const CiamLayout: FC<Props> = ({ children }: Props) => (
               components={[
                 // eslint-disable-next-line jsx-a11y/anchor-has-content,react/jsx-key
                 <a
-                  href="https://www.overleaf.com/"
+                  href="/"
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() =>
                     eventTracking.sendMB('unified-access-footer-click', {
                       product: 'overleaf',
                       item: 'overleaf',
-                      destinationUrl: 'https://www.overleaf.com/',
+                      destinationUrl: '/',
                     })
                   }
                 />,
@@ -72,8 +72,8 @@ const CiamLayout: FC<Props> = ({ children }: Props) => (
     </div>
     <footer>
       <div className="footer-links">
-        <a href="https://www.overleaf.com/legal#Privacy">Privacy</a>
-        <a href="https://www.overleaf.com/legal#Terms">Terms</a>
+        <a href="/learn">Privacy</a>
+        <a href="/learn">Terms</a>
       </div>
     </footer>
   </div>

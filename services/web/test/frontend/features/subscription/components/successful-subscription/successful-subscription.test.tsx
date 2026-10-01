@@ -81,7 +81,7 @@ describe('successful subscription page', function () {
       name: /Overleaf’s features/i,
     })
     expect(helpLink.getAttribute('href')).to.equal(
-      'https://docs.overleaf.com/getting-started/free-and-premium-plans/premium-features'
+      '/learn'
     )
 
     const backToYourProjectsLink = screen.getByRole('link', {
@@ -133,7 +133,7 @@ describe('successful subscription page', function () {
         name: /Overleaf.s AI features/i,
       })
       expect(aiFeaturesLink.getAttribute('href')).to.equal(
-        'https://docs.overleaf.com/integrations-and-add-ons/ai-features'
+        '/learn'
       )
       expect(aiFeaturesLink.getAttribute('target')).to.equal('_blank')
       expect(aiFeaturesLink.getAttribute('rel')).to.equal('noopener noreferrer')

@@ -37,7 +37,7 @@ export const AiConsentPromptMessageBody = ({
           used for model training. There are more details about how we use your
           data in{' '}
           <a
-            href="https://docs.overleaf.com/integrations-and-add-ons/ai-features#data-privacy-and-responsible-use"
+            href="/learn"
             target="_blank"
             rel="noopener noreferrer"
           >

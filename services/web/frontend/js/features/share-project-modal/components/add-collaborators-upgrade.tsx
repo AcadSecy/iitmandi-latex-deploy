@@ -53,7 +53,7 @@ export default function AddCollaboratorsUpgrade() {
             <OLButton
               variant="link"
               size="sm"
-              href="https://www.overleaf.com/blog/changes-to-project-sharing"
+              href="/learn"
               target="_blank"
               rel="noreferrer"
               onClick={() => {

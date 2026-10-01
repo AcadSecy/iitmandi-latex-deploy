@@ -180,7 +180,7 @@ function SSOAffiliationInfo({ userEmailData }: SSOAffiliationInfoProps) {
                   }
                 />{' '}
                 <a
-                  href="https://docs.overleaf.com/accounts-and-security/email-address-and-login-options/logging-in-with-institutional-sso"
+                  href="/learn"
                   target="_blank"
                   rel="noopener noreferrer"
                 >

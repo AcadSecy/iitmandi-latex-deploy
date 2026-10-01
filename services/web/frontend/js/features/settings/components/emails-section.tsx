@@ -51,7 +51,7 @@ function EmailsSectionContent() {
             <strong />,
             // eslint-disable-next-line jsx-a11y/anchor-has-content, react/jsx-key
             <a
-              href="https://docs.overleaf.com/accounts-and-security/email-address-and-login-options"
+              href="/learn"
               target="_blank"
               rel="noopener noreferrer"
             />,

@@ -46,7 +46,7 @@ function PdfPreviewError({
                   components={[
                     // eslint-disable-next-line jsx-a11y/anchor-has-content
                     <a
-                      href="https://docs.overleaf.com/troubleshooting-and-support/resolving-pdf-rendering-and-project-loading-problems"
+                      href="/learn"
                       target="_blank"
                       rel="noopener noreferrer"
                       key="troubleshooting-link"
@@ -71,7 +71,7 @@ function PdfPreviewError({
               components={[
                 // eslint-disable-next-line jsx-a11y/anchor-has-content
                 <a
-                  href="https://docs.overleaf.com/troubleshooting-and-support/resolving-pdf-rendering-and-project-loading-problems"
+                  href="/learn"
                   target="_blank"
                   rel="noopener noreferrer"
                   key="troubleshooting-link"
@@ -95,7 +95,7 @@ function PdfPreviewError({
                     <code key="domain" />,
                     /* eslint-disable-next-line jsx-a11y/anchor-has-content */
                     <a
-                      href="https://docs.overleaf.com/troubleshooting-and-support/resolving-pdf-rendering-and-project-loading-problems"
+                      href="/learn"
                       target="_blank"
                       rel="noopener noreferrer"
                       key="troubleshooting-link"
@@ -227,7 +227,7 @@ function PdfPreviewError({
                 <strong key="strong-" />,
                 // eslint-disable-next-line jsx-a11y/anchor-has-content
                 <a
-                  href="https://docs.overleaf.com/troubleshooting-and-support/resolving-pdf-rendering-and-project-loading-problems"
+                  href="/learn"
                   target="_blank"
                   rel="noopener noreferrer"
                   key="troubleshooting-link"
@@ -303,7 +303,7 @@ function TimedOutLogEntry() {
             components={[
               // eslint-disable-next-line jsx-a11y/anchor-has-content, react/jsx-key
               <a
-                href="https://docs.overleaf.com/troubleshooting-and-support/fixing-and-preventing-compile-timeouts/optimising-very-large-image-files"
+                href="/learn"
                 onClick={() => {
                   sendMB('paywall-info-click', {
                     'paywall-type': 'compile-timeout',
@@ -321,7 +321,7 @@ function TimedOutLogEntry() {
             components={[
               // eslint-disable-next-line jsx-a11y/anchor-has-content, react/jsx-key
               <a
-                href="https://docs.overleaf.com/troubleshooting-and-support/fixing-and-preventing-compile-timeouts"
+                href="/learn"
                 onClick={() => {
                   sendMB('paywall-info-click', {
                     'paywall-type': 'compile-timeout',
@@ -356,7 +356,7 @@ function TimedOutLogEntry() {
           components={[
             // eslint-disable-next-line jsx-a11y/anchor-has-content, react/jsx-key
             <a
-              href="https://docs.overleaf.com/troubleshooting-and-support/fixing-and-preventing-compile-timeouts"
+              href="/learn"
               onClick={() => {
                 sendMB('paywall-info-click', {
                   'paywall-type': 'compile-timeout',

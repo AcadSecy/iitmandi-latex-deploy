@@ -39,7 +39,7 @@ mixin ciamCardFooter(short)
 						{
 							name: 'a',
 							attrs: {
-								href: 'https://www.overleaf.com/',
+								href: '/',
 								target: '_blank',
 								rel: 'noopener noreferrer',
 								'event-tracking-mb': 'true',
@@ -48,7 +48,7 @@ mixin ciamCardFooter(short)
 								'event-segmentation': {
 									product: 'overleaf',
 									item: 'overleaf',
-									destinationUrl: 'https://www.overleaf.com/'
+									destinationUrl: '/'
 								}
 							}
 						},
@@ -95,8 +95,8 @@ mixin ciamCustomFormDangerMessage(key)
 mixin ciamFooter
 	footer
 		.footer-links
-			a(href='https://www.overleaf.com/legal#Privacy') Privacy
-			a(href='https://www.overleaf.com/legal#Terms') Terms
+			a(href='/learn') Privacy
+			a(href='/learn') Terms
 
 mixin ciamErrorNotification
 	.notification.notification-ds.notification-type-error(

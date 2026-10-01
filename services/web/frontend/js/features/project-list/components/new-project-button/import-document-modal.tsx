@@ -121,7 +121,7 @@ const ErrorNotification = ({ message }: { message: string }) => {
               components={[
                 // eslint-disable-next-line react/jsx-key, jsx-a11y/anchor-has-content
                 <a
-                  href="https://docs.overleaf.com/managing-projects-and-files/importing-and-exporting-files#common-issues-and-how-to-address-them"
+                  href="/learn"
                   target="_BLANK"
                   rel="noopener noreferrer"
                 />,

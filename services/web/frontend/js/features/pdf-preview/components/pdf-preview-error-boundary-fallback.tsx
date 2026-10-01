@@ -14,7 +14,7 @@ function PdfPreviewErrorBoundaryFallback({
       components={[
         // eslint-disable-next-line jsx-a11y/anchor-has-content
         <a
-          href="https://docs.overleaf.com/troubleshooting-and-support/resolving-pdf-rendering-and-project-loading-problems"
+          href="/learn"
           target="_blank"
           rel="noopener noreferrer"
           key="troubleshooting-link"

@@ -1324,8 +1324,9 @@ async function initialize(webRouter, privateApiRouter, publicApiRouter) {
     )
   }
 
-  webRouter.get(['/learn*', '/blog*', '/latex*', '/for/*', '/contact*'], (req, res) => {
-    res.redirect(301, `https://www.overleaf.com${req.originalUrl}`)
+  // Help links throughout the UI point here; see tools/branding/rewrite-help-links.mjs
+  webRouter.get(['/learn', '/learn/*'], (req, res) => {
+    res.render('general/help')
   })
 
   webRouter.get('/unsupported-browser', renderUnsupportedBrowserPage)

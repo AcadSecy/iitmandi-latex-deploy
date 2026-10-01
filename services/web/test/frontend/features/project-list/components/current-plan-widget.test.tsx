@@ -369,7 +369,7 @@ describe('<CurrentPlanWidget />', function () {
 
         const links = screen.getAllByRole('link')
         expect(links[0].getAttribute('href')).to.equal(
-          'https://docs.overleaf.com/getting-started/free-and-premium-plans/premium-features'
+          '/learn'
         )
 
         window.metaAttributesCache.delete('ol-usersBestSubscription')

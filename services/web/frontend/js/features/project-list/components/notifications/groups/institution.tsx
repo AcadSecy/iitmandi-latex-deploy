@@ -55,7 +55,7 @@ function Institution() {
                         tOptions={{ interpolation: { escapeValue: true } }}
                       />{' '}
                       <a
-                        href="https://docs.overleaf.com/accounts-and-security/email-address-and-login-options/logging-in-with-institutional-sso"
+                        href="/learn"
                         target="_blank"
                         rel="noopener noreferrer"
                       >
@@ -123,7 +123,7 @@ function Institution() {
                     />
                     &nbsp;
                     <a
-                      href="https://docs.overleaf.com/accounts-and-security/understanding-managed-accounts"
+                      href="/learn"
                       target="_blank"
                       rel="noopener noreferrer"
                     >
@@ -177,7 +177,7 @@ function Institution() {
                 action={
                   <OLButton
                     variant="secondary"
-                    href="https://docs.overleaf.com/accounts-and-security/email-address-and-login-options/logging-in-with-institutional-sso"
+                    href="/learn"
                     target="_blank"
                     rel="noopener noreferrer"
                   >

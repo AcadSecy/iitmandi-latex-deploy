@@ -24,7 +24,7 @@ export const FigureModalHelp = () => {
             // eslint-disable-next-line react/jsx-key
             <code />,
             // eslint-disable-next-line react/jsx-key
-            <LearnWikiLink href="https://docs.overleaf.com/writing-and-editing/inserting-images/captioning-and-referencing-figures#captioning-labeling-and-referencing" />,
+            <LearnWikiLink href="/learn" />,
           ]}
         />
       </p>
@@ -35,7 +35,7 @@ export const FigureModalHelp = () => {
           i18nKey="there_are_lots_of_options_to_edit_and_customize_your_figures"
           components={[
             // eslint-disable-next-line react/jsx-key
-            <LearnWikiLink href="https://docs.overleaf.com/writing-and-editing/inserting-images" />,
+            <LearnWikiLink href="/learn" />,
           ]}
         />
       </p>
@@ -46,7 +46,7 @@ export const FigureModalHelp = () => {
           i18nKey="latex_places_figures_according_to_a_special_algorithm"
           components={[
             // eslint-disable-next-line react/jsx-key
-            <LearnWikiLink href="https://docs.overleaf.com/writing-and-editing/inserting-images/positioning-figures" />,
+            <LearnWikiLink href="/learn" />,
           ]}
         />
       </p>
@@ -59,7 +59,7 @@ export const FigureModalHelp = () => {
             // eslint-disable-next-line react/jsx-key
             <code />,
             // eslint-disable-next-line react/jsx-key
-            <LearnWikiLink href="https://docs.overleaf.com/writing-and-editing/inserting-images/latex-code-for-including-images-in-your-document" />,
+            <LearnWikiLink href="/learn" />,
           ]}
         />
       </p>

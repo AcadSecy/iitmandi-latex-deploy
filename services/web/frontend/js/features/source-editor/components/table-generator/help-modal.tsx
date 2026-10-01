@@ -47,7 +47,7 @@ export const TableGeneratorHelpModal = () => {
             components={[
               // eslint-disable-next-line react/jsx-key, jsx-a11y/anchor-has-content
               <a
-                href="https://www.overleaf.com/learn/latex/Tables"
+                href="/learn"
                 target="_blank"
                 rel="noopener"
               />,
@@ -61,7 +61,7 @@ export const TableGeneratorHelpModal = () => {
             components={[
               // eslint-disable-next-line react/jsx-key, jsx-a11y/anchor-has-content
               <a
-                href="https://www.overleaf.com/learn/latex/Positioning_images_and_tables"
+                href="/learn"
                 target="_blank"
                 rel="noopener"
               />,
@@ -77,7 +77,7 @@ export const TableGeneratorHelpModal = () => {
               <code />,
               // eslint-disable-next-line react/jsx-key, jsx-a11y/anchor-has-content
               <a
-                href="https://docs.overleaf.com/writing-and-editing/inserting-images/captioning-and-referencing-figures#labels-and-cross-references"
+                href="/learn"
                 target="_blank"
                 rel="noopener noreferrer"
               />,

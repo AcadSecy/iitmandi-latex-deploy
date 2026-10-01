@@ -1,0 +1,83 @@
+extends ../layout-marketing
+
+block vars
+	- metadata = {title: 'Help'}
+	- isWebsiteRedesign = true
+
+block content
+	main#main-content.content
+		.container
+			.row
+				.col-lg-8.offset-lg-2
+					h1 Help
+					p
+						| #{settings.appName} is the Institute's collaborative LaTeX editor. This page covers the platform itself; for LaTeX, start with the guides below.
+
+					h2.h3 Learning LaTeX
+					ul
+						li
+							a(href='https://www.learnlatex.org/' target='_blank' rel='noopener noreferrer') Learn LaTeX
+							|  — short lessons for beginners, with examples to try.
+						li
+							a(href='https://en.wikibooks.org/wiki/LaTeX' target='_blank' rel='noopener noreferrer') LaTeX Wikibook
+							|  — a reference for document structure, tables, figures, mathematics and bibliographies.
+						li
+							a(href='https://ctan.org/' target='_blank' rel='noopener noreferrer') CTAN
+							|  — the documentation of every LaTeX package.
+
+					h2.h3 Fixing compile errors
+					ul
+						li
+							| The logs next to the PDF list each error with the line that caused it. Fix the first error first: the ones after it often follow from it.
+						li
+							| For an unfamiliar message, search
+							|
+							a(href='https://tex.stackexchange.com/' target='_blank' rel='noopener noreferrer') TeX Stack Exchange
+							| .
+						li
+							| If the PDF stops updating or looks out of date, choose
+							|
+							strong Recompile from scratch
+							|
+							| in the Recompile menu.
+						li
+							| Every compile has a time limit. Large images are the most common cause of slow compiles: scale them down to the size at which they are printed.
+						li
+							| When many people compile at the same time, your compile waits for a free slot and starts on its own.
+
+					h2.h3 Sharing and collaborating
+					ul
+						li
+							| Use
+							|
+							strong Share
+							|
+							| in the editor to invite people by their IIT Mandi email address, or to turn on view-only and edit links.
+						li
+							| Shared projects and links open only after logging in with an IIT Mandi account.
+						li
+							strong History
+							|
+							| shows every change to a project and can restore earlier versions.
+
+					h2.h3 Projects
+					ul
+						li
+							| Archiving a project hides it from your project list without deleting it.
+						li
+							| A project you delete from the trash cannot be restored by you. An administrator can recover it for 90 days; after that it is removed for good.
+
+					h2.h3 Git
+					p
+						| You can clone, pull and push projects with git. Create an authentication token in your account settings, and use it as the password when git asks for one.
+
+					h2.h3 Browsers
+					p
+						| Use a version of Chrome, Firefox, Safari or Edge released in the last year. Older browsers, and Internet Explorer, are not supported.
+
+					h2.h3 Contact
+					p
+						| For questions, problems with your account or anything this page doesn't answer, write to
+						|
+						a(href='mailto:' + settings.adminEmail) #{settings.adminEmail}
+						| .

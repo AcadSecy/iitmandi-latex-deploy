@@ -111,7 +111,7 @@ export function AddSecondaryEmailPrompt() {
               i18nKey="learn_more_about_account"
               components={[
                 // eslint-disable-next-line react/jsx-key, jsx-a11y/anchor-has-content
-                <a href="https://docs.overleaf.com/accounts-and-security/keeping-your-account-secure" />,
+                <a href="/learn" />,
               ]}
             />
           </p>

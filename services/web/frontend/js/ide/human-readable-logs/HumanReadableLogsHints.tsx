@@ -30,7 +30,7 @@ type LogHint = {
 const hints: { [ruleId: string]: LogHint } = {
   hint_misplaced_alignment_tab_character: {
     extraInfoURL:
-      'https://www.overleaf.com/learn/Errors/Misplaced_alignment_tab_character_%26',
+      'https://tex.stackexchange.com/search?q=Misplaced%20alignment%20tab%20character%20%26',
     formattedContent: () => (
       <>
         You have placed an alignment tab character '&' in the wrong place. If
@@ -46,19 +46,19 @@ const hints: { [ruleId: string]: LogHint } = {
   },
   hint_extra_alignment_tab_has_been_changed: {
     extraInfoURL:
-      'https://www.overleaf.com/learn/Errors/Extra_alignment_tab_has_been_changed_to_%5Ccr',
+      'https://tex.stackexchange.com/search?q=Extra%20alignment%20tab%20has%20been%20changed%20to%20%5Ccr',
     formattedContent: () => (
       <>
         You have written too many alignment tabs in a table, causing one of them
         to be turned into a line break. Make sure you have specified the correct
         number of columns in your{' '}
-        <WikiLink url="https://www.overleaf.com/learn/Tables">table</WikiLink>.
+        <WikiLink url="/learn">table</WikiLink>.
       </>
     ),
   },
   hint_display_math_should_end_with: {
     extraInfoURL:
-      'https://www.overleaf.com/learn/Errors/Display_math_should_end_with_$$',
+      'https://tex.stackexchange.com/search?q=Display%20math%20should%20end%20with$$',
     formattedContent: () => (
       <>
         You have forgotten a $ sign at the end of 'display math' mode. When
@@ -68,7 +68,7 @@ const hints: { [ruleId: string]: LogHint } = {
     ),
   },
   hint_missing_inserted: {
-    extraInfoURL: 'https://www.overleaf.com/learn/Errors/Missing_$_inserted',
+    extraInfoURL: 'https://tex.stackexchange.com/search?q=Missing$_inserted',
     formattedContent: () => (
       <>
         <p>
@@ -91,7 +91,7 @@ const hints: { [ruleId: string]: LogHint } = {
   },
   hint_reference_undefined: {
     extraInfoURL:
-      'https://www.overleaf.com/learn/Errors/There_were_undefined_references',
+      'https://tex.stackexchange.com/search?q=There%20were%20undefined%20references',
     formattedContent: () => (
       <>
         You have referenced something which has not yet been labelled. If you
@@ -103,7 +103,7 @@ const hints: { [ruleId: string]: LogHint } = {
   },
   hint_there_were_undefined_references: {
     extraInfoURL:
-      'https://www.overleaf.com/learn/Errors/There_were_undefined_references',
+      'https://tex.stackexchange.com/search?q=There%20were%20undefined%20references',
     formattedContent: () => (
       <>
         You have referenced something which has not yet been labelled. If you
@@ -115,7 +115,7 @@ const hints: { [ruleId: string]: LogHint } = {
   },
   hint_citation_on_page_undefined_on_input_line: {
     extraInfoURL:
-      'https://www.overleaf.com/learn/Errors/Citation_XXX_on_page_XXX_undefined_on_input_line_XXX',
+      'https://tex.stackexchange.com/search?q=Citation%20on%20page%20undefined%20on%20input%20line',
     formattedContent: () => (
       <>
         You have cited something which is not included in your bibliography.
@@ -127,7 +127,7 @@ const hints: { [ruleId: string]: LogHint } = {
   },
   hint_label_multiply_defined_labels: {
     extraInfoURL:
-      'https://www.overleaf.com/learn/Errors/There_were_multiply-defined_labels',
+      'https://tex.stackexchange.com/search?q=There%20were%20multiply-defined%20labels',
     formattedContent: () => (
       <>
         You have used the same label more than once. Check that each \label
@@ -137,14 +137,14 @@ const hints: { [ruleId: string]: LogHint } = {
   },
   hint_float_specifier_changed: {
     extraInfoURL:
-      'https://www.overleaf.com/learn/Errors/%60!h%27_float_specifier_changed_to_%60!ht%27',
+      'https://tex.stackexchange.com/search?q=%60!h'%20float%20specifier%20changed%20to%20%60!ht'',
     formattedContent: () => (
       <>
         The float specifier 'h' is too strict of a demand for LaTeX to place
         your float in a nice way here. Try relaxing it by using 'ht', or even
         'htbp' if necessary. If you want to try keep the float here anyway,
         check out the{' '}
-        <WikiLink url="https://www.overleaf.com/learn/Positioning_of_Figures">
+        <WikiLink url="/learn">
           float package
         </WikiLink>
         .
@@ -153,7 +153,7 @@ const hints: { [ruleId: string]: LogHint } = {
   },
   hint_no_positions_in_optional_float_specifier: {
     extraInfoURL:
-      'https://www.overleaf.com/learn/Errors/No_positions_in_optional_float_specifier',
+      'https://tex.stackexchange.com/search?q=No%20positions%20in%20optional%20float%20specifier',
     formattedContent: () => (
       <>
         You have forgotten to include a float specifier, which tells LaTeX where
@@ -163,7 +163,7 @@ const hints: { [ruleId: string]: LogHint } = {
         [h]), or remove the square brackets (e.g. \begin
         {'{figure}'}
         ). Find out more about float specifiers{' '}
-        <WikiLink url="https://www.overleaf.com/learn/Positioning_of_Figures">
+        <WikiLink url="/learn">
           here
         </WikiLink>
         .
@@ -182,11 +182,11 @@ const hints: { [ruleId: string]: LogHint } = {
                 We think you’ve got a missing package! The{' '}
                 <code>{command}</code> command won't work unless you include
                 <code>{suggestion.command}</code> in your{' '}
-                <WikiLink url="https://www.overleaf.com/learn/latex/Learn_LaTeX_in_30_minutes#The_preamble_of_a_document">
+                <WikiLink url="/learn">
                   document preamble
                 </WikiLink>
                 .{' '}
-                <WikiLink url="https://www.overleaf.com/learn/latex/Learn_LaTeX_in_30_minutes#Finding_and_using_LaTeX_packages">
+                <WikiLink url="/learn">
                   Learn more about packages
                 </WikiLink>
                 .
@@ -204,7 +204,7 @@ const hints: { [ruleId: string]: LogHint } = {
           {'{...}'}.
           <div className="log-entry-content-link">
             <a
-              href="https://www.overleaf.com/learn/Errors/Undefined_control_sequence"
+              href="https://tex.stackexchange.com/search?q=Undefined%20control%20sequence"
               target="_blank"
               rel="noopener"
             >
@@ -227,11 +227,11 @@ const hints: { [ruleId: string]: LogHint } = {
                 We think you’ve got a missing package! The{' '}
                 <code>{environment}</code> environment won't work unless you
                 include <code>{suggestion.command}</code> in your{' '}
-                <WikiLink url="https://www.overleaf.com/learn/latex/Learn_LaTeX_in_30_minutes#The_preamble_of_a_document">
+                <WikiLink url="/learn">
                   document preamble
                 </WikiLink>
                 .{' '}
-                <WikiLink url="https://www.overleaf.com/learn/latex/Learn_LaTeX_in_30_minutes#Finding_and_using_LaTeX_packages">
+                <WikiLink url="/learn">
                   Learn more about packages
                 </WikiLink>
                 .
@@ -249,7 +249,7 @@ const hints: { [ruleId: string]: LogHint } = {
           the environment is spelled correctly.
           <div className="log-entry-content-link">
             <a
-              href="https://www.overleaf.com/learn/Errors%2FLaTeX%20Error%3A%20Environment%20XXX%20undefined"
+              href="/learn"
               target="_blank"
               rel="noopener"
             >
@@ -262,16 +262,16 @@ const hints: { [ruleId: string]: LogHint } = {
   },
   hint_file_not_found: {
     extraInfoURL:
-      'https://www.overleaf.com/learn/Errors/File_XXX_not_found_on_input_line_XXX',
+      'https://tex.stackexchange.com/search?q=File%20not%20found%20on%20input%20line',
     formattedContent: () => (
       <>
         The compiler cannot find the file you want to include. Make sure that
         you have{' '}
-        <WikiLink url="https://www.overleaf.com/learn/how-to/Including_images_on_Overleaf">
+        <WikiLink url="/learn">
           uploaded the file
         </WikiLink>{' '}
         and{' '}
-        <WikiLink url="https://www.overleaf.com/learn/Errors/File_XXX_not_found_on_input_line_XXX.">
+        <WikiLink url="https://tex.stackexchange.com/search?q=File%20not%20found%20on%20input%20line%20.">
           specified the file location correctly
         </WikiLink>
         .
@@ -280,12 +280,12 @@ const hints: { [ruleId: string]: LogHint } = {
   },
   hint_unknown_graphics_extension: {
     extraInfoURL:
-      'https://www.overleaf.com/learn/Errors/LaTeX_Error:_Unknown_graphics_extension:_.XXX',
+      'https://tex.stackexchange.com/search?q=LaTeX%20Error%3A%20Unknown%20graphics%20extension%3A%20.',
     formattedContent: () => (
       <>
         The compiler does not recognise the file type of one of your images.
         Make sure you are using a{' '}
-        <WikiLink url="https://www.overleaf.com/learn/Errors/LaTeX_Error:_Unknown_graphics_extension:_.gif.">
+        <WikiLink url="https://tex.stackexchange.com/search?q=LaTeX%20Error%3A%20Unknown%20graphics%20extension%3A%20.gif.">
           supported image format
         </WikiLink>{' '}
         for your choice of compiler, and check that there are no periods (.) in
@@ -295,7 +295,7 @@ const hints: { [ruleId: string]: LogHint } = {
   },
   hint_unknown_float_option_h: {
     extraInfoURL:
-      'https://www.overleaf.com/learn/Errors/LaTeX_Error:_Unknown_float_option_%60H%27',
+      'https://tex.stackexchange.com/search?q=LaTeX%20Error%3A%20Unknown%20float%20option%20%60H'',
     formattedContent: () => (
       <>
         The compiler isn't recognizing the float option 'H'. Include \usepackage
@@ -305,13 +305,13 @@ const hints: { [ruleId: string]: LogHint } = {
   },
   hint_unknown_float_option_q: {
     extraInfoURL:
-      'https://www.overleaf.com/learn/Errors/LaTeX_Error:_Unknown_float_option_%60q%27',
+      'https://tex.stackexchange.com/search?q=LaTeX%20Error%3A%20Unknown%20float%20option%20%60q'',
     formattedContent: () => (
       <>
         You have used a float specifier which the compiler does not understand.
         You can learn more about the different float options available for
         placing figures{' '}
-        <WikiLink url="https://www.overleaf.com/learn/Positioning_of_Figures">
+        <WikiLink url="/learn">
           here
         </WikiLink>{' '}
         .
@@ -320,7 +320,7 @@ const hints: { [ruleId: string]: LogHint } = {
   },
   hint_math_allowed_only_in_math_mode: {
     extraInfoURL:
-      'https://www.overleaf.com/learn/Errors/LaTeX_Error:_%5Cmathrm_allowed_only_in_math_mode',
+      'https://tex.stackexchange.com/search?q=LaTeX%20Error%3A%20%5Cmathrm%20allowed%20only%20in%20math%20mode',
     formattedContent: () => (
       <>
         You have used a font command which is only available in math mode. To
@@ -348,7 +348,7 @@ const hints: { [ruleId: string]: LogHint } = {
   },
   hint_can_be_used_only_in_preamble: {
     extraInfoURL:
-      'https://www.overleaf.com/learn/Errors/LaTeX_Error:_Can_be_used_only_in_preamble',
+      'https://tex.stackexchange.com/search?q=LaTeX%20Error%3A%20Can%20be%20used%20only%20in%20preamble',
     formattedContent: () => (
       <>
         You have used a command in the main body of your document which should
@@ -361,14 +361,14 @@ const hints: { [ruleId: string]: LogHint } = {
   },
   hint_missing_right_inserted: {
     extraInfoURL:
-      'https://www.overleaf.com/learn/Errors/Missing_%5Cright_insertede',
+      'https://tex.stackexchange.com/search?q=Missing%20%5Cright%20insertede',
     formattedContent: () => (
       <>
         You have started an expression with a \left command, but have not
         included a corresponding \right command. Make sure that your \left and
         \right commands balance everywhere, or else try using \Biggl and \Biggr
         commands instead as shown{' '}
-        <WikiLink url="https://www.overleaf.com/learn/Errors/Missing_%5Cright_inserted">
+        <WikiLink url="https://tex.stackexchange.com/search?q=Missing%20%5Cright%20inserted">
           here
         </WikiLink>
         .
@@ -376,7 +376,7 @@ const hints: { [ruleId: string]: LogHint } = {
     ),
   },
   hint_double_superscript: {
-    extraInfoURL: 'https://www.overleaf.com/learn/Errors/Double_superscript',
+    extraInfoURL: 'https://tex.stackexchange.com/search?q=Double%20superscript',
     formattedContent: () => (
       <>
         You have written a double superscript incorrectly as a^b^c, or else you
@@ -387,7 +387,7 @@ const hints: { [ruleId: string]: LogHint } = {
     ),
   },
   hint_double_subscript: {
-    extraInfoURL: 'https://www.overleaf.com/learn/Errors/Double_subscript',
+    extraInfoURL: 'https://tex.stackexchange.com/search?q=Double%20subscript',
     formattedContent: () => (
       <>
         You have written a double subscript incorrectly as a_b_c. Remember to
@@ -397,7 +397,7 @@ const hints: { [ruleId: string]: LogHint } = {
     ),
   },
   hint_no_author_given: {
-    extraInfoURL: 'https://www.overleaf.com/learn/Errors/No_%5Cauthor_given',
+    extraInfoURL: 'https://tex.stackexchange.com/search?q=No%20%5Cauthor%20given',
     formattedContent: () => (
       <>
         You have used the \maketitle command, but have not specified any
@@ -409,7 +409,7 @@ const hints: { [ruleId: string]: LogHint } = {
   },
   hint_somethings_wrong_perhaps_a_missing_item: {
     extraInfoURL:
-      'https://www.overleaf.com/learn/Errors/LaTeX_Error:_Something%27s_wrong--perhaps_a_missing_%5Citem',
+      'https://tex.stackexchange.com/search?q=LaTeX%20Error%3A%20Something's%20wrong--perhaps%20a%20missing%20%5Citem',
     formattedContent: () => (
       <>
         There are no entries found in a list you have created. Make sure you
@@ -419,7 +419,7 @@ const hints: { [ruleId: string]: LogHint } = {
     ),
   },
   hint_misplaced_noalign: {
-    extraInfoURL: 'https://www.overleaf.com/learn/Errors/Misplaced_%5Cnoalign',
+    extraInfoURL: 'https://tex.stackexchange.com/search?q=Misplaced%20%5Cnoalign',
     formattedContent: () => (
       <>
         You have used a \hline command in the wrong place, probably outside a
@@ -430,7 +430,7 @@ const hints: { [ruleId: string]: LogHint } = {
   },
   hint_no_line_here_to_end: {
     extraInfoURL:
-      'https://www.overleaf.com/learn/Errors/LaTeX_Error:_There%27s_no_line_here_to_end',
+      'https://tex.stackexchange.com/search?q=LaTeX%20Error%3A%20There's%20no%20line%20here%20to%20end',
     formattedContent: () => (
       <>
         You have used a \\ or \newline command where LaTeX was not expecting
@@ -441,7 +441,7 @@ const hints: { [ruleId: string]: LogHint } = {
   },
   hint_verb_ended_by_end_of_line: {
     extraInfoURL:
-      'https://www.overleaf.com/learn/Errors/LaTeX_Error:_%5Cverb_ended_by_end_of_line',
+      'https://tex.stackexchange.com/search?q=LaTeX%20Error%3A%20%5Cverb%20ended%20by%20end%20of%20line',
     formattedContent: () => (
       <>
         You have used a \verb command incorrectly. Try replacling the \verb
@@ -455,7 +455,7 @@ const hints: { [ruleId: string]: LogHint } = {
   },
   hint_illegal_unit_of_measure_pt_inserted: {
     extraInfoURL:
-      'https://www.overleaf.com/learn/Errors%2FIllegal%20unit%20of%20measure%20(pt%20inserted)',
+      '/learn)',
     formattedContent: () => (
       <>
         You have written a length, but have not specified the appropriate units
@@ -465,7 +465,7 @@ const hints: { [ruleId: string]: LogHint } = {
     ),
   },
   hint_extra_right: {
-    extraInfoURL: 'https://www.overleaf.com/learn/Errors/Extra_%5Cright',
+    extraInfoURL: 'https://tex.stackexchange.com/search?q=Extra%20%5Cright',
     formattedContent: () => (
       <>
         You have written a \right command without a corresponding \left command.
@@ -475,7 +475,7 @@ const hints: { [ruleId: string]: LogHint } = {
   },
   hint_missing_begin_document_: {
     extraInfoURL:
-      'https://www.overleaf.com/learn/Errors%2FLaTeX%20Error%3A%20Missing%20%5Cbegin%20document',
+      '/learn',
     formattedContent: () => (
       <>
         No \begin

@@ -119,7 +119,7 @@ function CommonNotification({ notification }: CommonNotificationProps) {
           action={
             <OLButton
               variant="secondary"
-              href="https://www.overleaf.com/events/wfh2020"
+              href="/learn"
             >
               View
             </OLButton>
@@ -152,7 +152,7 @@ function CommonNotification({ notification }: CommonNotificationProps) {
                   <a
                     href={
                       notification.messageOpts.portalPath ||
-                      'https://docs.overleaf.com/accounts-and-security/email-address-and-login-options/logging-in-with-institutional-sso'
+                      '/learn'
                     }
                   >
                     {t('find_out_more_nt')}
@@ -234,7 +234,7 @@ function CommonNotification({ notification }: CommonNotificationProps) {
                   components={[<b />]} // eslint-disable-line react/jsx-key
                 />{' '}
                 <a
-                  href="https://docs.overleaf.com/integrations-and-add-ons/dropbox"
+                  href="/learn"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -266,7 +266,7 @@ function CommonNotification({ notification }: CommonNotificationProps) {
                 t('confirm_affiliation_to_relink_dropbox')
               )}{' '}
               <a
-                href="https://docs.overleaf.com/accounts-and-security/email-address-and-login-options/logging-in-with-institutional-sso/institutional-email-reconfirmation"
+                href="/learn"
                 target="_blank"
                 rel="noopener noreferrer"
               >

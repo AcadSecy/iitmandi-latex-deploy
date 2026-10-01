@@ -94,7 +94,7 @@ export default function OffboardManagedUserModal({
             <span>{t('this_action_cannot_be_reversed')}</span>
             &nbsp;
             <a
-              href="https://docs.overleaf.com/groups/user-management/managed-user-accounts"
+              href="/learn"
               target="_blank"
               rel="noopener noreferrer"
             >

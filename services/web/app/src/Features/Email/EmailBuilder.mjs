@@ -967,8 +967,10 @@ templates.securityAlert = NoCTAEmailTemplate({
   },
 })
 
-const GIT_TOKEN_DOCS_URL =
-  'https://docs.overleaf.com/integrations-and-add-ons/git-integration-and-github-synchronization/git-integration/git-integration-authentication-tokens#how-to-generate-authentication-tokens'
+// The help page explains git authentication tokens
+function gitTokenDocsUrl() {
+  return `${settings.siteUrl}/learn`
+}
 
 templates.gitTokenExpiringSoon = NoCTAEmailTemplate({
   subject() {
@@ -988,7 +990,7 @@ templates.gitTokenExpiringSoon = NoCTAEmailTemplate({
     )
     const docsLink = EmailMessageHelper.displayLink(
       'our docs',
-      GIT_TOKEN_DOCS_URL,
+      gitTokenDocsUrl(),
       isPlainText
     )
     return [
@@ -1019,7 +1021,7 @@ templates.gitTokenExpired = NoCTAEmailTemplate({
     )
     const docsLink = EmailMessageHelper.displayLink(
       'our docs',
-      GIT_TOKEN_DOCS_URL,
+      gitTokenDocsUrl(),
       isPlainText
     )
     return [

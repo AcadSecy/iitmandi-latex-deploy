@@ -2,8 +2,13 @@ import getMeta from '@/utils/meta'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 
-const overrides = new Map([['overleaf', 'overleaf light']])
+// The platform's own themes keep their upstream names; label them with ours
 function getThemeName(theme: string): string {
+  const appName = getMeta('ol-ExposedSettings')?.appName
+  const overrides = new Map([
+    ['overleaf', `${appName} light`],
+    ['overleaf_dark', `${appName} dark`],
+  ])
   return (overrides.get(theme) ?? theme).replace(/_/g, ' ')
 }
 

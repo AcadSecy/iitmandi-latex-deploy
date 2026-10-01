@@ -28,7 +28,7 @@ const RollingCompileImageChangedAlert = () => {
       components={[
         // eslint-disable-next-line jsx-a11y/anchor-has-content
         <a
-          href="https://docs.overleaf.com/troubleshooting-and-support/tex-live#How_do_I_change_a_project%E2%80%99s_TeX_Live_version"
+          href="/learn"
           target="_blank"
           key="getting-started-link"
           rel="noopener noreferrer"

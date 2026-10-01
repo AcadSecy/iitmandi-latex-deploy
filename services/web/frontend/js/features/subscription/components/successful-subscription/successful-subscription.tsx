@@ -194,7 +194,7 @@ function UpgradeSuccess({
                 components={[
                   // eslint-disable-next-line react/jsx-key, jsx-a11y/anchor-has-content
                   <a
-                    href="https://docs.overleaf.com/integrations-and-add-ons/ai-features"
+                    href="/learn"
                     target="_blank"
                     rel="noopener noreferrer"
                   />,

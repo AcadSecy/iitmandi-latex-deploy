@@ -135,7 +135,7 @@ describe('<DomainCapture />', function () {
       }).should(
         'have.attr',
         'href',
-        'https://docs.overleaf.com/collaborating/transferring-project-ownership'
+        '/learn'
       )
     })
 

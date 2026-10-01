@@ -15,7 +15,7 @@ const RollingBuildSelectedReminder = () => {
       i18nKey="if_you_find_any_issues_with_texlive"
       components={[
         <a href="https://forms.gle/yD8CVm4Kop9KwShx9" />, // eslint-disable-line react/jsx-key, jsx-a11y/anchor-has-content
-        <a href="https://docs.overleaf.com/getting-started/recompiling-your-project/selecting-a-tex-live-version-and-latex-compiler" />, // eslint-disable-line react/jsx-key, jsx-a11y/anchor-has-content
+        <a href="/learn" />, // eslint-disable-line react/jsx-key, jsx-a11y/anchor-has-content
       ]}
     />
   )

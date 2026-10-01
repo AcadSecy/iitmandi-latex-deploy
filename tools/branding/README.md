@@ -49,3 +49,12 @@ node tools/branding/rebrand-locales.mjs --check  # CI: fail if any string needs 
 ```
 
 Replaces the upstream product name in `services/web/locales/*.json` with `__appName__`, which the UI fills in from `settings.appName`. Run it after merging upstream changes. CI runs the `--check` form.
+
+## Help links
+
+```sh
+node tools/branding/rewrite-help-links.mjs          # rewrite
+node tools/branding/rewrite-help-links.mjs --check  # CI: fail if any link needs rewriting
+```
+
+Upstream UI links to the upstream project's documentation and help library. This script points those links at the platform's own help page, `/learn` (`services/web/app/views/general/help.pug`). Links that explain a specific LaTeX error go to a TeX Stack Exchange search for that error instead. It rewrites browser code and page templates. In server code, such as email templates, it only reports links, because they need an absolute URL (`${settings.siteUrl}/learn`) and must be fixed by hand. Run it after merging upstream changes. CI runs the `--check` form.

@@ -10,7 +10,7 @@ export const SynctexFileErrorToast = () => {
       <span>{t('synctex_failed')}</span>
 
       <OLButton
-        href="https://docs.overleaf.com/navigating-in-the-editor/working-with-the-pdf-viewer/moving-between-the-editor-and-pdf#an-error-couldnt-find-the-corresponding-source-file-was-shown"
+        href="/learn"
         target="_blank"
         rel="noopener noreferrer"
         variant="secondary"

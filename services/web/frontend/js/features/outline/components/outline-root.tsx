@@ -27,7 +27,7 @@ function OutlineRoot({
         <div className="outline-body-no-elements">
           {t('we_cant_find_any_sections_or_subsections_in_this_file')}.{' '}
           <a
-            href="https://docs.overleaf.com/navigating-in-the-editor/selecting-and-managing-files"
+            href="/learn"
             className="outline-body-link"
             target="_blank"
             rel="noopener noreferrer"
