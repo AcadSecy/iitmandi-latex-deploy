@@ -46,8 +46,9 @@ const SKIP_PATHS = /^app\/templates\/project_files\/example-project\//
 const SERVER_CODE = /^(app\/(src|templates)|modules\/[^/]+\/app\/src)\//
 const COMMENT = /^\s*(\/\/|\/\*|\*)/
 
+// A URL ends at whitespace, a quote, a bracket or a ${...} interpolation
 const URL_PATTERN =
-  /https?:\/\/(?:[a-z0-9-]+\.)*overleaf\.com(?:\/[^\s"'`)<>\\${}]*)?/gi
+  /https?:\/\/(?:[a-z0-9-]+\.)*overleaf\.com(?:\/(?:[^\s"'`)<>\\${}]|\$(?!\{))*)?/gi
 
 function replacement(url) {
   const { pathname } = new URL(url)
@@ -58,7 +59,13 @@ function replacement(url) {
       .replace(/\bXXX\b/g, ' ')
       .replace(/\s+/g, ' ')
       .trim()
-    return `https://tex.stackexchange.com/search?q=${encodeURIComponent(words)}`
+    // Also escape the characters encodeURIComponent keeps, so that the result
+    // can't end the string literal it is written into
+    const query = encodeURIComponent(words).replace(
+      /[!'()*]/g,
+      c => `%${c.charCodeAt(0).toString(16).toUpperCase()}`
+    )
+    return `https://tex.stackexchange.com/search?q=${query}`
   }
   return pathname === '/' ? '/' : '/learn'
 }

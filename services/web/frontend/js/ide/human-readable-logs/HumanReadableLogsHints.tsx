@@ -58,7 +58,7 @@ const hints: { [ruleId: string]: LogHint } = {
   },
   hint_display_math_should_end_with: {
     extraInfoURL:
-      'https://tex.stackexchange.com/search?q=Display%20math%20should%20end%20with$$',
+      'https://tex.stackexchange.com/search?q=Display%20math%20should%20end%20with%20%24%24',
     formattedContent: () => (
       <>
         You have forgotten a $ sign at the end of 'display math' mode. When
@@ -68,7 +68,7 @@ const hints: { [ruleId: string]: LogHint } = {
     ),
   },
   hint_missing_inserted: {
-    extraInfoURL: 'https://tex.stackexchange.com/search?q=Missing$_inserted',
+    extraInfoURL: 'https://tex.stackexchange.com/search?q=Missing%20%24%20inserted',
     formattedContent: () => (
       <>
         <p>
@@ -137,7 +137,7 @@ const hints: { [ruleId: string]: LogHint } = {
   },
   hint_float_specifier_changed: {
     extraInfoURL:
-      'https://tex.stackexchange.com/search?q=%60!h'%20float%20specifier%20changed%20to%20%60!ht'',
+      'https://tex.stackexchange.com/search?q=%60%21h%27%20float%20specifier%20changed%20to%20%60%21ht%27',
     formattedContent: () => (
       <>
         The float specifier 'h' is too strict of a demand for LaTeX to place
@@ -295,7 +295,7 @@ const hints: { [ruleId: string]: LogHint } = {
   },
   hint_unknown_float_option_h: {
     extraInfoURL:
-      'https://tex.stackexchange.com/search?q=LaTeX%20Error%3A%20Unknown%20float%20option%20%60H'',
+      'https://tex.stackexchange.com/search?q=LaTeX%20Error%3A%20Unknown%20float%20option%20%60H%27',
     formattedContent: () => (
       <>
         The compiler isn't recognizing the float option 'H'. Include \usepackage
@@ -305,7 +305,7 @@ const hints: { [ruleId: string]: LogHint } = {
   },
   hint_unknown_float_option_q: {
     extraInfoURL:
-      'https://tex.stackexchange.com/search?q=LaTeX%20Error%3A%20Unknown%20float%20option%20%60q'',
+      'https://tex.stackexchange.com/search?q=LaTeX%20Error%3A%20Unknown%20float%20option%20%60q%27',
     formattedContent: () => (
       <>
         You have used a float specifier which the compiler does not understand.
@@ -409,7 +409,7 @@ const hints: { [ruleId: string]: LogHint } = {
   },
   hint_somethings_wrong_perhaps_a_missing_item: {
     extraInfoURL:
-      'https://tex.stackexchange.com/search?q=LaTeX%20Error%3A%20Something's%20wrong--perhaps%20a%20missing%20%5Citem',
+      'https://tex.stackexchange.com/search?q=LaTeX%20Error%3A%20Something%27s%20wrong--perhaps%20a%20missing%20%5Citem',
     formattedContent: () => (
       <>
         There are no entries found in a list you have created. Make sure you
@@ -430,7 +430,7 @@ const hints: { [ruleId: string]: LogHint } = {
   },
   hint_no_line_here_to_end: {
     extraInfoURL:
-      'https://tex.stackexchange.com/search?q=LaTeX%20Error%3A%20There's%20no%20line%20here%20to%20end',
+      'https://tex.stackexchange.com/search?q=LaTeX%20Error%3A%20There%27s%20no%20line%20here%20to%20end',
     formattedContent: () => (
       <>
         You have used a \\ or \newline command where LaTeX was not expecting
