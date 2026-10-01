@@ -255,9 +255,11 @@ function stacked(theme) {
   const s = textH / MARK_H
   const gap = size * 0.4
   const contentW = MARK_W * s + gap + textW
-  // Keep the upstream canvas proportions (425 x 192) so existing <img> sizes still fit.
-  const h = textH * 1.3
-  const w = Math.max(contentW * 1.1, (h * 425) / 192)
+  // Keep the upstream canvas proportions (425 x 192), padding whichever side
+  // is short, so the logo keeps some margin in the <img> and navbar slots
+  // that were sized for the upstream artwork.
+  const w = Math.max(contentW * 1.1, (textH * 1.3 * 425) / 192)
+  const h = (w * 192) / 425
   const x0 = (w - contentW) / 2
   const y0 = (h - textH) / 2
   const tx = x0 + MARK_W * s + gap
