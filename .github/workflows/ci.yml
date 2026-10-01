@@ -1,11 +1,15 @@
 name: CI
 
+# Actions minutes for this private repository are limited, so CI runs only
+# when asked: "Run workflow" on the Actions tab, or `gh workflow run CI --ref
+# main`. Run it after a batch of pushes, before relying on main.
 on:
-  pull_request:
-    branches: [main]
-  push:
-    branches: [main]
   workflow_dispatch:
+    inputs:
+      all:
+        description: Run every job, not only those whose code changed since the last passing run
+        type: boolean
+        default: false
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -16,9 +20,9 @@ permissions:
 
 jobs:
   # Decides which jobs to run: only those whose code changed since the last
-  # passing run of the same kind (a push to main, or the same pull request), so
-  # a run cancelled by a newer push is still covered by the next one. Manual
-  # runs, the first run and changes to the workflows themselves run everything.
+  # passing run, so a cancelled or failed run is covered by the next one. The
+  # "all" input, the first run and changes to the workflows themselves run
+  # everything. `base` is the commit of the last passing run, if any.
   changes:
     name: Changed areas
     runs-on: ubuntu-24.04
@@ -32,13 +36,13 @@ jobs:
       web: ${{ steps.areas.outputs.web }}
       clsi: ${{ steps.areas.outputs.clsi }}
       git_bridge: ${{ steps.areas.outputs.git_bridge }}
+      base: ${{ steps.areas.outputs.base }}
     steps:
       - id: areas
         env:
           GH_TOKEN: ${{ github.token }}
-          EVENT: ${{ github.event_name }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-          BRANCH: ${{ github.head_ref || github.ref_name }}
+          HEAD_SHA: ${{ github.sha }}
+          ALL: ${{ inputs.all }}
         run: |
           AREAS="branding templates web clsi git_bridge"
           run_all() {
@@ -46,15 +50,16 @@ jobs:
             for area in $AREAS; do echo "$area=true" >> "$GITHUB_OUTPUT"; done
             exit 0
           }
-          case "$EVENT" in
-            push | pull_request) ;;
-            *) run_all "$EVENT event" ;;
-          esac
-          base=$(gh run list -R "$GITHUB_REPOSITORY" --workflow CI --event "$EVENT" \
-            --branch "$BRANCH" --status success --limit 1 \
-            --json headSha --jq '.[0].headSha // empty') || base=
+          base=$(gh run list -R "$GITHUB_REPOSITORY" --workflow CI --status success \
+            --limit 1 --json headSha --jq '.[0].headSha // empty') || base=
+          [ "$ALL" != true ] || run_all "asked for every job"
           [ -n "$base" ] || run_all "no earlier passing run"
-          [ "$base" != "$HEAD_SHA" ] || run_all "re-run of a passing commit"
+          echo "base=$base" >> "$GITHUB_OUTPUT"
+          if [ "$base" = "$HEAD_SHA" ]; then
+            echo "Nothing changed since the last passing run"
+            for area in $AREAS; do echo "$area=false" >> "$GITHUB_OUTPUT"; done
+            exit 0
+          fi
           gh api "repos/$GITHUB_REPOSITORY/compare/$base...$HEAD_SHA" \
             --jq '.files[].filename' > changed.txt || run_all "cannot compare with $base"
           [ "$(wc -l < changed.txt)" -lt 300 ] || run_all "too many changed files"
@@ -181,19 +186,17 @@ jobs:
 
       # Upstream's public repository leaves out some private modules, and the
       # extended Community Edition (CEP) is not type-clean, so the full type
-      # check always reports errors. Fail only on type errors in files that this
-      # change touches, counting CEP's own files as upstream.
+      # check always reports errors. Fail only on type errors in files changed
+      # since the last passing run (or since the upstream base when there is
+      # none, or every job was asked for), counting CEP's own files as upstream.
       - name: Type-check changed files
         working-directory: services/web
         env:
           # yu-i-i/overleaf-cep v6.3.0-ext-v5.1; update when merging a newer release
           CEP_BASE: 738bebb743e6ea8f579a1860e1de1fbfc292f505
+          BASE: ${{ needs.changes.outputs.base }}
         run: |
-          case "${{ github.event_name }}" in
-            pull_request) base="${{ github.event.pull_request.base.sha }}" ;;
-            push) base="${{ github.event.before }}" ;;
-            *) base="HEAD~1" ;;
-          esac
+          base="${BASE:-upstream-base}"
           if git merge-base --is-ancestor "$base" "$CEP_BASE" 2>/dev/null &&
             git merge-base --is-ancestor "$CEP_BASE" HEAD 2>/dev/null; then
             base="$CEP_BASE"
