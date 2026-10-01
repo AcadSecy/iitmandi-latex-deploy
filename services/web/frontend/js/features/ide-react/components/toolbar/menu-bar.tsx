@@ -38,6 +38,10 @@ const insertMenuSections = importOverleafModules('insertMenuSections') as {
   import: { default: MenuSectionStructure[] }
 }[]
 
+const formatMenuSections = importOverleafModules('formatMenuSections') as {
+  import: { default: MenuSectionStructure[] }
+}[]
+
 export const ToolbarMenuBar = () => {
   const { t } = useTranslation()
 
@@ -206,6 +210,9 @@ export const ToolbarMenuBar = () => {
           'format-style-subparagraph',
         ],
       },
+      ...formatMenuSections.flatMap(
+        ({ import: { default: sections } }) => sections
+      ),
     ],
     [t]
   )

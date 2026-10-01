@@ -40,12 +40,30 @@ Put `/srv/iitmandi-latex` on the 1 TB SSD. MongoDB recommends XFS for its data.
 - **MongoDB 8.0** holds accounts, projects, the text of every document, comments and the share-link tokens. It runs as a single-member replica set, which the app requires. Its cache is capped at 2 GB (`docker-compose.override.yml`) so that compiles keep their memory.
 - **Redis 7.4** holds login sessions and edits that are not yet written to MongoDB. It writes an append-only file synced every second, so a restart or crash loses at most a second of typing. It must never get a memory limit or an eviction policy, because an evicted key is a lost edit.
 - Neither database publishes a port. Both are reachable only from the app container on the internal Docker network.
-- With `ENABLE_CRON_RESOURCE_DELETION=true`, hourly jobs move projects that have not been opened for a week out of Redis, and remove deleted projects and accounts for good after 90 days. Without these jobs, storage only ever grows.
+- With `ENABLE_CRON_RESOURCE_DELETION=true`, hourly jobs move projects that have not been opened for a week out of Redis, and remove deleted projects and accounts for good after `OVERLEAF_*_HARD_DELETION_DELAY` (30 days). Without these jobs, storage only ever grows. See [Retention](#retention) for the rest.
 
 At this scale (about 3,500 accounts, 50 people editing at once) the database stays at a few GB. The upstream project runs the same stack for far larger sites. On a single server the limits come from operations, not from the database:
 
 - **No standby server.** If the VM is lost, the platform comes back from the last nightly backup, so up to a day of work can be lost. Run a restore drill before the pilot and after each upgrade.
-- **Disk.** 3,500 users × 500 MB quota is 1.75 TB, more than the 1 TB SSD, though real use is far lower. Alert at 80% full and watch the growth of `data/app`.
+- **Disk.** Storage is flexible rather than reserved: everyone always has `STORAGE_QUOTA_MB` (500 MB), and can go up to `STORAGE_MAX_MB` (5 GB) while more than `STORAGE_DISK_RESERVE_PERCENT` (15%) of the disk is free. 3,500 × 500 MB would be 1.75 TB, but real use is far lower, and when the disk gets low only the people above 500 MB are stopped and asked to free space. Alert at 80% full and watch the growth of `data/app`.
+
+## Retention
+
+Keeping everything for ever would fill the disk and keep personal data longer than needed, so data has a lifetime:
+
+| What | Kept for | Setting |
+| --- | --- | --- |
+| Projects in their owner's trash | 30 days, then deleted (the trash says so) | `TRASH_RETENTION_DAYS` |
+| Deleted projects and accounts | 30 days restorable by an admin, then removed for good | `OVERLEAF_PROJECT_HARD_DELETION_DELAY`, `OVERLEAF_USER_HARD_DELETION_DELAY` |
+| Audit logs (logins, sharing, IP addresses) | 365 days | `AUDIT_LOG_RETENTION_DAYS` |
+| Compile output of a project | 1 day after its last compile | built in |
+| Container logs | 3 × 50 MB per container | `docker-compose.override.yml` |
+| Logs inside the app container | 5 days | built in (logrotate) |
+| Backups | 7 days | [`backup/`](backup/README.md) |
+
+The trash and audit log jobs run daily at 02:40 (`server-ce/cron/retention.sh`), and only with `ENABLE_CRON_RESOURCE_DELETION=true`.
+
+A project's history is kept as long as the project, so that any version can be restored; it goes when the project is deleted. Accounts of people who have left are not removed automatically. `modules/retention/scripts/inactive-accounts.mjs --days=730` lists accounts unused for two years with their project counts, and `--delete` removes them once that has been agreed.
 
 ## Compiles
 

@@ -37,7 +37,7 @@ async function openEditor(req, res, next) {
   res.render(Path.resolve(import.meta.dirname, '../views/waiting-room'), {
     title: 'editor_waiting_room_title',
     position: place.position,
-    limit: Settings.editorPlaces.limit,
+    limit: EditorPlaces.currentLimit(),
   })
 }
 

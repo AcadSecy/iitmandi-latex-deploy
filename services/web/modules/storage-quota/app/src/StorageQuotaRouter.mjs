@@ -64,5 +64,10 @@ export default {
       AuthenticationController.requireLogin(),
       StorageQuotaController.getUserStorage
     )
+    webRouter.get(
+      '/user/storage/projects',
+      AuthenticationController.requireLogin(),
+      StorageQuotaController.getUserProjectSizes
+    )
   },
 }

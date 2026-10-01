@@ -13,6 +13,10 @@ import { useProjectListContext } from '@/features/project-list/context/project-l
 import importOverleafModules from '../../../../../macros/import-overleaf-module.macro'
 import { ActivePage } from '../../util/navigation-state'
 
+const sidebarLowerComponents = importOverleafModules(
+  'projectListSidebarLower'
+) as { import: { default: JSXElementConstructor<object> }; path: string }[]
+
 function SidebarDsNav({
   activePage,
   trashActive = false,
@@ -83,6 +87,11 @@ function SidebarDsNav({
         )}
       >
         <SidebarLowerSection showThemeToggle>
+          {sidebarLowerComponents.map(
+            ({ import: { default: Component }, path }) => (
+              <Component key={path} />
+            )
+          )}
           {DsNavLibraryLink && (
             <DsNavLibraryLink
               active={activePage === 'library' && !trashActive}

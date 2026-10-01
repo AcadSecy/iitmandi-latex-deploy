@@ -4,13 +4,23 @@
 #   OVERLEAF_TAG=iitmandi/latex:CHANGE_ME make build-community
 #   cd .. && docker build -t iitmandi/latex-x-iit-mandi:CHANGE_ME services/git-bridge
 ---
+# Docker keeps everything a container prints, for ever, unless told
+# otherwise. Keep at most 3 x 50 MB per container.
+x-logging: &logging
+  driver: local
+  options:
+    max-size: 50m
+    max-file: "3"
+
 services:
   sharelatex:
     image: iitmandi/latex:CHANGE_ME
+    logging: *logging
 
   # Our git image, Latex X IIT-Mandi, instead of the upstream one
   git-bridge:
     image: iitmandi/latex-x-iit-mandi:CHANGE_ME
+    logging: *logging
 
   mongo:
     # By default MongoDB's cache takes half the RAM, which the compile
@@ -18,3 +28,7 @@ services:
     # if the database (db.stats().dataSize) grows past ~10 GB. Keep --replSet
     # as the Toolkit sets it: the app needs a replica set.
     command: "--replSet overleaf --wiredTigerCacheSizeGB 2"
+    logging: *logging
+
+  redis:
+    logging: *logging

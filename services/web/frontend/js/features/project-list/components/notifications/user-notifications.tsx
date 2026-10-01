@@ -21,6 +21,10 @@ const [enrollmentNotificationModule] = importOverleafModules(
 
 const [usGovBannerModule] = importOverleafModules('usGovBanner')
 
+const projectListNotifications = importOverleafModules(
+  'projectListNotifications'
+) as { import: { default: JSXElementConstructor<object> }; path: string }[]
+
 const EnrollmentNotification: JSXElementConstructor<{
   groupId: string
   groupName: string
@@ -49,6 +53,11 @@ function UserNotifications() {
             />
           ))}
         <GroupSsoSetupSuccess />
+        {projectListNotifications.map(
+          ({ import: { default: Component }, path }) => (
+            <Component key={path} />
+          )
+        )}
         <Common />
         <Institution />
         <ConfirmEmail />

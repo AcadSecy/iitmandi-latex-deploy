@@ -1,4 +1,5 @@
 import fs from 'node:fs'
+import os from 'node:os'
 import Settings from '@overleaf/settings'
 import RedisWrapper from '../../../../app/src/infrastructure/RedisWrapper.mjs'
 
@@ -38,6 +39,31 @@ function enabled() {
   return Settings.editorPlaces?.limit > 0
 }
 
+// Busy: the CPUs are mostly in use (load average over the last minute), or
+// little memory is left
+const BUSY_LOAD_PER_CPU = 0.8
+const MIN_FREE_MEMORY_SHARE = 0.15
+
+function serverIsBusy() {
+  const cpus = os.availableParallelism?.() ?? os.cpus().length
+  return (
+    os.loadavg()[0] / cpus > BUSY_LOAD_PER_CPU ||
+    os.freemem() / os.totalmem() < MIN_FREE_MEMORY_SHARE
+  )
+}
+
+/**
+ * How many people may have the editor open now: `limit` is always possible,
+ * and up to `maxLimit` while the server has CPU and memory to spare. When it
+ * gets busy, nobody loses their place, but newcomers wait until there are
+ * fewer than `limit`.
+ */
+function currentLimit() {
+  const { limit, maxLimit } = Settings.editorPlaces
+  if (!(maxLimit > limit)) return limit
+  return serverIsBusy() ? limit : maxLimit
+}
+
 /**
  * Give the user a place in the editor (or renew the one they hold), or put
  * them in the queue.
@@ -52,7 +78,7 @@ async function acquire(userId) {
     String(userId),
     Date.now(),
     HOLD_MS,
-    Settings.editorPlaces.limit,
+    currentLimit(),
     GIVE_UP_MS
   )
   return { admitted: admitted === 1, position }
@@ -64,7 +90,16 @@ async function stats() {
     client.zcount(KEYS[0], Date.now(), '+inf'),
     client.zcard(KEYS[1]),
   ])
-  return { limit: Settings.editorPlaces.limit, holding, waiting }
+  return {
+    limit: currentLimit(),
+    baseLimit: Settings.editorPlaces.limit,
+    maxLimit: Math.max(
+      Settings.editorPlaces.maxLimit || 0,
+      Settings.editorPlaces.limit
+    ),
+    holding,
+    waiting,
+  }
 }
 
-export default { enabled, acquire, stats, ACQUIRE_SCRIPT, KEYS }
+export default { enabled, acquire, stats, currentLimit, ACQUIRE_SCRIPT, KEYS }

@@ -331,6 +331,15 @@ function LinkSharingInfo() {
 function AccessTokenEditDisplayArea({ tokens }: { tokens: Tokens | null }) {
   const { t } = useTranslation()
 
+  // Share links can be set to give view access only
+  if (getMeta('ol-ExposedSettings').shareLinksCanEdit === false) {
+    return (
+      <div className="access-token-wrapper">
+        <p className="text-muted mb-0">{t('share_links_view_only')}</p>
+      </div>
+    )
+  }
+
   return (
     <div className="access-token-wrapper">
       <strong className="access-token-wrapper-title">

@@ -31,6 +31,9 @@ export type ExposedSettings = {
   maxUploadSize: number
   askAiUrl?: string
   askAiName?: string
+  storageQuotaEnabled?: boolean
+  shareLinksCanEdit?: boolean
+  trashRetentionDays?: number
   recaptchaDisabled: {
     invite: boolean
     login: boolean

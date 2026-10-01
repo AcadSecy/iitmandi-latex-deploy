@@ -72,7 +72,7 @@ jobs:
           }
           deps='libraries/|package\.json$|yarn\.lock$|\.yarnrc\.yml$|\.yarn/|tsconfig'
           area branding '^(services/web/|tools/branding/)'
-          area templates '^(services/web/modules/iitmandi-templates/|deploy/iitmandi/texlive/)'
+          area templates '^(services/web/modules/(iitmandi-templates|page-setup)/|deploy/iitmandi/texlive/)'
           area web "^(services/web/|$deps)"
           area clsi "^(services/clsi/|server-ce/|deploy/iitmandi/texlive/|$deps)"
           area git_bridge '^services/git-bridge/'
@@ -125,6 +125,13 @@ jobs:
         run: >
           node services/web/modules/iitmandi-templates/scripts/assemble.mjs
           "$RUNNER_TEMP/templates" > "$RUNNER_TEMP/templates.txt"
+      # What Format > Page setup writes (font size, paper, margins, spacing,
+      # font) must compile in every template it can change
+      - name: Add page setup variants of the templates
+        run: |
+          node services/web/modules/page-setup/scripts/page-setup-variants.mjs \
+            "$RUNNER_TEMP/templates" < "$RUNNER_TEMP/templates.txt" > "$RUNNER_TEMP/variants.txt"
+          cat "$RUNNER_TEMP/variants.txt" >> "$RUNNER_TEMP/templates.txt"
       - name: Compile every template with the platform's TeX Live image
         run: |
           docker run --rm -v "$RUNNER_TEMP:/work" "$TEXLIVE_IMAGE" bash -c '
@@ -138,9 +145,9 @@ jobs:
               cd "/work/templates/$id"
               if latexmk $flag -interaction=nonstopmode -halt-on-error -file-line-error "$main" > build.log 2>&1 &&
                 ! grep -qE "There were undefined references|(Citation|Reference) .* undefined" "${main%.tex}.log"; then
-                echo "ok   $id"
+                echo "ok   $id $main"
               else
-                echo "FAIL $id"
+                echo "FAIL $id $main"
                 tail -n 40 build.log
                 status=1
               fi
@@ -231,6 +238,7 @@ jobs:
           test/unit/src/Downloads/ProjectDownloadsController.test.mjs
           test/unit/src/User/UserDeleter.test.mjs
           test/unit/src/User/UserEmailsController.test.mjs
+          test/unit/src/TokenAccess/TokenAccessController.test.mjs
 
       # Only the handlers the compile queue changes. Six upstream tests for the
       # SyncTeX request validation (proxySyncCode/proxySyncPdf) fail in this
@@ -242,7 +250,7 @@ jobs:
           test/unit/src/Compile/CompileController.test.mjs
           --testNamePattern '^CompileController (compile|stopCompile) '
 
-      - name: Unit tests (editor waiting room against Redis, storage quota, source code)
+      - name: Unit tests (editor waiting room against Redis, storage, source code, retention, logo)
         working-directory: services/web
         env:
           TEST_REDIS_HOST: localhost
@@ -251,8 +259,10 @@ jobs:
           modules/editor-waiting-room
           modules/storage-quota
           modules/source-code
+          modules/retention
+          modules/iitmandi-logo
 
-      - name: Frontend tests (project list, welcome message, Ask AI)
+      - name: Frontend tests (project list, welcome message, Ask AI, page setup, logo)
         working-directory: services/web
         env:
           NODE_ENV: test
@@ -264,6 +274,8 @@ jobs:
           test/frontend/features/project-list/components/project-list-root.test.tsx
           test/frontend/features/project-list/components/welcome-message.test.tsx
           modules/ask-ai/test/frontend/open-assistant.test.ts
+          modules/page-setup/test/frontend/preamble.test.ts
+          modules/iitmandi-logo/test/frontend/logo-insertion.test.ts
 
   clsi:
     name: Compile service

@@ -450,6 +450,9 @@ module.exports = {
 
   disableChat: process.env.OVERLEAF_DISABLE_CHAT === 'true',
   disableLinkSharing: process.env.OVERLEAF_DISABLE_LINK_SHARING === 'true',
+  // false: share links only let people view, and the owner gives edit access
+  // to people by name. An edit link already sent then gives view access.
+  shareLinksCanEdit: process.env.SHARE_LINKS_CAN_EDIT !== 'false',
   safeCompilers,
   defaultLatexCompiler: safeCompilers.includes(
     process.env.DEFAULT_LATEX_COMPILER
@@ -879,18 +882,49 @@ module.exports = {
   },
 
   // At most `limit` users can have the editor open at once; the others wait in
-  // a first-come-first-served queue (modules/editor-waiting-room). A place is
-  // given up after `idleMinutes` without activity. A limit of 0 turns this off.
+  // a first-come-first-served queue (modules/editor-waiting-room). With
+  // maxLimit above it, up to maxLimit get in while the server has CPU and
+  // memory to spare. A place is given up after `idleMinutes` without
+  // activity. A limit of 0 turns this off.
   editorPlaces: {
     limit: intFromEnv('EDITOR_SESSION_LIMIT', 0),
+    maxLimit: intFromEnv('EDITOR_SESSION_MAX', 0),
     idleMinutes: intFromEnv('EDITOR_SESSION_IDLE_MINUTES', 30),
   },
 
   // Storage each user may fill with the projects they own
   // (modules/storage-quota). Admins can change it per user with
   // modules/storage-quota/scripts/set-storage-quota.mjs. 0 turns quotas off.
+  // With maxMB above defaultMB, storage is flexible: users may go past their
+  // quota, up to maxMB, while the disk at diskPath has more than
+  // diskReservePercent free. When it has less, only users under their quota
+  // can add files.
   storageQuota: {
     defaultMB: intFromEnv('STORAGE_QUOTA_MB', 0),
+    maxMB: intFromEnv('STORAGE_MAX_MB', 0),
+    diskPath: process.env.STORAGE_DISK_PATH || '/var/lib/overleaf/data',
+    diskReservePercent: intFromEnv('STORAGE_DISK_RESERVE_PERCENT', 15),
+  },
+
+  // How long things are kept (modules/retention, run daily by cron): projects
+  // in their owner's trash are deleted after trashDays, and account and
+  // project audit logs (logins, sharing, IP addresses) after auditLogDays.
+  // 0 keeps them for ever.
+  retention: {
+    trashDays: intFromEnv('TRASH_RETENTION_DAYS', 0),
+    auditLogDays: intFromEnv('AUDIT_LOG_RETENTION_DAYS', 0),
+  },
+
+  // The Institute logo. New blank projects and the example project include
+  // it, and "Insert > IIT Mandi logo" adds it to any project
+  // (modules/iitmandi-logo). It is an 800-pixel copy of the official logo,
+  // sharp in print up to about 6 cm wide.
+  institutionLogo: {
+    path: Path.resolve(
+      __dirname,
+      '../modules/iitmandi-logo/assets/iitmandi-logo.jpg'
+    ),
+    fileName: 'iitmandi-logo.jpg',
   },
 
   // "Ask AI" buttons in the editor toolbar and on compile errors open an
@@ -1078,7 +1112,16 @@ module.exports = {
     contactUsModal: [],
     sourceEditorExtensions: [],
     sourceEditorVisualExtensions: [],
-    sourceEditorComponents: [],
+    sourceEditorComponents: [
+      Path.resolve(
+        __dirname,
+        '../modules/page-setup/frontend/js/components/page-setup-controller.tsx'
+      ),
+      Path.resolve(
+        __dirname,
+        '../modules/iitmandi-logo/frontend/js/components/iitmandi-logo-controller.tsx'
+      ),
+    ],
     pdfLogEntryHeaderActionComponents: [
       Path.resolve(
         __dirname,
@@ -1097,7 +1140,16 @@ module.exports = {
       ),
     ],
     sourceEditorToolbarStartButtons: [],
-    sourceEditorToolbarButtonGroups: [],
+    sourceEditorToolbarButtonGroups: [
+      Path.resolve(
+        __dirname,
+        '../modules/page-setup/frontend/js/components/page-setup-toolbar-button.tsx'
+      ),
+      Path.resolve(
+        __dirname,
+        '../modules/iitmandi-logo/frontend/js/components/iitmandi-logo-toolbar-button.tsx'
+      ),
+    ],
     sourceEditorToolbarComponents: [],
     sourceEditorToolbarEndButtons: [
       Path.resolve(
@@ -1162,7 +1214,18 @@ module.exports = {
         '../modules/template-gallery/frontend/js/features/template/components/menubar-manage-template'
       ),
     ],
-    insertMenuSections: [],
+    insertMenuSections: [
+      Path.resolve(
+        __dirname,
+        '../modules/iitmandi-logo/frontend/js/insert-menu-sections.ts'
+      ),
+    ],
+    formatMenuSections: [
+      Path.resolve(
+        __dirname,
+        '../modules/page-setup/frontend/js/format-menu-sections.ts'
+      ),
+    ],
     oauth2Server: [
       Path.resolve(
         __dirname,
@@ -1180,6 +1243,18 @@ module.exports = {
     usGovBanner: [],
     rollingBuildsUpdatedAlert: [],
     offlineModeToolbarButtons: [],
+    projectListSidebarLower: [
+      Path.resolve(
+        __dirname,
+        '../modules/storage-quota/frontend/js/components/storage-meter.tsx'
+      ),
+    ],
+    projectListNotifications: [
+      Path.resolve(
+        __dirname,
+        '../modules/storage-quota/frontend/js/components/storage-notification.tsx'
+      ),
+    ],
     settingsEntries: [
       Path.resolve(
         __dirname,
@@ -1272,6 +1347,8 @@ module.exports = {
     'editor-waiting-room',
     'storage-quota',
     'source-code',
+    'iitmandi-logo',
+    'retention',
   ],
   viewIncludes: {},
 

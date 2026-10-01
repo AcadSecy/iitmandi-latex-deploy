@@ -15,9 +15,14 @@ describe('StorageQuotaController', function () {
   beforeEach(async function (ctx) {
     ctx.StorageQuota = {
       enabled: sinon.stub().returns(true),
-      getStatus: sinon
-        .stub()
-        .resolves({ usedBytes: 100 * MB, quotaBytes: 500 * MB }),
+      getStatus: sinon.stub().resolves({
+        usedBytes: 100 * MB,
+        quotaBytes: 500 * MB,
+        limitBytes: 500 * MB,
+        maxBytes: 500 * MB,
+        limitBytes: 500 * MB,
+        serverLowOnSpace: false,
+      }),
       addToUsage: sinon.stub().resolves(),
       getProjectBytes: sinon.stub().resolves(10 * MB),
     }
@@ -70,6 +75,7 @@ describe('StorageQuotaController', function () {
       ctx.StorageQuota.getStatus.resolves({
         usedBytes: 499.5 * MB,
         quotaBytes: 500 * MB,
+        limitBytes: 500 * MB,
       })
       await ctx.Controller.checkFileUpload(ctx.req, ctx.res, ctx.next)
       expect(ctx.next.called).to.equal(false)
@@ -85,6 +91,7 @@ describe('StorageQuotaController', function () {
       ctx.StorageQuota.getStatus.resolves({
         usedBytes: 9000 * MB,
         quotaBytes: null,
+        limitBytes: null,
       })
       await ctx.Controller.checkFileUpload(ctx.req, ctx.res, ctx.next)
       expect(ctx.next.calledOnce).to.equal(true)
@@ -147,6 +154,7 @@ describe('StorageQuotaController', function () {
       ctx.StorageQuota.getStatus.resolves({
         usedBytes: 500 * MB,
         quotaBytes: 500 * MB,
+        limitBytes: 500 * MB,
       })
       await ctx.Controller.checkLinkedFile(ctx.req, ctx.res, ctx.next)
       expect(ctx.next.called).to.equal(false)
@@ -154,8 +162,36 @@ describe('StorageQuotaController', function () {
     })
   })
 
+  describe('flexible storage', function () {
+    it('allows uploads past the quota while the current limit allows them', async function (ctx) {
+      ctx.StorageQuota.getStatus.resolves({
+        usedBytes: 600 * MB,
+        quotaBytes: 500 * MB,
+        maxBytes: 5000 * MB,
+        limitBytes: 5000 * MB,
+        serverLowOnSpace: false,
+      })
+      await ctx.Controller.checkFileUpload(ctx.req, ctx.res, ctx.next)
+      expect(ctx.next.calledOnce).to.equal(true)
+    })
+
+    it('refuses uploads past the quota when the server is low on space', async function (ctx) {
+      ctx.StorageQuota.getStatus.resolves({
+        usedBytes: 600 * MB,
+        quotaBytes: 500 * MB,
+        maxBytes: 5000 * MB,
+        limitBytes: 500 * MB,
+        serverLowOnSpace: true,
+      })
+      await ctx.Controller.checkFileUpload(ctx.req, ctx.res, ctx.next)
+      expect(ctx.next.called).to.equal(false)
+      expect(ctx.res.statusCode).to.equal(422)
+    })
+  })
+
   describe('getUserStorage', function () {
-    it('reports fresh usage and the quota', async function (ctx) {
+    it('reports fresh usage and the limits for the settings page', async function (ctx) {
+      ctx.req.query = { fresh: 'true' }
       await ctx.Controller.getUserStorage(ctx.req, ctx.res)
       expect(
         ctx.StorageQuota.getStatus.calledWith('user-1', { fresh: true })
@@ -164,13 +200,36 @@ describe('StorageQuotaController', function () {
         enabled: true,
         usedBytes: 100 * MB,
         quotaBytes: 500 * MB,
+        maxBytes: 500 * MB,
+        limitBytes: 500 * MB,
+        serverLowOnSpace: false,
       })
+    })
+
+    it('uses the cached usage otherwise', async function (ctx) {
+      ctx.req.query = {}
+      await ctx.Controller.getUserStorage(ctx.req, ctx.res)
+      expect(
+        ctx.StorageQuota.getStatus.calledWith('user-1', { fresh: false })
+      ).to.equal(true)
     })
 
     it('says so when quotas are off', async function (ctx) {
       ctx.StorageQuota.enabled.returns(false)
       await ctx.Controller.getUserStorage(ctx.req, ctx.res)
       expect(JSON.parse(ctx.res.body)).to.deep.equal({ enabled: false })
+    })
+  })
+
+  describe('getUserProjectSizes', function () {
+    it("lists the sizes of the user's projects", async function (ctx) {
+      const projects = [{ id: 'p1', name: 'Thesis', bytes: 10 * MB }]
+      ctx.StorageQuota.getProjectSizes = sinon.stub().resolves(projects)
+      await ctx.Controller.getUserProjectSizes(ctx.req, ctx.res)
+      expect(ctx.StorageQuota.getProjectSizes.calledWith('user-1')).to.equal(
+        true
+      )
+      expect(JSON.parse(ctx.res.body)).to.deep.equal({ projects })
     })
   })
 })

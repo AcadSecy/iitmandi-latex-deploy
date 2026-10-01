@@ -50,10 +50,15 @@ async function main() {
     await StorageQuota.setQuotaMB(user._id, null)
   }
 
-  const { usedBytes, quotaBytes } = await StorageQuota.getStatus(user._id, {
-    fresh: true,
-  })
-  const quota = quotaBytes == null ? 'no limit' : `${quotaBytes / MB} MB`
+  const { usedBytes, quotaBytes, maxBytes, limitBytes } =
+    await StorageQuota.getStatus(user._id, { fresh: true })
+  let quota = 'no limit'
+  if (quotaBytes != null) {
+    quota = `${quotaBytes / MB} MB`
+    if (maxBytes > quotaBytes) {
+      quota += `, up to ${maxBytes / MB} MB while the disk has room (now ${limitBytes / MB} MB)`
+    }
+  }
   console.log(
     `${user.email}: ${(usedBytes / MB).toFixed(1)} MB used, quota ${quota}`
   )

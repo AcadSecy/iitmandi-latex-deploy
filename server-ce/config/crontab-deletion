@@ -1,3 +1,4 @@
 5 * * * *    root  /overleaf/cron/deactivate-projects.sh >> /var/log/overleaf/cron-deactivate-projects.log 2>&1
 15 * * * *   root  /overleaf/cron/delete-users.sh >> /var/log/overleaf/cron-delete-users.log 2>&1
 20 * * * *   root  /overleaf/cron/delete-projects.sh >> /var/log/overleaf/cron-delete-projects.log 2>&1
+40 2 * * *   root  /overleaf/cron/retention.sh >> /var/log/overleaf/cron-retention.log 2>&1

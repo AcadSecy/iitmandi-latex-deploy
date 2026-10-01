@@ -91,6 +91,7 @@ async function createBasicProject(ownerId, projectName) {
 
   const docLines = await _buildTemplate('mainbasic.tex', ownerId, projectName)
   await _createRootDoc(project, ownerId, docLines)
+  await _addInstitutionLogo(project, ownerId)
 
   AnalyticsManager.recordEventForUserInBackground(ownerId, 'project-created', {
     projectId: project._id,
@@ -208,15 +209,22 @@ async function _addExampleProjectFiles(ownerId, projectName, project) {
     null
   )
 
-  const frogPath = path.join(
-    import.meta.dirname,
-    `/../../../templates/project_files/${templateProjectDir}/frog.jpg`
-  )
+  // Our example project shows the Institute logo instead of the frog
+  const image =
+    Settings.institutionLogo && templateProjectDir === 'example-project-sp'
+      ? Settings.institutionLogo
+      : {
+          fileName: 'frog.jpg',
+          path: path.join(
+            import.meta.dirname,
+            `/../../../templates/project_files/${templateProjectDir}/frog.jpg`
+          ),
+        }
   const { fileRef } = await ProjectEntityUpdateHandler.promises.addFile(
     project._id,
     project.rootFolder[0]._id,
-    'frog.jpg',
-    frogPath,
+    image.fileName,
+    image.path,
     null,
     ownerId,
     null
@@ -228,6 +236,21 @@ async function _addExampleProjectFiles(ownerId, projectName, project) {
       { path: 'sample.bib', doc: bibDoc, docLines: bibDocLines.join('\n') },
     ],
   }
+}
+
+// The Institute logo, which the blank and example project templates show
+async function _addInstitutionLogo(project, ownerId) {
+  if (!Settings.institutionLogo) return
+  const { fileRef } = await ProjectEntityUpdateHandler.promises.addFile(
+    project._id,
+    project.rootFolder[0]._id,
+    Settings.institutionLogo.fileName,
+    Settings.institutionLogo.path,
+    null,
+    ownerId,
+    null
+  )
+  return fileRef
 }
 
 async function _createBlankProject(
@@ -331,6 +354,7 @@ async function _buildTemplate(templateName, userId, projectName) {
   const template = fs.readFileSync(templatePath)
   const data = {
     app_name: Settings.appName,
+    logo: Settings.institutionLogo?.fileName,
     project_name: projectName,
     user,
     year: new Date().getUTCFullYear(),

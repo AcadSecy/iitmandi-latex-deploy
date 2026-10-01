@@ -5,19 +5,20 @@ import ProjectGetter from '../../../../app/src/Features/Project/ProjectGetter.mj
 import StorageQuota from './StorageQuota.mjs'
 
 /**
- * Whether adding `incomingBytes` would take the user past their quota. When
- * the size is not known up front (0), refuse only once the user is at the
- * quota. Allowed uploads are added to the cached usage. If usage cannot be
- * worked out, the upload is allowed rather than blocked.
+ * Whether adding `incomingBytes` would take the user past what they may use
+ * right now (see StorageQuota.getStatus). When the size is not known up front
+ * (0), refuse only once the user is at the limit. Allowed uploads are added to
+ * the cached usage. If usage cannot be worked out, the upload is allowed
+ * rather than blocked.
  */
 async function wouldExceed(userId, incomingBytes) {
   try {
-    const { usedBytes, quotaBytes } = await StorageQuota.getStatus(userId)
+    const { usedBytes, limitBytes } = await StorageQuota.getStatus(userId)
     const exceeded =
-      quotaBytes != null &&
+      limitBytes != null &&
       (incomingBytes > 0
-        ? usedBytes + incomingBytes > quotaBytes
-        : usedBytes >= quotaBytes)
+        ? usedBytes + incomingBytes > limitBytes
+        : usedBytes >= limitBytes)
     if (!exceeded) {
       await StorageQuota.addToUsage(userId, incomingBytes)
     }
@@ -91,16 +92,27 @@ async function checkLinkedFile(req, res, next) {
   res.status(400).json({ message: quotaExceededText(req) })
 }
 
-// For the account settings page
+// For the account settings page (?fresh=true, the figure as of now) and the
+// project list (the cached figure, which is cheaper)
 async function getUserStorage(req, res) {
   if (!StorageQuota.enabled()) {
     return res.json({ enabled: false })
   }
   const userId = SessionManager.getLoggedInUserId(req.session)
-  const { usedBytes, quotaBytes } = await StorageQuota.getStatus(userId, {
-    fresh: true,
+  const status = await StorageQuota.getStatus(userId, {
+    fresh: req.query.fresh === 'true',
   })
-  res.json({ enabled: true, usedBytes, quotaBytes })
+  res.json({ enabled: true, ...status })
+}
+
+// The size of each project the user owns, largest first
+async function getUserProjectSizes(req, res) {
+  if (!StorageQuota.enabled()) {
+    return res.json({ projects: [] })
+  }
+  const userId = SessionManager.getLoggedInUserId(req.session)
+  const projects = await StorageQuota.getProjectSizes(userId)
+  res.json({ projects })
 }
 
 export default {
@@ -109,4 +121,5 @@ export default {
   checkClone: expressify(checkClone),
   checkLinkedFile: expressify(checkLinkedFile),
   getUserStorage: expressify(getUserStorage),
+  getUserProjectSizes: expressify(getUserProjectSizes),
 }

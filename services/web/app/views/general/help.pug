@@ -13,6 +13,34 @@ block content
 					p
 						| #{settings.appName} is the Institute's collaborative LaTeX editor. This page covers the platform itself; for LaTeX, start with the guides below.
 
+					h2.h3#visual-editor Editing without knowing LaTeX
+					ul
+						li
+							| Choose
+							|
+							strong Visual
+							|
+							| above the editor to edit headings, lists, bold and italic text, tables and figures as they look, rather than as code. The PDF on the right follows when you recompile.
+						li
+							strong Format › Page setup
+							|
+							| (also the line-spacing button at the start of the toolbar) changes the font size, line spacing (single, 1.5 or double), margins, paper size and font of the whole document, and recompiles. It works in the main file, the one that starts with
+							|
+							code \documentclass
+							| .
+						li
+							strong Insert › IIT Mandi logo
+							|
+							| puts the Institute logo where the cursor is. New blank projects already show it at the top; delete those lines if you don't need it.
+						li
+							| To find where something in the PDF comes from, double-click it in the PDF: the editor jumps to that place.
+						li
+							| Undo (Ctrl+Z) takes back the last changes, and
+							|
+							strong History
+							|
+							| restores any earlier version.
+
 					h2.h3 Learning LaTeX
 					ul
 						li
@@ -83,7 +111,10 @@ block content
 							|
 							strong Share
 							|
-							| in the editor to invite people by their IIT Mandi email address, or to turn on view-only and edit links.
+							if settings.shareLinksCanEdit === false
+								| in the editor to invite people by their IIT Mandi email address as viewers or editors, or to turn on a view-only link. Nobody can edit a project unless its owner invited them by name.
+							else
+								| in the editor to invite people by their IIT Mandi email address, or to turn on view-only and edit links.
 						li
 							| Shared projects and links open only after logging in with an IIT Mandi account.
 						li
@@ -95,16 +126,22 @@ block content
 					ul
 						li
 							| Archiving a project hides it from your project list without deleting it.
+						if settings.retention && settings.retention.trashDays > 0
+							li
+								| Projects you own are deleted #{settings.retention.trashDays} days after you move them to the trash, so take back anything you still need before then.
 						li
-							| A project you delete from the trash cannot be restored by you. An administrator can recover it for 90 days; after that it is removed for good.
+							| A project you delete from the trash cannot be restored by you. An administrator can recover it for #{Math.round(settings.projectHardDeletionDelay / 86400000)} days; after that it is removed for good.
 
 					if settings.storageQuota && settings.storageQuota.defaultMB > 0
 						h2.h3#storage Storage space
 						ul
 							li
 								| Each account has #{settings.storageQuota.defaultMB} MB for the files and documents in the projects it owns, including archived projects and projects in the trash. Projects shared with you count towards their owner's space, not yours.
+							if settings.storageQuota.maxMB > settings.storageQuota.defaultMB
+								li
+									| Those #{settings.storageQuota.defaultMB} MB are always yours, and you are not stopped there: while the server has room, you can use up to #{settings.storageQuota.maxMB} MB. If the server runs low on space, people using more than #{settings.storageQuota.defaultMB} MB are asked to free some before adding files.
 							li
-								| Your account settings show how much you are using. Earlier versions kept in a project's history don't count.
+								| The project list and your account settings show how much you are using, and the settings list your largest projects. Earlier versions kept in a project's history don't count.
 							li
 								| To free space, delete files you no longer need, or delete old projects from the trash.
 							li
@@ -129,7 +166,10 @@ block content
 						h2.h3#editor-waiting-room When the editor is full
 						ul
 							li
-								| To keep editing fast for everyone, at most #{settings.editorPlaces.limit} people can have the editor open at the same time.
+								if settings.editorPlaces.maxLimit > settings.editorPlaces.limit
+									| To keep editing fast for everyone, the number of people who can have the editor open at once depends on how busy the server is: at least #{settings.editorPlaces.limit}, and up to #{settings.editorPlaces.maxLimit} while it has room.
+								else
+									| To keep editing fast for everyone, at most #{settings.editorPlaces.limit} people can have the editor open at the same time.
 							li
 								| When it is full, opening a project shows your place in the queue. Keep that tab open: the project opens by itself as soon as a place is free.
 							li

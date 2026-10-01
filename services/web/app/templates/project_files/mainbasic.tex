@@ -6,7 +6,11 @@
 \date{<%= month %> <%= year %>}
 
 \begin{document}
-
+<% if (logo) { %>
+\begin{center}
+    \includegraphics[width=3cm]{<%= logo %>}
+\end{center}
+<% } %>
 \maketitle
 
 \section{Introduction}

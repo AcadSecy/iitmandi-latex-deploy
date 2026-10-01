@@ -11,6 +11,7 @@ import SortByDropdown from './dropdown/sort-by-dropdown'
 import ProjectTools from './table/project-tools/project-tools'
 import ProjectListTitle from './title/project-list-title'
 import TrashPageTabs from './trash/trash-page-tabs'
+import TrashRetentionNotice from './trash/trash-retention-notice'
 import LoadMore from './load-more'
 import OLCol from '@/shared/components/ol/ol-col'
 import OLRow from '@/shared/components/ol/ol-row'
@@ -95,6 +96,7 @@ export function ProjectListDsNav() {
             <div className="project-ds-nav-main">
               {error ? <DashApiError /> : ''}
               <UserNotifications />
+              {showTrashHeader && <TrashRetentionNotice />}
               <main aria-labelledby="main-content">
                 <div className="project-list-header-row">
                   {showTrashHeader ? (

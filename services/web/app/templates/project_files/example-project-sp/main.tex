@@ -4,9 +4,8 @@
 % Replace `english' with e.g. `spanish' to change the document language
 \usepackage[english]{babel}
 
-% Set page size and margins
-% Replace `letterpaper' with `a4paper' for UK/EU standard size
-\usepackage[letterpaper,top=2cm,bottom=2cm,left=3cm,right=3cm,marginparwidth=1.75cm]{geometry}
+% Set page size and margins (or use Format > Page setup in the editor)
+\usepackage[a4paper,top=2cm,bottom=2cm,left=3cm,right=3cm,marginparwidth=1.75cm]{geometry}
 
 % Useful packages
 \usepackage{amsmath}
@@ -33,18 +32,19 @@ Once you're familiar with the editor, you can find various project settings in t
 
 \subsection{How to create Sections and Subsections}
 
-Simply use the section and subsection commands, as in this example document! With \LaTeX{}, all the formatting and numbering is handled automatically according to the template you've chosen. If you're using Rich Text mode, you can also create new section and subsections via the buttons in the editor toolbar.
+Simply use the section and subsection commands, as in this example document! With \LaTeX{}, all the formatting and numbering is handled automatically according to the template you've chosen. If you're using the Visual Editor, you can also create new section and subsections via the buttons in the editor toolbar.
 
 \subsection{How to include Figures}
 
-First you have to upload the image file from your computer using the upload link in the file-tree menu. Then use the includegraphics command to include it in your document. Use the figure environment and the caption command to add a number and a caption to your figure. See the code for Figure \ref{fig:frog} in this section for an example.
+First you have to upload the image file from your computer using the upload link in the file-tree menu. Then use the includegraphics command to include it in your document. Use the figure environment and the caption command to add a number and a caption to your figure. See the code for Figure \ref{fig:image} in this section for an example.
 
 Note that your figure will automatically be placed in the most appropriate place for it, given the surrounding text and taking into account other figures or tables that may be close by.
 
 \begin{figure}
 \centering
-\includegraphics[width=0.25\linewidth]{frog.jpg}
-\caption{\label{fig:frog}This frog was uploaded via the file-tree menu.}
+<% if (logo) { %>\includegraphics[width=0.25\linewidth]{<%= logo %>}
+\caption{\label{fig:image}The IIT Mandi logo. You can add it to any document with Insert > IIT Mandi logo.}<% } else { %>\includegraphics[width=0.25\linewidth]{frog.jpg}
+\caption{\label{fig:image}This frog was uploaded via the file-tree menu.}<% } %>
 \end{figure}
 
 \subsection{How to add Tables}
@@ -93,7 +93,7 @@ denote their mean. Then as $n$ approaches infinity, the random variables $\sqrt{
 
 Usually the template you're using will have the page margins and paper size set correctly for that use-case. For example, if you're using a journal article template provided by the journal publisher, that template will be formatted according to their requirements. In these cases, it's best not to alter the margins directly.
 
-If however you're using a more general template, such as this one, and would like to alter the margins, a common way to do so is via the geometry package. You can find the geometry package loaded in the preamble at the top of this example file.
+If however you're using a more general template, such as this one, and would like to alter the margins, a common way to do so is via the geometry package. You can find the geometry package loaded in the preamble at the top of this example file. Without writing any code, you can also change the margins, paper size, font size, line spacing and font with Format > Page setup.
 
 \subsection{How to change the document language and spell check settings}
 

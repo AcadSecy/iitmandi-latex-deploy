@@ -369,6 +369,49 @@ describe('TokenAccessController', function () {
       })
     })
 
+    describe('when share links may only give view access', function () {
+      beforeEach(async function (ctx) {
+        ctx.Settings.shareLinksCanEdit = false
+        ctx.req.params = { token: ctx.token }
+        ctx.req.body = {
+          confirmedByUser: true,
+          tokenHashPrefix: '#prefix',
+        }
+        await new Promise((resolve, reject) => {
+          ctx.res.callback = resolve
+          ctx.TokenAccessController.grantTokenAccessReadAndWrite(
+            ctx.req,
+            ctx.res,
+            ctx.rejectOnError(reject)
+          )
+        })
+      })
+
+      it('adds the user as a read only member', function (ctx) {
+        expect(
+          ctx.CollaboratorsHandler.promises.addUserIdToProject
+        ).to.have.been.calledWith(
+          ctx.project._id,
+          undefined,
+          ctx.user._id,
+          PrivilegeLevels.READ_ONLY,
+          { pendingEditor: false }
+        )
+      })
+
+      it('writes a project audit log', function (ctx) {
+        expect(
+          ctx.ProjectAuditLogHandler.promises.addEntry
+        ).to.have.been.calledWith(
+          ctx.project._id,
+          'accept-via-link-sharing',
+          ctx.user._id,
+          ctx.req.ip,
+          { privileges: 'readOnly' }
+        )
+      })
+    })
+
     describe('when there are no edit collaborator slots available', function () {
       beforeEach(async function (ctx) {
         ctx.LimitationsManager.promises.canAcceptEditCollaboratorInvite.resolves(

@@ -17,6 +17,7 @@ describe('EditorWaitingRoomController', function () {
       enabled: sinon.stub().returns(true),
       acquire: sinon.stub().resolves({ admitted: true, position: 0 }),
       stats: sinon.stub().resolves({ limit: 50, holding: 12, waiting: 0 }),
+      currentLimit: sinon.stub().returns(50),
     }
 
     vi.doMock('@overleaf/settings', () => ({ default: ctx.Settings }))

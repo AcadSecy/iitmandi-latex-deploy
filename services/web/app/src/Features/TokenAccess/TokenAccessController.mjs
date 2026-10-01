@@ -363,23 +363,26 @@ async function grantTokenAccessReadAndWrite(req, res, next) {
       !(await LimitationsManager.promises.canAcceptEditCollaboratorInvite(
         project._id
       ))
+    // When share links may not give edit access (SHARE_LINKS_CAN_EDIT=false),
+    // an edit link only lets people view; the owner makes editors by name
+    const viewOnly = pendingEditor || Settings.shareLinksCanEdit === false
     await ProjectAuditLogHandler.promises.addEntry(
       project._id,
       'accept-via-link-sharing',
       userId,
       req.ip,
       {
-        privileges: pendingEditor ? 'readOnly' : 'readAndWrite',
+        privileges: viewOnly ? 'readOnly' : 'readAndWrite',
         ...(pendingEditor && { pendingEditor: true }),
       }
     )
     AnalyticsManager.recordEventForSession(req.session, 'project-joined', {
-      role: pendingEditor
+      role: viewOnly
         ? PrivilegeLevels.READ_ONLY
         : PrivilegeLevels.READ_AND_WRITE,
       ownerId: project.owner_ref.toString(),
       source: 'link-sharing',
-      mode: pendingEditor ? 'view' : 'edit',
+      mode: viewOnly ? 'view' : 'edit',
       projectId: project._id.toString(),
       ...(pendingEditor && { pendingEditor: true }),
     })
@@ -387,9 +390,7 @@ async function grantTokenAccessReadAndWrite(req, res, next) {
       project._id,
       undefined,
       userId,
-      pendingEditor
-        ? PrivilegeLevels.READ_ONLY
-        : PrivilegeLevels.READ_AND_WRITE,
+      viewOnly ? PrivilegeLevels.READ_ONLY : PrivilegeLevels.READ_AND_WRITE,
       { pendingEditor }
     )
 
