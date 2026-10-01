@@ -73,7 +73,8 @@ function ThinFooter({
             {showPoweredBy ? (
               <>
                 <li>
-                  {appName} · <a href={sourceCodeUrl}>Source code</a>
+                  {appName} · <a href={sourceCodeUrl}>Source code</a> ·{' '}
+                  <a href="/license">License</a>
                 </li>
                 {showLanguagePicker || hasCustomLeftNav ? <Separator /> : null}
               </>

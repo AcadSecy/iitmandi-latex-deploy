@@ -1329,6 +1329,12 @@ async function initialize(webRouter, privateApiRouter, publicApiRouter) {
     res.render('general/help')
   })
 
+  // The AGPL's legal notices, linked from the footer; readable without logging in
+  AuthenticationController.addEndpointToLoginWhitelist('/license')
+  webRouter.get('/license', (req, res) => {
+    res.render('general/license')
+  })
+
   webRouter.get('/unsupported-browser', renderUnsupportedBrowserPage)
 
   webRouter.get('*', ErrorController.notFound)

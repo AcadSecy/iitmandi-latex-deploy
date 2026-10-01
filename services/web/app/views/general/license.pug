@@ -1,0 +1,50 @@
+extends ../layout-marketing
+
+block vars
+	- metadata = {title: 'License and credits'}
+	- isWebsiteRedesign = true
+
+block content
+	main#main-content.content
+		.container
+			.row
+				.col-lg-8.offset-lg-2
+					h1 License and credits
+
+					h2.h3 License
+					p
+						| #{settings.appName} is free software: you can redistribute it and/or modify it under the terms of the
+						|
+						a(href='https://www.gnu.org/licenses/agpl-3.0.html') GNU Affero General Public License, version 3
+						| , as published by the Free Software Foundation.
+					p
+						| It is provided "as is", without warranty of any kind, express or implied, including the implied warranties of merchantability and fitness for a particular purpose.
+					p
+						| Everyone who uses #{settings.appName} can get the complete source code of the version running here:
+						|
+						a(href=settings.sourceCodeUrl) source code
+						| .
+
+					h2.h3 Copyright
+					ul
+						li
+							| #{settings.appName} is based on
+							|
+							a(href='https://github.com/overleaf/overleaf') Overleaf Community Edition
+							| , copyright © Overleaf, 2014–2026.
+						li
+							| Its extended features (login with Google, LDAP and SAML, sandboxed compiles, track changes and comments, the template gallery, the administration tools and more) come from the
+							|
+							a(href='https://github.com/yu-i-i/overleaf-cep') extended Community Edition
+							| , copyright © yu-i-i and davrot, 2024–2026.
+						li Changes for IIT Mandi are copyright © 2026 their contributors.
+					p
+						| Some of this code is adapted from other open-source projects. The source code lists them in
+						|
+						code CREDITS.md
+						|
+						| and in the license files of its dependencies.
+
+					h2.h3 Trademarks
+					p
+						| Overleaf is a trademark of its owner. #{settings.appName} is not affiliated with or endorsed by Overleaf.
