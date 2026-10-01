@@ -74,7 +74,8 @@ function StorageSection() {
           />
         </div>
         <p className="small text-muted mt-2">
-          {t('storage_quota_explanation')}
+          {t('storage_quota_explanation')}{' '}
+          <a href="/learn#storage">{t('learn_more')}</a>
         </p>
       </>
     )

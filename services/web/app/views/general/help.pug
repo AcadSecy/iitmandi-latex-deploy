@@ -67,6 +67,31 @@ block content
 						li
 							| A project you delete from the trash cannot be restored by you. An administrator can recover it for 90 days; after that it is removed for good.
 
+					if settings.storageQuota && settings.storageQuota.defaultMB > 0
+						h2.h3#storage Storage space
+						ul
+							li
+								| Each account has #{settings.storageQuota.defaultMB} MB for the files and documents in the projects it owns, including archived projects and projects in the trash. Projects shared with you count towards their owner's space, not yours.
+							li
+								| Your account settings show how much you are using. Earlier versions kept in a project's history don't count.
+							li
+								| To free space, delete files you no longer need, or delete old projects from the trash.
+							li
+								| If your work needs more space, for example a thesis with many images, write to
+								|
+								a(href='mailto:' + settings.adminEmail) #{settings.adminEmail}
+								| .
+
+					if settings.editorPlaces && settings.editorPlaces.limit > 0
+						h2.h3#editor-waiting-room When the editor is full
+						ul
+							li
+								| To keep editing fast for everyone, at most #{settings.editorPlaces.limit} people can have the editor open at the same time.
+							li
+								| When it is full, opening a project shows your place in the queue. Keep that tab open: the project opens by itself as soon as a place is free.
+							li
+								| After #{settings.editorPlaces.idleMinutes} minutes without typing, clicking or scrolling, your place goes to the next person waiting. When you come back, you get a free place again, or a place in the queue.
+
 					h2.h3 Git
 					p
 						| You can clone, pull and push projects with git. Create an authentication token in your account settings, and use it as the password when git asks for one.

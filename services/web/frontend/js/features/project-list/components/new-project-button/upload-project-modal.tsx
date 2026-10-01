@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { Dashboard } from '@uppy/react'
 import { useTranslation } from 'react-i18next'
+import Notification from '@/shared/components/notification'
 import { useProjectUploader } from '../../hooks/use-project-uploader'
 import {
   OLModal,
@@ -26,10 +28,19 @@ function UploadProjectModal({
   const themed = useFeatureFlag('themed-modals')
   const uppyTheme = useActiveOverallTheme('themed-modals')
 
+  // The server explains a refused upload (for example, a full storage quota)
+  // in the error field, already translated
+  const [error, setError] = useState<string | null>(null)
+
   const uppy = useProjectUploader({
     endpoint: '/project/new/upload',
     allowedFileTypes: ['.zip'],
     onSuccess: openProject,
+    onError: response => {
+      const message = response?.body?.error
+      setError(typeof message === 'string' ? message : null)
+    },
+    onFileAdded: () => setError(null),
   })
 
   return (
@@ -45,6 +56,14 @@ function UploadProjectModal({
         <OLModalTitle as="h3">{t('upload_zipped_project')}</OLModalTitle>
       </OLModalHeader>
       <OLModalBody>
+        {error && (
+          <Notification
+            type="error"
+            content={error}
+            ariaLive="polite"
+            className="mb-3"
+          />
+        )}
         <Dashboard
           uppy={uppy}
           proudlyDisplayPoweredByUppy={false}

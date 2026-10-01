@@ -57,7 +57,10 @@ function WaitingRoomRoot({
             <p className="lead">
               {t('editor_waiting_room_position', { position })}
             </p>
-            <p>{t('editor_waiting_room_explanation', { limit })}</p>
+            <p>
+              {t('editor_waiting_room_explanation', { limit })}{' '}
+              <a href="/learn#editor-waiting-room">{t('learn_more')}</a>
+            </p>
             <LoadingSpinner />
             <p className="mt-4">
               <a href="/project">{t('back_to_your_projects')}</a>
