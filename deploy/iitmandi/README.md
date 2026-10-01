@@ -44,6 +44,14 @@ At this scale (about 3,500 accounts, 50 people editing at once) the database sta
 - **No standby server.** If the VM is lost, the platform comes back from the last nightly backup, so up to a day of work can be lost. Run a restore drill before the pilot and after each upgrade.
 - **Disk.** 3,500 users × 500 MB quota is 1.75 TB, more than the 1 TB SSD, though real use is far lower. Alert at 80% full and watch the growth of `data/app`.
 
+## Compiles
+
+Each compile runs in its own container with no network, 1 CPU and 2 GiB of memory (`COMPILE_GROUP_DOCKER_CONFIGS`). `COMPILE_QUEUE_SLOTS` compiles run at once; the rest wait in line.
+
+- **Turns.** A compile that has run for `COMPILE_QUEUE_TURN_SECONDS` while someone waits is paused (`docker pause`: it keeps its memory but uses no CPU) and rejoins the line. A long thesis therefore still finishes on a busy server, and short compiles wait at most about one turn behind it. Paused time does not count towards `COMPILE_TIMEOUT`. `docker ps --filter status=paused` lists paused compiles. After a restart the compile service stops any it finds, since nobody would resume them.
+- **Time limit and Stop.** At `COMPILE_TIMEOUT`, or when a user presses Stop, TeX is interrupted instead of killed: it finishes the PDF with the pages typeset so far, which the editor shows with a notice. The compile files stay, so the next compile reuses the `.aux`, `.bbl` and cached figures. Only when something had to be killed mid-write are the files thrown away, as before.
+- **Proxy.** A compile request can take up to `COMPILE_QUEUE_MAX_REQUEST_SECONDS` (9 minutes). The app's own nginx allows 10 minutes; a reverse proxy in front of the server must allow at least as long, or long compiles end in a gateway timeout.
+
 ## Secrets and share links
 
 `OVERLEAF_INVITE_TOKEN_SECRET` encrypts the share-link tokens in MongoDB, and `OVERLEAF_SESSION_SECRET` signs login cookies. Generate both once (`openssl rand -hex 32`) and never change them. If the invite secret changes or is lost, every share link and pending invitation stops working. The nightly backup includes the Toolkit config, but also keep an offline copy of both secrets with the backup password, in case the backup itself can't be read.

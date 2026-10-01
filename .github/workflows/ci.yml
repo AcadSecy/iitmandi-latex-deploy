@@ -194,6 +194,55 @@ jobs:
           test/frontend/features/project-list/components/welcome-message.test.tsx
           modules/ask-ai/test/frontend/open-assistant.test.ts
 
+  clsi:
+    name: Compile service
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      # The TeX Live image the platform compiles in (deploy/iitmandi/variables.env.example)
+      TEXLIVE_IMAGE: texlive/texlive:latest-full
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          # dependencies are cached below; the automatic cache needs Corepack first
+          package-manager-cache: false
+      - run: corepack enable
+      - uses: actions/cache@v6
+        with:
+          path: .yarn/cache
+          key: yarn-cache-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
+          restore-keys: yarn-cache-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: yarn workspaces focus @overleaf/clsi
+
+      - name: Unit tests (running, stopping and pausing compiles)
+        working-directory: services/clsi
+        run: >
+          yarn vitest run --config ./vitest.config.unit.cjs
+          test/unit/js/DockerRunner.test.js
+          test/unit/js/LatexRunner.test.js
+          test/unit/js/CompileManager.test.js
+
+      - name: Pull the TeX Live image
+        run: docker pull "$TEXLIVE_IMAGE"
+
+      # Real compiles in Docker with the production seccomp profile: a stopped
+      # or timed-out compile keeps a valid PDF of the pages already typeset,
+      # and a paused compile's time does not count.
+      - name: Stop and pause real compiles
+        working-directory: services/clsi
+        run: |
+          mkdir -p compiles
+          DOCKER_RUNNER=true \
+          TEX_LIVE_DOCKER_IMAGE="$TEXLIVE_IMAGE" \
+          TEXLIVE_IMAGE_USER="$(id -u):$(id -g)" \
+          SANDBOXED_COMPILES_HOST_DIR_COMPILES="$PWD/compiles" \
+          LOG_LEVEL=warn \
+          yarn vitest run test/docker
+
   git-bridge:
     name: Git bridge
     runs-on: ubuntu-24.04
