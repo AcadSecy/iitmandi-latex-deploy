@@ -1,5 +1,6 @@
 # docker image build
 .dockerignore
+server-ce/source-archive/
 
 # user defined files
 .env

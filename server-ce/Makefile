@@ -40,7 +40,22 @@ build-base:
 	  $(MONOREPO_ROOT)
 
 
-build-community:
+# AGPL-3.0: the image carries the source of exactly the commit it is built
+# from, which the app serves to its users at /source. A build from uncommitted
+# changes would not match the archive, so it is refused (ALLOW_DIRTY=true
+# overrides, for local experiments only).
+source-archive:
+	@if [ "$(ALLOW_DIRTY)" != true ] && [ -n "$$(git -C $(MONOREPO_ROOT) status --porcelain)" ]; then \
+	  echo "Commit your changes first: the image must match its source archive (ALLOW_DIRTY=true overrides)" >&2; \
+	  exit 1; \
+	fi
+	rm -rf source-archive
+	mkdir -p source-archive
+	git -C $(MONOREPO_ROOT) archive --format=tar.gz --prefix=iitmandi-latex/ \
+	  -o server-ce/source-archive/source.tar.gz $(MONOREPO_REVISION)
+	echo $(MONOREPO_REVISION) > source-archive/REVISION
+
+build-community: source-archive
 	cp .dockerignore $(MONOREPO_ROOT)
 	docker build \
 	  --build-arg BUILDKIT_INLINE_CACHE=1 \
@@ -80,5 +95,5 @@ shellcheck_fix:
 	done
 
 .PHONY: all \
-	build-base build-community \
+	build-base build-community source-archive \
 	shellcheck shellcheck_fix

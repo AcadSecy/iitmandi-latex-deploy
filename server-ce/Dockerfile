@@ -99,6 +99,11 @@ RUN chmod +x /overleaf/bin/force-history-resyncs
 # -----------------------
 COPY server-ce/config/latexmkrc /usr/local/share/latexmk/LatexMk
 
+# Source code of this build, served at /source (AGPL-3.0). Made by
+# `make source-archive`, which `make build-community` runs first.
+# -----------------------
+COPY server-ce/source-archive/ /overleaf/source/
+
 # File that controls open|closed status of the site
 # -------------------------------------------------
 ENV SITE_MAINTENANCE_FILE="/etc/overleaf/site_status"

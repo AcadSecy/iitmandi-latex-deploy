@@ -201,10 +201,9 @@ const settings = {
   appName: process.env.OVERLEAF_APP_NAME || 'IIT Mandi LaTeX',
 
   // Linked from the footer. The AGPL-3.0 requires offering the source code of
-  // this modified version to all users; point this at a location they can reach.
-  sourceCodeUrl:
-    process.env.OVERLEAF_SOURCE_CODE_URL ||
-    'https://github.com/TayalAditya/iitmandi-latex',
+  // this modified version to all users. By default /source serves the archive
+  // of the exact commit the image was built from (server-ce/Makefile).
+  sourceCodeUrl: process.env.OVERLEAF_SOURCE_CODE_URL || '/source',
 
   restrictInvitesToExistingAccounts:
     process.env.OVERLEAF_RESTRICT_INVITES_TO_EXISTING_ACCOUNTS === 'true',

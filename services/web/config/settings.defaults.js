@@ -790,10 +790,10 @@ module.exports = {
 
   // Where users can get the source code of this deployment. The AGPL-3.0
   // requires offering the source of a modified version to everyone who uses it
-  // over a network; the footer links here.
-  sourceCodeUrl:
-    process.env.SOURCE_CODE_URL ||
-    'https://github.com/TayalAditya/iitmandi-latex',
+  // over a network; the footer links here. /source (modules/source-code) serves
+  // the archive that the image build packs into sourceArchiveDir.
+  sourceCodeUrl: process.env.SOURCE_CODE_URL || '/source',
+  sourceArchiveDir: process.env.SOURCE_ARCHIVE_DIR || '/overleaf/source',
 
   adminEmail: process.env.ADMIN_EMAIL || 'placeholder@example.com',
   adminDomains: process.env.ADMIN_DOMAINS
@@ -1271,6 +1271,7 @@ module.exports = {
     'zotero',
     'editor-waiting-room',
     'storage-quota',
+    'source-code',
   ],
   viewIncludes: {},
 
