@@ -1,5 +1,6 @@
 import { FC, PropsWithChildren, useEffect } from 'react'
 import { FetchError, postJSON } from '@/infrastructure/fetch-json'
+import getMeta from '@/utils/meta'
 import type { EditorPlace } from './editor-place'
 
 const ACTIVITY_EVENTS = [
@@ -16,6 +17,10 @@ const ACTIVITY_EVENTS = [
 // page takes them to the waiting room.
 const EditorPlaceKeeper: FC<PropsWithChildren> = ({ children }) => {
   useEffect(() => {
+    // Only the editor holds a place. The PDF opened in its own window is not
+    // gated, so reloading it to reach the waiting room would loop.
+    if (getMeta('ol-detachRole') === 'detached') return
+
     let lastActivity = Date.now()
     let idleMs = Infinity
     let timer: number | undefined
