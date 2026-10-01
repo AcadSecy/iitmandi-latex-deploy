@@ -201,8 +201,12 @@ jobs:
           jq -e '.serviceName == "Latex X IIT-Mandi"
             and .siteUrl == "https://latex.iitmandi.ac.in"
             and .supportEmail == "latex-admin@iitmandi.ac.in"' runtime.json
-          test "$(docker exec git-bridge ps -o user= -o comm= | awk '$2 == "java" {print $1}')" = node
-          test "$(docker exec git-bridge stat -c %U /data/git-bridge)" = node
+          java_user=$(docker exec git-bridge ps -eo user=,comm= | awk '$2 == "java" {print $1}')
+          echo "java runs as: $java_user"
+          test "$java_user" = node
+          data_owner=$(docker exec git-bridge stat -c %U /data/git-bridge)
+          echo "/data/git-bridge is owned by: $data_owner"
+          test "$data_owner" = node
           # A message git users see carries our name, not the upstream one
           curl -s -X POST http://127.0.0.1:8000/abc123.git/info/lfs/objects/batch | tee lfs.json
           jq -e '.message == "ERROR: Git LFS is not supported on Latex X IIT-Mandi"' lfs.json
