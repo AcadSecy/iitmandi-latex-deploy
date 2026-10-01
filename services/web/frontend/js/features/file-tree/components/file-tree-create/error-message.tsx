@@ -84,6 +84,9 @@ export default function ErrorMessage({
           </DangerMessage>
         )
 
+      case 'storage-quota-exceeded':
+        return <DangerMessage>{t('storage_quota_exceeded')}</DangerMessage>
+
       case 'not-logged-in':
         return (
           <DangerMessage>

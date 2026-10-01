@@ -877,6 +877,13 @@ module.exports = {
     idleMinutes: intFromEnv('EDITOR_SESSION_IDLE_MINUTES', 30),
   },
 
+  // Storage each user may fill with the projects they own
+  // (modules/storage-quota). Admins can change it per user with
+  // modules/storage-quota/scripts/set-storage-quota.mjs. 0 turns quotas off.
+  storageQuota: {
+    defaultMB: intFromEnv('STORAGE_QUOTA_MB', 0),
+  },
+
   analytics: {
     enabled: false,
   },
@@ -1146,7 +1153,12 @@ module.exports = {
     usGovBanner: [],
     rollingBuildsUpdatedAlert: [],
     offlineModeToolbarButtons: [],
-    settingsEntries: [],
+    settingsEntries: [
+      Path.resolve(
+        __dirname,
+        '../modules/storage-quota/frontend/js/components/storage-section.tsx'
+      ),
+    ],
     autoCompleteExtensions: [
       Path.resolve(
         __dirname,
@@ -1231,6 +1243,7 @@ module.exports = {
     'github-sync',
     'zotero',
     'editor-waiting-room',
+    'storage-quota',
   ],
   viewIncludes: {},
 
