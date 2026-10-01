@@ -16,9 +16,9 @@ permissions:
 
 jobs:
   # Decides which jobs to run: only those whose code changed since the last
-  # pull-request run that passed, so a run cancelled by a newer push is still
-  # covered by the next one. Pushes to main, manual runs, the first run of a
-  # pull request and changes to the workflows themselves run everything.
+  # passing run of the same kind (a push to main, or the same pull request), so
+  # a run cancelled by a newer push is still covered by the next one. Manual
+  # runs, the first run and changes to the workflows themselves run everything.
   changes:
     name: Changed areas
     runs-on: ubuntu-24.04
@@ -37,7 +37,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           EVENT: ${{ github.event_name }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          BRANCH: ${{ github.head_ref || github.ref_name }}
         run: |
           AREAS="branding templates web clsi git_bridge"
           run_all() {
@@ -45,9 +46,12 @@ jobs:
             for area in $AREAS; do echo "$area=true" >> "$GITHUB_OUTPUT"; done
             exit 0
           }
-          [ "$EVENT" = pull_request ] || run_all "$EVENT event"
-          base=$(gh run list -R "$GITHUB_REPOSITORY" --workflow CI --event pull_request \
-            --branch "$GITHUB_HEAD_REF" --status success --limit 1 \
+          case "$EVENT" in
+            push | pull_request) ;;
+            *) run_all "$EVENT event" ;;
+          esac
+          base=$(gh run list -R "$GITHUB_REPOSITORY" --workflow CI --event "$EVENT" \
+            --branch "$BRANCH" --status success --limit 1 \
             --json headSha --jq '.[0].headSha // empty') || base=
           [ -n "$base" ] || run_all "no earlier passing run"
           [ "$base" != "$HEAD_SHA" ] || run_all "re-run of a passing commit"
