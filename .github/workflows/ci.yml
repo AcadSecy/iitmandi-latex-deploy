@@ -15,8 +15,63 @@ permissions:
   contents: read
 
 jobs:
+  # Decides which jobs to run: only those whose code changed since the last
+  # pull-request run that passed, so a run cancelled by a newer push is still
+  # covered by the next one. Pushes to main, manual runs, the first run of a
+  # pull request and changes to the workflows themselves run everything.
+  changes:
+    name: Changed areas
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      branding: ${{ steps.areas.outputs.branding }}
+      templates: ${{ steps.areas.outputs.templates }}
+      web: ${{ steps.areas.outputs.web }}
+      clsi: ${{ steps.areas.outputs.clsi }}
+      git_bridge: ${{ steps.areas.outputs.git_bridge }}
+    steps:
+      - id: areas
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          AREAS="branding templates web clsi git_bridge"
+          run_all() {
+            echo "Running every job: $1"
+            for area in $AREAS; do echo "$area=true" >> "$GITHUB_OUTPUT"; done
+            exit 0
+          }
+          [ "$EVENT" = pull_request ] || run_all "$EVENT event"
+          base=$(gh run list -R "$GITHUB_REPOSITORY" --workflow CI --event pull_request \
+            --branch "$GITHUB_HEAD_REF" --status success --limit 1 \
+            --json headSha --jq '.[0].headSha // empty') || base=
+          [ -n "$base" ] || run_all "no earlier passing run"
+          [ "$base" != "$HEAD_SHA" ] || run_all "re-run of a passing commit"
+          gh api "repos/$GITHUB_REPOSITORY/compare/$base...$HEAD_SHA" \
+            --jq '.files[].filename' > changed.txt || run_all "cannot compare with $base"
+          [ "$(wc -l < changed.txt)" -lt 300 ] || run_all "too many changed files"
+          echo "Changed since the last passing run ($base):"
+          cat changed.txt
+          ! grep -q '^\.github/' changed.txt || run_all "workflow files changed"
+          area() {
+            if grep -qE "$2" changed.txt; then value=true; else value=false; fi
+            echo "$1=$value" | tee -a "$GITHUB_OUTPUT"
+          }
+          deps='libraries/|package\.json$|yarn\.lock$|\.yarnrc\.yml$|\.yarn/|tsconfig'
+          area branding '^(services/web/|tools/branding/)'
+          area templates '^services/web/modules/iitmandi-templates/'
+          area web "^(services/web/|$deps)"
+          area clsi "^(services/clsi/|server-ce/|$deps)"
+          area git_bridge '^services/git-bridge/'
+
   branding:
     name: Branding and stylesheets
+    needs: changes
+    if: needs.changes.outputs.branding == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -40,6 +95,8 @@ jobs:
 
   templates:
     name: Templates
+    needs: changes
+    if: needs.changes.outputs.templates == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
@@ -79,6 +136,8 @@ jobs:
 
   web:
     name: Web
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
@@ -196,6 +255,8 @@ jobs:
 
   clsi:
     name: Compile service
+    needs: changes
+    if: needs.changes.outputs.clsi == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
@@ -245,6 +306,8 @@ jobs:
 
   git-bridge:
     name: Git bridge
+    needs: changes
+    if: needs.changes.outputs.git_bridge == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
