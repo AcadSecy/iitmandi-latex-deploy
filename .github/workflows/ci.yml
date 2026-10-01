@@ -65,17 +65,25 @@ jobs:
       - name: Generate editor parsers
         run: yarn workspace @overleaf/web run lezer-latex:generate
 
-      # Upstream's public repository leaves out some private modules, so the full
-      # type check always reports "Cannot find module" errors for them. Fail only
-      # on type errors in files that this change touches.
+      # Upstream's public repository leaves out some private modules, and the
+      # extended Community Edition (CEP) is not type-clean, so the full type
+      # check always reports errors. Fail only on type errors in files that this
+      # change touches, counting CEP's own files as upstream.
       - name: Type-check changed files
         working-directory: services/web
+        env:
+          # yu-i-i/overleaf-cep v6.3.0-ext-v5.1; update when merging a newer release
+          CEP_BASE: 738bebb743e6ea8f579a1860e1de1fbfc292f505
         run: |
           case "${{ github.event_name }}" in
             pull_request) base="${{ github.event.pull_request.base.sha }}" ;;
             push) base="${{ github.event.before }}" ;;
             *) base="HEAD~1" ;;
           esac
+          if git merge-base --is-ancestor "$base" "$CEP_BASE" 2>/dev/null &&
+            git merge-base --is-ancestor "$CEP_BASE" HEAD 2>/dev/null; then
+            base="$CEP_BASE"
+          fi
           yarn tsc --noEmit --pretty false > "$RUNNER_TEMP/tsc.log" || true
           echo "$(grep -c 'error TS' "$RUNNER_TEMP/tsc.log" || true) type errors in total"
           git diff --name-only "$base"...HEAD -- . | sed -e 's#^services/web/##' -e '/^$/d' > "$RUNNER_TEMP/changed.txt"

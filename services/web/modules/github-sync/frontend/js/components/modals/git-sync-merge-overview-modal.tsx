@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import getMeta from '@/utils/meta'
 import useAsync from '@/shared/hooks/use-async'
-import { getJSON } from '@/infrastructure/fetch-json'
+import { FetchError, getJSON } from '@/infrastructure/fetch-json'
 import { OLModalBody, OLModalFooter } from '@/shared/components/ol/ol-modal'
 import OLForm from '@/shared/components/ol/ol-form'
 import OLFormGroup from '@/shared/components/ol/ol-form-group'
@@ -62,7 +62,7 @@ const GitSyncMergeOverviewModal = ({
   } = useAsync<UnmergedCommitsResponse | null>()
 
   const loadUnmergedCommits = () => {
-    setData({})
+    setData(null)
 
     runAsync(getJSON(`/project/${projectId}/github-sync/merge/overview`))
       .then(data => { if (!data) setModalStatus('loading') })
@@ -106,7 +106,7 @@ const GitSyncMergeOverviewModal = ({
           </>
         )}
 
-        {isSuccess && (
+        {isSuccess && data && (
           <>
             <hr />
 
@@ -206,7 +206,7 @@ const GitSyncMergeOverviewModal = ({
             <OLButton
               variant="danger-ghost"
               onClick={() => setModalStatus('confirm-unlink')}
-              disabled={!isSuccess && error?.info?.statusCode !== 404}
+              disabled={!isSuccess && (error as FetchError | null)?.response?.status !== 404}
             >
               {t('unlink')}
             </OLButton>

@@ -46,7 +46,7 @@ function ImportFromGitHubModalContent({ handleHide }: { handleHide: () => void }
   }, [runAsync])
 
   const reposExist = data?.repos != null
-  const repos = reposExist ? data.repos : []
+  const repos = data?.repos ?? []
 
   const {
     isLoading: isImporting,
@@ -79,7 +79,7 @@ function ImportFromGitHubModalContent({ handleHide }: { handleHide: () => void }
 
   return (
     <>
-      <OLModalHeader onClose={handleHide}>
+      <OLModalHeader>
         <OLModalTitle>{t('import_from_github')}</OLModalTitle>
       </OLModalHeader>
 
@@ -211,7 +211,7 @@ export default function ImportFromGitHubModal({ onHide }: { onHide: () => void }
       size="lg"
       onHide={onHide}
       backdrop="static"
-      themed="true"
+      themed
     >
       <ImportFromGitHubModalContent handleHide={onHide} />
     </OLModal>
