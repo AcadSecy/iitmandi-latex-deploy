@@ -857,6 +857,14 @@ module.exports = {
     },
   },
 
+  // First-come-first-served compile queue: at most `slots` compiles run at
+  // once and the rest wait for a free slot. 0 slots disables the queue.
+  // Keep maxWait plus the compile timeout below nginx's proxy_read_timeout.
+  compileQueue: {
+    slots: intFromEnv('COMPILE_QUEUE_SLOTS', 0),
+    maxWaitMs: intFromEnv('COMPILE_QUEUE_MAX_WAIT_SECONDS', 300) * 1000,
+  },
+
   analytics: {
     enabled: false,
   },

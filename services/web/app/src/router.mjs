@@ -640,6 +640,18 @@ async function initialize(webRouter, privateApiRouter, publicApiRouter) {
   )
 
   webRouter.get(
+    '/project/:Project_id/compile/queue',
+    AuthorizationMiddleware.ensureUserCanReadProject,
+    CompileController.getCompileQueueStatus
+  )
+
+  webRouter.post(
+    '/project/:Project_id/compile/queue/promote',
+    AuthorizationMiddleware.ensureUserCanReadProject,
+    CompileController.promoteQueuedCompile
+  )
+
+  webRouter.get(
     '/project/:Project_id/output/cached/output.overleaf.json',
     AsyncLocalStorage.middleware,
     AuthorizationMiddleware.ensureUserCanReadProject,

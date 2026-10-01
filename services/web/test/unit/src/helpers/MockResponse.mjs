@@ -25,6 +25,8 @@ class MockResponse {
     this.headers[field] = val
   }
 
+  on(event, listener) {}
+
   render(template, variables) {
     this.success = true
     this.rendered = true

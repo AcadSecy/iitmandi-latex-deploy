@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import sinon from 'sinon'
 import _ from 'lodash'
 
@@ -67,6 +67,7 @@ describe('CompileManager', function () {
         },
         redis: { web: { host: '127.0.0.1', port: 42 } },
         rateLimit: { autoCompile: {} },
+        compileQueue: { slots: 1, maxWaitMs: 60_000 },
       }),
     }))
 
@@ -287,6 +288,160 @@ describe('CompileManager', function () {
 
         expect(status).to.equal('autocompile-backoff')
       })
+    })
+  })
+
+  describe('compile queue', function () {
+    let finishFirstCompile
+
+    beforeEach(function (ctx) {
+      ctx.CompileManager._checkIfRecentlyCompiled = sinon.stub().resolves(false)
+      ctx.CompileManager._checkIfAutoCompileLimitHasBeenHit = sinon
+        .stub()
+        .resolves(true)
+      ctx.ProjectRootDocManager.promises.ensureRootDocumentIsValid = sinon
+        .stub()
+        .resolves({
+          rootDocId: 'mock-root-doc-id-123',
+          rootResourcePath: '/main.tex',
+        })
+      ctx.ClsiManager.promises.stopCompile = sinon.stub().resolves()
+      ctx.ClsiManager.promises.sendRequest = sinon
+        .stub()
+        .resolves({ status: 'success', outputFiles: [] })
+      ctx.ClsiManager.promises.sendRequest.onFirstCall().returns(
+        new Promise(resolve => {
+          finishFirstCompile = () =>
+            resolve({ status: 'success', outputFiles: [] })
+        })
+      )
+    })
+
+    afterEach(function () {
+      vi.useRealTimers()
+    })
+
+    async function startTwoCompiles(ctx, secondOptions = {}) {
+      const first = ctx.CompileManager.promises.compile(
+        'project-1',
+        'user-1',
+        {}
+      )
+      await vi.waitFor(() =>
+        expect(ctx.ClsiManager.promises.sendRequest.callCount).to.equal(1)
+      )
+      const second = ctx.CompileManager.promises.compile(
+        'project-2',
+        'user-2',
+        secondOptions
+      )
+      await vi.waitFor(() =>
+        expect(
+          ctx.CompileManager.getCompileQueueStatus('project-2', 'user-2').state
+        ).to.equal('waiting')
+      )
+      return { first, second }
+    }
+
+    it('waits for a free slot and compiles once the server is free', async function (ctx) {
+      const { first, second } = await startTwoCompiles(ctx)
+      expect(
+        ctx.CompileManager.getCompileQueueStatus('project-2', 'user-2')
+      ).to.include({ state: 'waiting', position: 1 })
+      expect(ctx.ClsiManager.promises.sendRequest.callCount).to.equal(1)
+
+      finishFirstCompile()
+      expect((await first).status).to.equal('success')
+      expect((await second).status).to.equal('success')
+      expect(ctx.ClsiManager.promises.sendRequest.callCount).to.equal(2)
+      expect(
+        ctx.CompileManager.getCompileQueueStatus('project-2', 'user-2').state
+      ).to.equal('idle')
+    })
+
+    it('cancels a waiting compile when it is stopped', async function (ctx) {
+      const { first, second } = await startTwoCompiles(ctx)
+
+      await ctx.CompileManager.promises.stopCompile('project-2', 'user-2')
+      expect((await second).status).to.equal('terminated')
+      expect(ctx.ClsiManager.promises.stopCompile.called).to.equal(false)
+
+      finishFirstCompile()
+      await first
+      expect(ctx.ClsiManager.promises.sendRequest.callCount).to.equal(1)
+    })
+
+    it('leaves the queue when the request is aborted', async function (ctx) {
+      const first = ctx.CompileManager.promises.compile(
+        'project-1',
+        'user-1',
+        {}
+      )
+      await vi.waitFor(() =>
+        expect(ctx.ClsiManager.promises.sendRequest.callCount).to.equal(1)
+      )
+      const abortController = new AbortController()
+      const second = ctx.CompileManager.promises.compile(
+        'project-2',
+        'user-2',
+        {},
+        { signal: abortController.signal }
+      )
+      await vi.waitFor(() =>
+        expect(
+          ctx.CompileManager.getCompileQueueStatus('project-2', 'user-2').state
+        ).to.equal('waiting')
+      )
+
+      abortController.abort()
+      expect((await second).status).to.equal('terminated')
+      finishFirstCompile()
+      await first
+      expect(ctx.ClsiManager.promises.sendRequest.callCount).to.equal(1)
+    })
+
+    it('reports a busy server when a requested compile waits too long', async function (ctx) {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+      const { first, second } = await startTwoCompiles(ctx)
+
+      vi.advanceTimersByTime(60_000)
+      expect((await second).status).to.equal('unavailable')
+      finishFirstCompile()
+      await first
+    })
+
+    it('backs off an auto-compile that waits too long', async function (ctx) {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+      const { first, second } = await startTwoCompiles(ctx, {
+        isAutoCompile: true,
+      })
+
+      vi.advanceTimersByTime(60_000)
+      expect((await second).status).to.equal('autocompile-backoff')
+      finishFirstCompile()
+      await first
+    })
+
+    it('lets the user promote their waiting auto-compile', async function (ctx) {
+      const { first, second } = await startTwoCompiles(ctx, {
+        isAutoCompile: true,
+      })
+      expect(
+        ctx.CompileManager.getCompileQueueStatus('project-2', 'user-2')
+          .isAutoCompile
+      ).to.equal(true)
+
+      expect(
+        ctx.CompileManager.promoteQueuedCompile('project-2', 'user-2')
+      ).to.equal(true)
+      expect(
+        ctx.CompileManager.getCompileQueueStatus('project-2', 'user-2')
+          .isAutoCompile
+      ).to.equal(false)
+
+      finishFirstCompile()
+      await first
+      expect((await second).status).to.equal('success')
     })
   })
 

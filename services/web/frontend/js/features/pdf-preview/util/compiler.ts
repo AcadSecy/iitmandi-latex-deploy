@@ -118,6 +118,10 @@ export default class DocumentCompiler {
     if (wasCompiling) {
       if (options.isAutoCompileOnChange) {
         this.debouncedAutoCompile()
+      } else if (!options.isAutoCompileOnLoad) {
+        // If the compile in flight is an auto-compile waiting in the server's
+        // compile queue, give it the priority of a requested compile.
+        this.promoteQueuedCompile()
       }
       return
     }
@@ -219,6 +223,14 @@ export default class DocumentCompiler {
     }
 
     return params
+  }
+
+  promoteQueuedCompile() {
+    postJSON(`/project/${this.projectId}/compile/queue/promote`, {
+      signal: this.signal,
+    }).catch(error => {
+      debugConsole.error(error)
+    })
   }
 
   // send a request to stop the current compile

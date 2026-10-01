@@ -393,6 +393,8 @@
   "compile_error_handling": "",
   "compile_larger_projects": "",
   "compile_mode": "",
+  "compile_now_queued": "",
+  "compile_queued": "",
   "compile_terminated_by_user": "",
   "compile_timeout_modal_intro": "",
   "compiler": "",

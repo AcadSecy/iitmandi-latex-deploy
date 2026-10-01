@@ -5,12 +5,14 @@ import ProjectGetter from '../Project/ProjectGetter.mjs'
 import ProjectRootDocManager from '../Project/ProjectRootDocManager.mjs'
 import UserGetter from '../User/UserGetter.mjs'
 import ClsiManager from './ClsiManager.mjs'
+import { CompileQueue, CompileQueueError } from './CompileQueue.mjs'
 import Metrics from '@overleaf/metrics'
 import { RateLimiter } from '../../infrastructure/RateLimiter.mjs'
 import { callbackify, callbackifyMultiResult } from '@overleaf/promise-utils'
 import Errors from '../Errors/Errors.js'
 let CompileManager
 const rclient = RedisWrapper.client('clsi_recently_compiled')
+const compileQueue = new CompileQueue(Settings.compileQueue)
 
 function instrumentWithTimer(fn, key) {
   return async (...args) => {
@@ -27,7 +29,7 @@ function generateBuildId() {
   return `${Date.now().toString(16)}-${Crypto.randomBytes(8).toString('hex')}`
 }
 
-async function compile(projectId, userId, options = {}) {
+async function compile(projectId, userId, options = {}, { signal } = {}) {
   const recentlyCompiled = await CompileManager._checkIfRecentlyCompiled(
     projectId,
     userId
@@ -63,6 +65,48 @@ async function compile(projectId, userId, options = {}) {
     }
   }
 
+  // Wait for a free compile slot before reading the project, so that a
+  // compile which waited still sees the latest content.
+  const slot = await _waitForCompileSlot(projectId, userId, options, signal)
+  if (slot.status) {
+    return { status: slot.status, outputFiles: [] }
+  }
+  try {
+    return await _compileInSlot(projectId, userId, options)
+  } finally {
+    slot.release()
+  }
+}
+
+function _compileQueueUserKey(projectId, userId) {
+  return userId ? userId.toString() : `anonymous:${projectId}`
+}
+
+async function _waitForCompileSlot(projectId, userId, options, signal) {
+  try {
+    const release = await compileQueue.acquire({
+      userKey: _compileQueueUserKey(projectId, userId),
+      projectId: projectId.toString(),
+      isAutoCompile: options.isAutoCompile,
+      signal,
+    })
+    return { release }
+  } catch (error) {
+    if (!(error instanceof CompileQueueError)) {
+      throw error
+    }
+    Metrics.inc('compile-queue-rejected', 1, { reason: error.reason })
+    if (error.reason === 'timeout') {
+      // The editor explains both statuses as high server load.
+      return {
+        status: options.isAutoCompile ? 'autocompile-backoff' : 'unavailable',
+      }
+    }
+    return { status: 'terminated' }
+  }
+}
+
+async function _compileInSlot(projectId, userId, options) {
   // Generate the buildId ahead of fetching the project content from redis/mongo so that the buildId's timestamp is before any lastUpdated date.
   options.buildId = generateBuildId()
 
@@ -228,10 +272,33 @@ async function syncTeX(
 }
 
 async function stopCompile(projectId, userId) {
+  if (
+    compileQueue.cancel(
+      projectId.toString(),
+      _compileQueueUserKey(projectId, userId)
+    )
+  ) {
+    return
+  }
+
   const limits =
     await CompileManager.promises.getProjectCompileLimits(projectId)
 
   return await ClsiManager.promises.stopCompile(projectId, userId, limits)
+}
+
+function getCompileQueueStatus(projectId, userId) {
+  return compileQueue.getStatus(
+    projectId.toString(),
+    _compileQueueUserKey(projectId, userId)
+  )
+}
+
+function promoteQueuedCompile(projectId, userId) {
+  return compileQueue.promote(
+    projectId.toString(),
+    _compileQueueUserKey(projectId, userId)
+  )
 }
 
 async function deleteAuxFiles(projectId, userId, clsiserverid) {
@@ -247,6 +314,8 @@ async function deleteAuxFiles(projectId, userId, clsiserverid) {
 }
 
 export default CompileManager = {
+  getCompileQueueStatus,
+  promoteQueuedCompile,
   promises: {
     compile: instrumentedCompile,
     deleteAuxFiles,

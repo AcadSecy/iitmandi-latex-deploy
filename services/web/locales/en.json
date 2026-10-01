@@ -489,6 +489,8 @@
   "compile_larger_projects": "Compile larger projects",
   "compile_longer_more_complex_docs_with_24x": "Compile longer, more complex docs with 24x the compile time of the free plan.",
   "compile_mode": "Compile mode",
+  "compile_now_queued": "Compile now (#__position__)",
+  "compile_queued": "Queued (#__position__)",
   "compile_servers": "Compile servers",
   "compile_servers_info_new": "The servers used to compile your project. Compiles for users on paid plans always run on the fastest available servers.",
   "compile_speed": "Compile speed",
