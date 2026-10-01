@@ -1,0 +1,21 @@
+# IIT Mandi LaTeX: Overleaf Toolkit settings.
+# Run the Toolkit's bin/init first, then change these keys in
+# overleaf-toolkit/config/overleaf.rc. Keys not listed keep their defaults.
+
+# Needed by the Toolkit for sandboxed compiles and the Git integration.
+# The image itself is replaced by our build in docker-compose.override.yml.
+SERVER_PRO=true
+
+# Run every compile in its own TeX Live container. This mounts the Docker
+# socket into the app container, which gives it root-level control of the
+# host: run the platform on a VM that hosts nothing else.
+SIBLING_CONTAINERS_ENABLED=true
+SIBLING_CONTAINERS_PULL=true
+
+# Clone and push projects with git. Set config/version to the upstream release
+# our build is based on (6.3.0) so the matching git-bridge image is used.
+GIT_BRIDGE_ENABLED=true
+
+# Listen on localhost only; the Institute proxy terminates HTTPS.
+OVERLEAF_LISTEN_IP=127.0.0.1
+OVERLEAF_PORT=8080

@@ -1,0 +1,8 @@
+# IIT Mandi LaTeX: copy to overleaf-toolkit/config/docker-compose.override.yml.
+# Build the image from this repository first, naming it to match below:
+#   cd server-ce && make build-base
+#   OVERLEAF_TAG=iitmandi/latex:CHANGE_ME make build-community
+---
+services:
+  sharelatex:
+    image: iitmandi/latex:CHANGE_ME
