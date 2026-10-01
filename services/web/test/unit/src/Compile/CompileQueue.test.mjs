@@ -14,6 +14,17 @@ function track(queue, request, started) {
   return promise
 }
 
+// Returns the reason a promise rejects with. (The unit test bootstrap loads
+// chai-as-promised, which replaces vitest's `expect(promise).rejects`.)
+async function rejectionOf(promise) {
+  try {
+    await promise
+  } catch (error) {
+    return error
+  }
+  throw new Error('expected the promise to reject')
+}
+
 async function flush() {
   await new Promise(resolve => setImmediate(resolve))
 }
@@ -145,7 +156,9 @@ describe('CompileQueue', function () {
 
     expect(queue.cancel('p1', 'a')).toBe(false)
     expect(queue.cancel('p2', 'b')).toBe(true)
-    await expect(b).rejects.toMatchObject({ reason: 'cancelled' })
+    const error = await rejectionOf(b)
+    expect(error).toBeInstanceOf(CompileQueueError)
+    expect(error.reason).toBe('cancelled')
     expect(queue.getStatus('p2', 'b').state).toBe('idle')
     expect(queue.getStatus('p1', 'a').state).toBe('running')
   })
@@ -161,8 +174,9 @@ describe('CompileQueue', function () {
     )
     await flush()
     controller.abort()
-    await expect(b).rejects.toBeInstanceOf(CompileQueueError)
-    await expect(b).rejects.toMatchObject({ reason: 'aborted' })
+    const error = await rejectionOf(b)
+    expect(error).toBeInstanceOf(CompileQueueError)
+    expect(error.reason).toBe('aborted')
     expect(queue.getStatus('p2', 'b').state).toBe('idle')
   })
 
@@ -170,9 +184,10 @@ describe('CompileQueue', function () {
     const queue = new CompileQueue({ slots: 1 })
     const controller = new AbortController()
     controller.abort()
-    await expect(
+    const error = await rejectionOf(
       queue.acquire({ userKey: 'a', projectId: 'p1', signal: controller.signal })
-    ).rejects.toMatchObject({ reason: 'aborted' })
+    )
+    expect(error.reason).toBe('aborted')
     expect(queue.getStatus('p1', 'a').waiting).toBe(0)
   })
 
@@ -182,7 +197,7 @@ describe('CompileQueue', function () {
     track(queue, { userKey: 'a', projectId: 'p1' }, started)
     const b = track(queue, { userKey: 'b', projectId: 'p2' }, started)
     vi.advanceTimersByTime(1000)
-    await expect(b).rejects.toMatchObject({ reason: 'timeout' })
+    expect((await rejectionOf(b)).reason).toBe('timeout')
     expect(queue.getStatus('p2', 'b').state).toBe('idle')
   })
 
