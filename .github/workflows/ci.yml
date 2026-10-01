@@ -17,13 +17,15 @@ permissions:
 jobs:
   branding:
     name: Branding and stylesheets
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
           node-version: 24
+          # dependencies are cached below; the automatic cache needs Corepack first
+          package-manager-cache: false
       - name: Locale strings use __appName__
         run: node tools/branding/rebrand-locales.mjs --check
       - name: Compile the main stylesheet
@@ -36,7 +38,7 @@ jobs:
 
   web:
     name: Web
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
       NODE_OPTIONS: --max-old-space-size=6144
@@ -45,6 +47,8 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 24
+          # dependencies are cached below; the automatic cache needs Corepack first
+          package-manager-cache: false
       - run: corepack enable
       - uses: actions/cache@v4
         with:
