@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Nightly backup of IIT Mandi LaTeX running on the Overleaf Toolkit.
+# Nightly backup of IIT Mandi LaTeX running on the Toolkit.
 #
 #  1. Flush edits that are still in Redis (document updater, project history)
 #     so that the database and history store are up to date.
 #  2. Dump MongoDB with --oplog, which makes the dump consistent at one point
 #     in time while the platform keeps running.
-#  3. Store the dump, the Overleaf data directory (without compile output and
+#  3. Store the dump, the app data directory (without compile output and
 #     caches), git-bridge data and the Toolkit config in an off-host restic
 #     repository (encrypted and deduplicated), then keep one snapshot per day
 #     for KEEP_DAILY days.
@@ -21,7 +21,7 @@ if [[ -f $CONFIG_FILE ]]; then
   source "$CONFIG_FILE"
 fi
 
-: "${TOOLKIT_DIR:=/opt/overleaf-toolkit}"
+: "${TOOLKIT_DIR:=/opt/iitmandi-latex/toolkit}"
 : "${STAGING_DIR:=/var/backups/iitmandi-latex}"
 : "${KEEP_DAILY:=7}"
 : "${APP_CONTAINER:=sharelatex}"
@@ -57,9 +57,9 @@ in_app() {
 command -v restic >/dev/null || fail "restic is not installed"
 command -v docker >/dev/null || fail "docker is not installed"
 
-OVERLEAF_DATA=$(toolkit_path OVERLEAF_DATA_PATH data/overleaf)
+APP_DATA=$(toolkit_path OVERLEAF_DATA_PATH data/overleaf)
 GIT_BRIDGE_DATA=$(toolkit_path GIT_BRIDGE_DATA_PATH data/git-bridge)
-[[ -d $OVERLEAF_DATA ]] || fail "Overleaf data directory $OVERLEAF_DATA not found"
+[[ -d $APP_DATA ]] || fail "app data directory $APP_DATA not found"
 
 mkdir -p "$STAGING_DIR"
 chmod 700 "$STAGING_DIR"
@@ -85,15 +85,15 @@ if ! docker exec "$MONGO_CONTAINER" mongodump --quiet --oplog --archive >"$dump"
 fi
 [[ -s $dump ]] || fail "MongoDB dump is empty"
 
-paths=("$dump" "$OVERLEAF_DATA" "$TOOLKIT_DIR/config")
+paths=("$dump" "$APP_DATA" "$TOOLKIT_DIR/config")
 [[ -d $GIT_BRIDGE_DATA ]] && paths+=("$GIT_BRIDGE_DATA")
 
 log "uploading to $RESTIC_REPOSITORY"
 restic backup --quiet --tag iitmandi-latex \
-  --exclude "$OVERLEAF_DATA/data/compiles" \
-  --exclude "$OVERLEAF_DATA/data/output" \
-  --exclude "$OVERLEAF_DATA/data/cache" \
-  --exclude "$OVERLEAF_DATA/tmp" \
+  --exclude "$APP_DATA/data/compiles" \
+  --exclude "$APP_DATA/data/output" \
+  --exclude "$APP_DATA/data/cache" \
+  --exclude "$APP_DATA/tmp" \
   "${paths[@]}"
 
 log "keeping the last $KEEP_DAILY daily snapshots"

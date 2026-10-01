@@ -3,7 +3,7 @@
 #
 #   restore.sh [SNAPSHOT] [--yes]     SNAPSHOT defaults to "latest"
 #
-# Stops the platform, replaces the Overleaf data directory, git-bridge data and
+# Stops the platform, replaces the app data directory, git-bridge data and
 # the MongoDB contents with the snapshot, empties Redis, and starts the platform
 # again. Compile output and caches are not in backups; they are rebuilt on the
 # next compile. Users have to log in again afterwards.
@@ -19,7 +19,7 @@ if [[ -f $CONFIG_FILE ]]; then
   source "$CONFIG_FILE"
 fi
 
-: "${TOOLKIT_DIR:=/opt/overleaf-toolkit}"
+: "${TOOLKIT_DIR:=/opt/iitmandi-latex/toolkit}"
 : "${STAGING_DIR:=/var/backups/iitmandi-latex}"
 : "${RESTORE_DIR:=$STAGING_DIR}"
 : "${MONGO_CONTAINER:=mongo}"
@@ -54,7 +54,7 @@ for arg in "$@"; do
 done
 
 [[ -f $TOOLKIT_DIR/config/overleaf.rc ]] || fail "no Toolkit config in $TOOLKIT_DIR/config"
-OVERLEAF_DATA=$(toolkit_path OVERLEAF_DATA_PATH data/overleaf)
+APP_DATA=$(toolkit_path OVERLEAF_DATA_PATH data/overleaf)
 GIT_BRIDGE_DATA=$(toolkit_path GIT_BRIDGE_DATA_PATH data/git-bridge)
 
 if [[ $snapshot == latest ]]; then
@@ -77,7 +77,7 @@ restic restore "$snapshot" --tag iitmandi-latex --target "$work"
 
 dump="$work$STAGING_DIR/mongo.archive"
 [[ -s $dump ]] || fail "the snapshot has no MongoDB dump at $STAGING_DIR/mongo.archive"
-[[ -d $work$OVERLEAF_DATA ]] || fail "the snapshot has no Overleaf data at $OVERLEAF_DATA"
+[[ -d $work$APP_DATA ]] || fail "the snapshot has no app data at $APP_DATA"
 
 log "stopping the platform"
 "$TOOLKIT_DIR/bin/stop"
@@ -86,7 +86,7 @@ log "restoring files"
 # Excluded paths were not backed up, so keep whatever is there
 rsync -a --delete \
   --exclude /data/compiles --exclude /data/output --exclude /data/cache --exclude /tmp \
-  "$work$OVERLEAF_DATA/" "$OVERLEAF_DATA/"
+  "$work$APP_DATA/" "$APP_DATA/"
 if [[ -d $work$GIT_BRIDGE_DATA ]]; then
   rsync -a --delete "$work$GIT_BRIDGE_DATA/" "$GIT_BRIDGE_DATA/"
 fi

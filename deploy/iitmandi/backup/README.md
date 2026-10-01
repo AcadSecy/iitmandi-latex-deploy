@@ -1,6 +1,6 @@
 # Backups
 
-Nightly, off-host, encrypted backups of IIT Mandi LaTeX with 7 days of retention, as required by the implementation plan. They run on the host that runs the Overleaf Toolkit, without stopping the platform.
+Nightly, off-host, encrypted backups of IIT Mandi LaTeX with 7 days of retention, as required by the implementation plan. They run on the host that runs the Toolkit, without stopping the platform.
 
 ## What is backed up
 
