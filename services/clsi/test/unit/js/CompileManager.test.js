@@ -45,6 +45,8 @@ describe('CompileManager', () => {
     ctx.LatexRunner = {
       promises: {
         runLatex: sinon.stub().resolves({}),
+        suspendLatex: sinon.stub().resolves(),
+        resumeLatex: sinon.stub().resolves(),
       },
     }
     ctx.ResourceWriter = {
@@ -138,6 +140,9 @@ describe('CompileManager', () => {
       rm: sinon.stub().resolves(),
       unlink: sinon.stub().resolves(),
       rmdir: sinon.stub().resolves(),
+      open: sinon
+        .stub()
+        .rejects(Object.assign(new Error('not found'), { code: 'ENOENT' })),
     }
     ctx.fsPromises.lstat.withArgs(ctx.compileDir).resolves(ctx.dirStats)
     ctx.fsPromises.stat
@@ -575,6 +580,68 @@ describe('CompileManager', () => {
       })
     })
 
+    describe('when the compile was stopped gracefully', () => {
+      beforeEach(async ctx => {
+        const error = new Error('timed out!')
+        error.timedout = true
+        error.stoppedCleanly = true
+        ctx.LatexRunner.promises.runLatex.rejects(error)
+        await expect(
+          ctx.CompileManager.promises.doCompileWithLock(ctx.request, {}, {})
+        ).to.be.rejected
+      })
+
+      it('should keep the compile directory for the next compile', ctx => {
+        expect(ctx.fsPromises.rmdir).not.to.have.been.calledWith(
+          ctx.compileDir
+        )
+        expect(ctx.fsPromises.unlink).not.to.have.been.calledWith(
+          ctx.compileDir + '/main.tex'
+        )
+      })
+    })
+
+    describe('when a stopped compile left a PDF', () => {
+      function pdfEnding(ctx, text) {
+        const tail = Buffer.from(text)
+        ctx.fsPromises.open.resolves({
+          stat: sinon.stub().resolves({ size: 5000 }),
+          read: sinon.stub().callsFake(({ buffer }) => {
+            tail.copy(buffer, buffer.length - tail.length)
+            return { buffer }
+          }),
+          close: sinon.stub().resolves(),
+        })
+      }
+
+      async function stopCompile(ctx) {
+        const error = new Error('terminated!')
+        error.terminated = true
+        error.stoppedCleanly = true
+        ctx.LatexRunner.promises.runLatex.rejects(error)
+        await expect(
+          ctx.CompileManager.promises.doCompileWithLock(ctx.request, {}, {})
+        ).to.be.rejected
+      }
+
+      it('keeps a finished PDF', async ctx => {
+        pdfEnding(ctx, 'startxref\n12345\n%%EOF\n')
+        await stopCompile(ctx)
+        expect(ctx.fsPromises.rm).not.to.have.been.calledWith(
+          ctx.compileDir + '/output.pdf'
+        )
+      })
+
+      it('removes a PDF that TeX did not finish', async ctx => {
+        pdfEnding(ctx, '/Length 42 >>\nstream\n')
+        await stopCompile(ctx)
+        expect(ctx.fsPromises.rm).to.have.been.calledWith(
+          ctx.compileDir + '/output.pdf',
+          { force: true }
+        )
+      })
+    })
+
     describe('with slow pngs from latexmk metrics', () => {
       beforeEach(ctx => {
         ctx.request.isCompileFromHistory = true
@@ -615,6 +682,25 @@ describe('CompileManager', () => {
           )
         ).to.be.fulfilled
       })
+    })
+  })
+
+  describe('suspendCompile and resumeCompile', () => {
+    it('pause and resume the running compile', async ctx => {
+      await ctx.CompileManager.promises.suspendCompile(
+        ctx.projectId,
+        ctx.userId
+      )
+      expect(ctx.LatexRunner.promises.suspendLatex).to.have.been.calledWith(
+        `${ctx.projectId}-${ctx.userId}`
+      )
+      await ctx.CompileManager.promises.resumeCompile(
+        ctx.projectId,
+        ctx.userId
+      )
+      expect(ctx.LatexRunner.promises.resumeLatex).to.have.been.calledWith(
+        `${ctx.projectId}-${ctx.userId}`
+      )
     })
   })
 

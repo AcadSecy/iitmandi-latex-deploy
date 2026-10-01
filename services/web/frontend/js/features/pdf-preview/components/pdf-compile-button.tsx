@@ -161,7 +161,11 @@ function PdfCompileButton() {
           className={buttonClassName}
           loadingLabel={
             queueStatus?.state === 'waiting'
-              ? `${t('compile_queued', { position: queueStatus.position })}…`
+              ? `${
+                  queueStatus.paused
+                    ? t('compile_paused', { position: queueStatus.position })
+                    : t('compile_queued', { position: queueStatus.position })
+                }…`
               : `${t('compiling')}…`
           }
         >

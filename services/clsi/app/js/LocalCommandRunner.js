@@ -16,6 +16,7 @@ import { promisify } from 'node:util'
 import Path from 'node:path'
 import _ from 'lodash'
 import logger from '@overleaf/logger'
+import GracefulStop from './GracefulStop.js'
 let CommandRunner
 
 logger.debug('using standard command runner')
@@ -23,7 +24,11 @@ logger.debug('using standard command runner')
 // Track PIDs that have been intentionally killed so that the close handler
 // can detect termination even when the child exits with a numeric code instead
 // of being reported as killed by a signal (e.g. exit code 4 from latexmk).
-const killedPids = new Set()
+// The value says whether the stop was graceful (see GracefulStop.js).
+const killedPids = new Map()
+
+// Directories of the running commands, by PID.
+const runningDirectories = new Map()
 
 export default CommandRunner = {
   run(
@@ -70,9 +75,11 @@ export default CommandRunner = {
 
     let stdout = ''
     proc.stdout.setEncoding('utf8').on('data', data => (stdout += data))
+    runningDirectories.set(proc.pid, directory)
 
     proc.on('error', function (err) {
       killedPids.delete(proc.pid)
+      runningDirectories.delete(proc.pid)
       logger.err(
         { err, projectId, command, directory },
         'error running command'
@@ -83,10 +90,14 @@ export default CommandRunner = {
     proc.on('close', function (code, signal) {
       let err
       logger.debug({ code, signal, projectId }, 'command exited')
-      const wasKilled = killedPids.delete(proc.pid)
+      const wasKilled = killedPids.has(proc.pid)
+      const stoppedCleanly = killedPids.get(proc.pid) === true
+      killedPids.delete(proc.pid)
+      runningDirectories.delete(proc.pid)
       if (signal === 'SIGTERM' || wasKilled) {
         err = new Error('terminated')
         err.terminated = true
+        err.stoppedCleanly = stoppedCleanly
         return callback(err)
       } else if (code === 1) {
         // exit status from chktex
@@ -101,18 +112,74 @@ export default CommandRunner = {
     return proc.pid
   }, // return process id to allow job to be killed if necessary
 
+  // Stops the command, letting TeX finish the PDF with the pages typeset so
+  // far (GracefulStop.js), then kills its process group.
   kill(pid, callback) {
     if (callback == null) {
       callback = function () {}
     }
+    if (killedPids.has(pid)) {
+      return callback()
+    }
+    killedPids.set(pid, false)
     try {
-      killedPids.add(pid)
-      process.kill(-pid) // kill all processes in group
+      // a paused command has to run to finish its files
+      process.kill(-pid, 'SIGCONT')
     } catch (err) {
       killedPids.delete(pid)
       return callback(err)
     }
-    return callback()
+    const graceMs = GracefulStop.gracePeriodMs()
+    const stopper = spawn('sh', ['-c', GracefulStop.STOP_SCRIPT], {
+      env: {
+        ...process.env,
+        STOP_PGID: String(pid),
+        STOP_DIR: runningDirectories.get(pid) || '.',
+        STOP_ROUNDS: String(GracefulStop.stopRounds(graceMs)),
+      },
+      stdio: 'ignore',
+    })
+    const killGroup = _.once(code => {
+      clearTimeout(timeoutId)
+      if (killedPids.has(pid)) {
+        killedPids.set(pid, code === GracefulStop.STOPPED_CLEANLY)
+      }
+      try {
+        process.kill(-pid, 'SIGKILL') // kill all processes in group
+      } catch (err) {
+        // the command has already exited
+      }
+      callback()
+    })
+    const timeoutId = setTimeout(() => {
+      stopper.kill('SIGKILL')
+      killGroup(null)
+    }, graceMs * 2 + 5000)
+    stopper.on('error', () => killGroup(null))
+    stopper.on('close', code => killGroup(code))
+  },
+
+  // Pauses or resumes all processes of a running command.
+  suspend(pid, callback) {
+    CommandRunner._signalGroup(pid, 'SIGSTOP', callback)
+  },
+
+  resume(pid, callback) {
+    CommandRunner._signalGroup(pid, 'SIGCONT', callback)
+  },
+
+  _signalGroup(pid, signal, callback) {
+    if (!runningDirectories.has(pid) || killedPids.has(pid)) {
+      const error = new Error('no running command')
+      error.name = 'NotFoundError'
+      return callback(error)
+    }
+    try {
+      process.kill(-pid, signal)
+    } catch (err) {
+      return callback(err)
+    }
+    callback()
   },
 
   canRunSyncTeXInOutputDir() {
@@ -123,4 +190,6 @@ export default CommandRunner = {
 CommandRunner.promises = {
   run: promisify(CommandRunner.run),
   kill: promisify(CommandRunner.kill),
+  suspend: promisify(CommandRunner.suspend),
+  resume: promisify(CommandRunner.resume),
 }

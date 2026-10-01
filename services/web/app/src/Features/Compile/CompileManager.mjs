@@ -143,6 +143,19 @@ async function _compileInSlot(projectId, userId, options) {
 
   // only pass userId down to clsi if this is a per-user compile
   const compileAsUser = Settings.disablePerUserCompiles ? undefined : userId
+
+  // While others wait, the queue may pause this compile between turns.
+  compileQueue.allowPausing(
+    projectId.toString(),
+    _compileQueueUserKey(projectId, userId),
+    {
+      budgetMs: limits.timeout * 1000,
+      suspend: () =>
+        ClsiManager.promises.suspendCompile(projectId, compileAsUser, limits),
+      resume: () =>
+        ClsiManager.promises.resumeCompile(projectId, compileAsUser, limits),
+    }
+  )
   const {
     status,
     outputFiles,
@@ -272,12 +285,10 @@ async function syncTeX(
 }
 
 async function stopCompile(projectId, userId) {
-  if (
-    compileQueue.cancel(
-      projectId.toString(),
-      _compileQueueUserKey(projectId, userId)
-    )
-  ) {
+  const userKey = _compileQueueUserKey(projectId, userId)
+  const cancelled = compileQueue.cancel(projectId.toString(), userKey)
+  // a paused compile is still running on the CLSI
+  if (cancelled && !compileQueue.hasActive(projectId.toString(), userKey)) {
     return
   }
 

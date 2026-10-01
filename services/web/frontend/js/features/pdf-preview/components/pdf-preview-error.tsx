@@ -299,6 +299,15 @@ function TimedOutLogEntry() {
       <ul>
         <li>
           <Trans
+            i18nKey="project_timed_out_cache_figures"
+            components={[
+              // eslint-disable-next-line jsx-a11y/anchor-has-content, react/jsx-key
+              <a href="/learn#compile-time" />,
+            ]}
+          />
+        </li>
+        <li>
+          <Trans
             i18nKey="project_timed_out_optimize_images"
             components={[
               // eslint-disable-next-line jsx-a11y/anchor-has-content, react/jsx-key

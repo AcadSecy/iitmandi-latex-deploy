@@ -864,9 +864,18 @@ module.exports = {
   // First-come-first-served compile queue: at most `slots` compiles run at
   // once and the rest wait for a free slot. 0 slots disables the queue.
   // Keep maxWait plus the compile timeout below nginx's proxy_read_timeout.
+  // With turnMs, a compile that has run that long while others wait is paused
+  // and resumes when a slot is free (0 never pauses). At most maxPaused
+  // compiles are paused at once (default: slots), and pausing never makes a
+  // request take longer than maxRequestMs, which must stay below
+  // proxy_read_timeout.
   compileQueue: {
     slots: intFromEnv('COMPILE_QUEUE_SLOTS', 0),
     maxWaitMs: intFromEnv('COMPILE_QUEUE_MAX_WAIT_SECONDS', 300) * 1000,
+    turnMs: intFromEnv('COMPILE_QUEUE_TURN_SECONDS', 0) * 1000,
+    maxPaused: intFromEnv('COMPILE_QUEUE_MAX_PAUSED', 0),
+    maxRequestMs:
+      intFromEnv('COMPILE_QUEUE_MAX_REQUEST_SECONDS', 540) * 1000,
   },
 
   // At most `limit` users can have the editor open at once; the others wait in

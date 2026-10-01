@@ -8,6 +8,9 @@ const MODULE_PATH = path.join(
   '../../../app/js/LatexRunner'
 )
 
+// latexmk runs with "X" (quit) queued on its stdin, see GracefulStop.js
+const ANSWER_QUIT_ON_STDIN = ['sh', '-c', 'printf "X\\n" | "$@"', 'latexmk']
+
 describe('LatexRunner', () => {
   beforeEach(async ctx => {
     ctx.Settings = {
@@ -93,6 +96,7 @@ describe('LatexRunner', () => {
         ctx.CommandRunner.run.should.have.been.calledWith(
           ctx.project_id,
           [
+            ...ANSWER_QUIT_ON_STDIN,
             'latexmk',
             '-cd',
             '-jobname=output',
@@ -152,6 +156,7 @@ describe('LatexRunner', () => {
 
       it('should set the appropriate latexmk flag', ctx => {
         ctx.CommandRunner.run.should.have.been.calledWith(ctx.project_id, [
+          ...ANSWER_QUIT_ON_STDIN,
           'latexmk',
           '-cd',
           '-jobname=output',
@@ -242,6 +247,7 @@ describe('LatexRunner', () => {
 
       it('should set the appropriate flags', ctx => {
         ctx.CommandRunner.run.should.have.been.calledWith(ctx.project_id, [
+          ...ANSWER_QUIT_ON_STDIN,
           'latexmk',
           '-cd',
           '-jobname=output',
@@ -330,6 +336,37 @@ describe('LatexRunner', () => {
           'latexmk-img-times': [],
         })
       })
+    })
+  })
+
+  describe('suspendLatex and resumeLatex', () => {
+    beforeEach(ctx => {
+      ctx.CommandRunner.run = sinon.stub().returns('container-name')
+      ctx.CommandRunner.suspend = sinon.stub().yields()
+      ctx.CommandRunner.resume = sinon.stub().yields()
+    })
+
+    it('pauses and resumes the running compile', async ctx => {
+      ctx.call(() => {})
+      await ctx.LatexRunner.promises.suspendLatex(ctx.project_id)
+      expect(ctx.CommandRunner.suspend).to.have.been.calledWith(
+        'container-name'
+      )
+      await ctx.LatexRunner.promises.resumeLatex(ctx.project_id)
+      expect(ctx.CommandRunner.resume).to.have.been.calledWith(
+        'container-name'
+      )
+    })
+
+    it('fails with NotFoundError when no compile is running', async ctx => {
+      let error
+      try {
+        await ctx.LatexRunner.promises.suspendLatex('another-project')
+      } catch (err) {
+        error = err
+      }
+      expect(error?.name).to.equal('NotFoundError')
+      expect(ctx.CommandRunner.suspend).not.to.have.been.called
     })
   })
 })

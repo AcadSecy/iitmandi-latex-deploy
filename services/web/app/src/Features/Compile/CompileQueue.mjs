@@ -8,6 +8,13 @@
  * - Requested compiles are served before auto-compiles, so auto-compiles only
  *   use capacity that nobody is waiting for. A waiting auto-compile can be
  *   promoted when the user asks for a compile.
+ * - Compiles take turns (`turnMs`). A compile that has run for a whole turn
+ *   while someone else waits is paused: its processes are frozen, its time
+ *   limit stops counting, and it goes to the back of the line until a slot is
+ *   free again. Long documents still finish, and nobody waits more than about
+ *   a turn behind them. When nobody waits, a compile simply keeps running.
+ *   A paused compile goes to the front of the line when it would otherwise
+ *   miss `maxRequestMs`, the time a compile request may take in total.
  *
  * The queue is held in memory. This is correct for Community Edition, where
  * every compile request goes through the single web process.
@@ -29,26 +36,51 @@ export class CompileQueueError extends Error {
  * @property {'idle' | 'waiting' | 'running'} state
  * @property {number | null} position 1-based place in line while waiting
  * @property {boolean} isAutoCompile
+ * @property {boolean} paused whether a compile that already ran is waiting for another turn
  * @property {number} slots
+ * @property {number} turnSeconds 0 when compiles are never paused
  * @property {number} running
  * @property {number} waiting
+ */
+
+/**
+ * @typedef {Object} PauseHandlers
+ * @property {() => Promise<void>} suspend pauses the running compile
+ * @property {() => Promise<void>} resume resumes it
+ * @property {number} budgetMs how long the compile may run, not counting pauses
  */
 
 export class CompileQueue {
   #slots
   #maxWaitMs
+  #turnMs
+  #maxPaused
+  #maxRequestMs
   #waiting = []
   #running = new Set()
   #runningUsers = new Set()
+  #pausedUsers = new Set()
 
   /**
    * @param {Object} options
    * @param {number} [options.slots] number of compiles that may run at once; 0 disables the queue
    * @param {number} [options.maxWaitMs] how long a request may wait for a slot
+   * @param {number} [options.turnMs] how long a compile may run while others wait; 0 never pauses compiles
+   * @param {number} [options.maxPaused] how many compiles may be paused at once (they keep their memory); defaults to `slots`
+   * @param {number} [options.maxRequestMs] how long a compile request may take in total, including waits and pauses
    */
-  constructor({ slots = 0, maxWaitMs = 5 * 60 * 1000 } = {}) {
+  constructor({
+    slots = 0,
+    maxWaitMs = 5 * 60 * 1000,
+    turnMs = 0,
+    maxPaused = 0,
+    maxRequestMs = 9 * 60 * 1000,
+  } = {}) {
     this.#slots = Number.isInteger(slots) && slots > 0 ? slots : 0
     this.#maxWaitMs = maxWaitMs
+    this.#turnMs = turnMs > 0 ? turnMs : 0
+    this.#maxPaused = maxPaused > 0 ? maxPaused : this.#slots
+    this.#maxRequestMs = maxRequestMs
   }
 
   get enabled() {
@@ -86,6 +118,15 @@ export class CompileQueue {
         signal,
         onAbort: null,
         timer: null,
+        deadline: Date.now() + this.#maxRequestMs,
+        released: false,
+        // taking turns
+        handlers: null,
+        turnStartedAt: 0,
+        activeMs: 0,
+        turnTimer: null,
+        pausing: false,
+        paused: false,
       }
       entry.timer = setTimeout(
         () => this.#leave(entry, 'timeout'),
@@ -102,17 +143,53 @@ export class CompileQueue {
   }
 
   /**
-   * Remove a user's waiting compiles for a project. Running compiles are not
-   * affected. Returns whether anything was removed.
+   * Let the queue pause the user's running compile while others wait.
+   *
+   * @param {string} projectId
+   * @param {string} userKey
+   * @param {PauseHandlers} handlers
+   */
+  allowPausing(projectId, userKey, handlers) {
+    if (!this.#turnMs) {
+      return
+    }
+    const entry = [...this.#running].find(
+      entry => entry.projectId === projectId && entry.userKey === userKey
+    )
+    if (!entry) {
+      return
+    }
+    entry.handlers = handlers
+    this.#startTurnTimer(entry)
+  }
+
+  /**
+   * Remove a user's waiting compiles for a project. Running and paused
+   * compiles are not affected. Returns whether anything was removed.
    */
   cancel(projectId, userKey) {
     const entries = this.#waiting.filter(
-      entry => entry.projectId === projectId && entry.userKey === userKey
+      entry =>
+        !entry.paused &&
+        entry.projectId === projectId &&
+        entry.userKey === userKey
     )
     for (const entry of entries) {
       this.#leave(entry, 'cancelled')
     }
     return entries.length > 0
+  }
+
+  /**
+   * Whether the user has a compile for the project that is running or paused.
+   */
+  hasActive(projectId, userKey) {
+    const isMine = entry =>
+      entry.projectId === projectId && entry.userKey === userKey
+    return (
+      [...this.#running].some(isMine) ||
+      this.#waiting.some(entry => entry.paused && isMine(entry))
+    )
   }
 
   /**
@@ -147,7 +224,9 @@ export class CompileQueue {
       state: 'idle',
       position: null,
       isAutoCompile: false,
+      paused: false,
       slots: this.#slots,
+      turnSeconds: Math.round(this.#turnMs / 1000),
       running: this.#running.size,
       waiting: this.#waiting.length,
     }
@@ -157,44 +236,160 @@ export class CompileQueue {
       status.state = 'waiting'
       status.position = index + 1
       status.isAutoCompile = line[index].isAutoCompile
+      status.paused = line[index].paused
     } else if ([...this.#running].some(isMine)) {
       status.state = 'running'
     }
     return status
   }
 
-  // Requested compiles in arrival order, then auto-compiles in arrival order.
+  // Paused compiles that would otherwise miss their deadline, then requested
+  // compiles in arrival order, then auto-compiles in arrival order. A paused
+  // compile rejoins the line when it is paused.
   #line() {
+    const now = Date.now()
+    const urgent = this.#waiting
+      .filter(entry => entry.paused && now >= this.#urgentAt(entry))
+      .sort((a, b) => this.#urgentAt(a) - this.#urgentAt(b))
+    const rest = this.#waiting.filter(entry => !urgent.includes(entry))
     return [
-      ...this.#waiting.filter(entry => !entry.isAutoCompile),
-      ...this.#waiting.filter(entry => entry.isAutoCompile),
+      ...urgent,
+      ...rest.filter(entry => !entry.isAutoCompile),
+      ...rest.filter(entry => entry.isAutoCompile),
     ]
+  }
+
+  // From this time a paused compile needs its next turn: it has to finish the
+  // rest of its time budget before the deadline, and waiting for a free slot
+  // takes up to a turn.
+  #urgentAt(entry, activeMs = entry.activeMs) {
+    const remainingMs = Math.max(0, (entry.handlers?.budgetMs ?? 0) - activeMs)
+    return entry.deadline - remainingMs - this.#turnMs
+  }
+
+  #canStart(entry) {
+    if (entry.paused) {
+      return true
+    }
+    return (
+      !this.#runningUsers.has(entry.userKey) &&
+      !this.#pausedUsers.has(entry.userKey)
+    )
   }
 
   #dispatch() {
     while (this.#running.size < this.#slots) {
-      const next = this.#line().find(
-        entry => !this.#runningUsers.has(entry.userKey)
-      )
+      const next = this.#line().find(entry => this.#canStart(entry))
       if (!next) {
-        return
+        break
       }
       this.#start(next)
     }
+    this.#pauseForWaiting()
+  }
+
+  // Pause compiles whose turn is over, one for each compile that could start.
+  #pauseForWaiting() {
+    if (!this.#turnMs) {
+      return
+    }
+    const now = Date.now()
+    const pausing = [...this.#running].filter(entry => entry.pausing).length
+    const paused = this.#waiting.filter(entry => entry.paused).length
+    let wanted =
+      this.#line().filter(entry => this.#canStart(entry)).length - pausing
+    let room = this.#maxPaused - paused - pausing
+    const candidates = [...this.#running]
+      .filter(entry => this.#mayPause(entry, now))
+      .sort((a, b) => a.turnStartedAt - b.turnStartedAt)
+    for (const entry of candidates) {
+      if (wanted <= 0 || room <= 0) {
+        return
+      }
+      wanted--
+      room--
+      this.#pause(entry)
+    }
+  }
+
+  #mayPause(entry, now) {
+    if (!entry.handlers || entry.pausing || entry.released) {
+      return false
+    }
+    const turnMs = now - entry.turnStartedAt
+    if (turnMs < this.#turnMs) {
+      return false
+    }
+    // Paused now, it must not need its next turn straight away.
+    return now + this.#turnMs <= this.#urgentAt(entry, entry.activeMs + turnMs)
+  }
+
+  #pause(entry) {
+    entry.pausing = true
+    clearTimeout(entry.turnTimer)
+    entry.handlers.suspend().then(
+      () => {
+        entry.pausing = false
+        if (entry.released || !this.#running.has(entry)) {
+          return
+        }
+        entry.activeMs += Date.now() - entry.turnStartedAt
+        this.#running.delete(entry)
+        this.#runningUsers.delete(entry.userKey)
+        entry.paused = true
+        this.#pausedUsers.add(entry.userKey)
+        this.#waiting.push(entry)
+        this.#dispatch()
+      },
+      () => {
+        // The compile has just finished, or cannot be paused: let it run.
+        entry.pausing = false
+        entry.handlers = null
+      }
+    )
+  }
+
+  #startTurnTimer(entry) {
+    clearTimeout(entry.turnTimer)
+    if (!this.#turnMs || !entry.handlers) {
+      return
+    }
+    const elapsed = Date.now() - entry.turnStartedAt
+    entry.turnTimer = setTimeout(
+      () => this.#dispatch(),
+      Math.max(0, this.#turnMs - elapsed)
+    )
+    entry.turnTimer.unref?.()
   }
 
   #start(entry) {
     this.#removeWaiting(entry)
     this.#running.add(entry)
     this.#runningUsers.add(entry.userKey)
-    let released = false
+    entry.turnStartedAt = Date.now()
+    if (entry.paused) {
+      entry.paused = false
+      this.#pausedUsers.delete(entry.userKey)
+      this.#startTurnTimer(entry)
+      entry.handlers.resume().catch(() => {
+        // The compile has ended while paused; its release follows.
+      })
+      return
+    }
     entry.resolve(() => {
-      if (released) {
+      if (entry.released) {
         return
       }
-      released = true
-      this.#running.delete(entry)
-      this.#runningUsers.delete(entry.userKey)
+      entry.released = true
+      clearTimeout(entry.turnTimer)
+      if (this.#running.has(entry)) {
+        this.#running.delete(entry)
+        this.#runningUsers.delete(entry.userKey)
+      } else if (entry.paused) {
+        this.#removeWaiting(entry)
+        this.#pausedUsers.delete(entry.userKey)
+        entry.paused = false
+      }
       this.#dispatch()
     })
   }

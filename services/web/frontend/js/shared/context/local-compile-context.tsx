@@ -527,6 +527,16 @@ export const LocalCompileProvider: FC<React.PropsWithChildren> = ({
         // set the PDF context
         if (data.status === 'success') {
           setPdfFile(handleOutputFiles(outputFiles, projectId, data))
+        } else if (
+          (data.status === 'timedout' || data.status === 'terminated') &&
+          outputFiles.has('output.pdf')
+        ) {
+          // A compile that hit the time limit or was stopped keeps the pages
+          // typeset before it stopped.
+          const partialPdf = handleOutputFiles(outputFiles, projectId, data)
+          if (partialPdf) {
+            setPdfFile({ ...partialPdf, partial: data.status })
+          }
         }
 
         setFileList(buildFileList(outputFiles, data))
@@ -670,12 +680,13 @@ export const LocalCompileProvider: FC<React.PropsWithChildren> = ({
     setPdfFile,
   ])
 
-  // switch to logs if there's an error
+  // switch to logs if there's an error, unless the compile left a PDF with
+  // the pages it typeset before it stopped (the PDF explains the error)
   useEffect(() => {
-    if (error) {
+    if (error && !pdfFile?.partial) {
       setShowLogs(true)
     }
-  }, [error])
+  }, [error, pdfFile])
 
   // whether there has been an autocompile linting error, if syntax validation is switched on
   const autoCompileLintingError = Boolean(

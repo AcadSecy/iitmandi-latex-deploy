@@ -8,6 +8,8 @@ import LockManager from './DockerLockManager.js'
 import Path from 'node:path'
 import _ from 'lodash'
 import { getLastProjectAccessTime } from './LastProjectAccess.js'
+import GracefulStop from './GracefulStop.js'
+import Errors from './Errors.js'
 
 const dockerode = new Docker()
 
@@ -16,6 +18,28 @@ logger.debug('using docker runner')
 
 let containerMonitorTimeout
 let containerMonitorInterval
+let pausedContainerSweepTimeout
+
+// Containers that are being waited for, by name: their time budget, whether
+// they are paused, and how they were stopped.
+const runningContainers = new Map()
+
+const { gracePeriodMs } = GracefulStop
+
+// A paused compile that is never resumed (for example because web restarted)
+// is stopped after this long.
+function maxPausedMs() {
+  return Settings.clsi?.docker?.maxPausedTime ?? 10 * 60 * 1000
+}
+
+// Calls a callback-style dockerode method and returns a promise.
+function dockerCall(object, method, ...args) {
+  return new Promise((resolve, reject) => {
+    object[method](...args, (error, result) =>
+      error ? reject(error) : resolve(result)
+    )
+  })
+}
 
 const DockerRunner = {
   run(
@@ -124,7 +148,17 @@ const DockerRunner = {
     return name
   },
 
+  // Stops a compile, keeping the pages that are already typeset when the
+  // container is one we are waiting for (see GracefulStop.js).
   kill(containerId, callback) {
+    if (runningContainers.has(containerId)) {
+      DockerRunner._stop(containerId).then(() => callback(), callback)
+      return
+    }
+    DockerRunner._kill(containerId, callback)
+  },
+
+  _kill(containerId, callback) {
     logger.debug({ containerId }, 'sending kill signal to container')
     const container = dockerode.getContainer(containerId)
     container.kill(error => {
@@ -184,7 +218,7 @@ const DockerRunner = {
           name,
           timeout,
           options,
-          (error, exitCode) => {
+          (error, exitCode, { stoppedCleanly = false } = {}) => {
             if (error != null) {
               return callback(error)
             }
@@ -192,6 +226,7 @@ const DockerRunner = {
               // exit status from kill -9
               const err = new Error('terminated')
               err.terminated = true
+              err.stoppedCleanly = stoppedCleanly
               return callback(err)
             }
             if (exitCode === 1) {
@@ -224,6 +259,7 @@ const DockerRunner = {
     cwd
   ) {
     const timeoutInSeconds = timeout / 1000
+    const gracePeriodSeconds = Math.ceil(gracePeriodMs() / 1000)
 
     for (const hostVol in volumes) {
       const dockerVol = volumes[hostVol]
@@ -261,11 +297,13 @@ const DockerRunner = {
           ([hostVol, dockerVol]) => `${hostVol}:${dockerVol}`
         ),
         LogConfig: { Type: 'none', Config: {} },
+        // CPU seconds per process. The margin covers the grace period in
+        // which a stopped engine finishes its PDF (SIGXCPU would kill it).
         Ulimits: [
           {
             Name: 'cpu',
-            Soft: timeoutInSeconds + 5,
-            Hard: timeoutInSeconds + 10,
+            Soft: timeoutInSeconds + gracePeriodSeconds + 5,
+            Hard: timeoutInSeconds + gracePeriodSeconds + 10,
           },
         ],
         CapDrop: ['ALL'],
@@ -443,19 +481,45 @@ const DockerRunner = {
     })
   },
 
+  // Waits for the container to exit. `timeout` is the time the command may
+  // run; time spent paused (see `suspend`) does not count.
   waitForContainer(containerId, timeout, options, _callback) {
     const callback = _.once(_callback)
 
     const container = dockerode.getContainer(containerId)
 
-    let timedOut = false
-    const timeoutId = setTimeout(() => {
-      timedOut = true
-      logger.debug({ containerId }, 'timeout reached, killing container')
-      container.kill(err => {
-        logger.warn({ err, containerId }, 'failed to kill container')
-      })
-    }, timeout)
+    const entry = {
+      timedOut: false,
+      paused: false,
+      stopping: null,
+      stoppedCleanly: false,
+      remainingMs: timeout,
+      runningSince: Date.now(),
+      timeoutId: null,
+      pausedTimeoutId: null,
+    }
+    entry.startTimer = () => {
+      entry.runningSince = Date.now()
+      entry.timeoutId = setTimeout(() => {
+        entry.timedOut = true
+        logger.debug({ containerId }, 'timeout reached, stopping container')
+        DockerRunner._stop(containerId)
+      }, entry.remainingMs)
+    }
+    entry.clearTimers = () => {
+      clearTimeout(entry.timeoutId)
+      clearTimeout(entry.pausedTimeoutId)
+    }
+    runningContainers.set(containerId, entry)
+    entry.startTimer()
+
+    const finish = (...args) => {
+      entry.clearTimers()
+      if (runningContainers.get(containerId) === entry) {
+        runningContainers.delete(containerId)
+      }
+      callback(...args)
+    }
 
     logger.debug({ containerId }, 'waiting for docker container')
     container.wait((error, res) => {
@@ -464,28 +528,166 @@ const DockerRunner = {
           { containerId },
           'auto-destroy container destroyed before starting to wait'
         )
-        clearTimeout(timeoutId)
-        return callback(null, 0)
+        return finish(null, 0)
       }
       if (error != null) {
-        clearTimeout(timeoutId)
         logger.warn({ err: error, containerId }, 'error waiting for container')
-        return callback(error)
+        return finish(error)
       }
-      if (timedOut) {
+      if (entry.timedOut) {
         logger.debug({ containerId }, 'docker container timed out')
         error = new Error('container timed out')
         error.timedout = true
-        callback(error)
+        error.stoppedCleanly = entry.stoppedCleanly
+        finish(error)
       } else {
-        clearTimeout(timeoutId)
         logger.debug(
           { containerId, exitCode: res.StatusCode },
           'docker container returned'
         )
-        callback(null, res.StatusCode)
+        finish(null, res.StatusCode, { stoppedCleanly: entry.stoppedCleanly })
       }
     })
+  },
+
+  // Stops a container we are waiting for: the TeX engines finish the PDF with
+  // the pages typeset so far (GracefulStop.js), then the container is killed.
+  // Records in the entry whether the files in the compile directory are
+  // complete. Repeated calls share the first stop.
+  _stop(containerId) {
+    const entry = runningContainers.get(containerId)
+    if (!entry) {
+      return dockerCall(DockerRunner, '_kill', containerId)
+    }
+    if (!entry.stopping) {
+      entry.stopping = (async () => {
+        entry.clearTimers()
+        const container = dockerode.getContainer(containerId)
+        try {
+          if (entry.paused) {
+            // a paused container can neither run a command nor be killed
+            await dockerCall(container, 'unpause')
+            entry.paused = false
+          }
+          entry.stoppedCleanly =
+            await DockerRunner._interruptCompile(container)
+        } catch (err) {
+          logger.warn({ err, containerId }, 'graceful stop failed')
+          entry.stoppedCleanly = false
+        }
+        await dockerCall(DockerRunner, '_kill', containerId).catch(err => {
+          logger.warn({ err, containerId }, 'failed to kill container')
+        })
+      })()
+    }
+    return entry.stopping
+  },
+
+  // Runs the stop script in the container. Resolves with whether everything
+  // in it finished cleanly.
+  async _interruptCompile(container) {
+    const graceMs = gracePeriodMs()
+    const exec = await dockerCall(container, 'exec', {
+      Cmd: ['sh', '-c', GracefulStop.STOP_SCRIPT],
+      Env: [`STOP_ROUNDS=${GracefulStop.stopRounds(graceMs)}`],
+      AttachStdout: true,
+      AttachStderr: true,
+    })
+    const stream = await dockerCall(exec, 'start', {})
+    let timeoutId
+    const ended = await Promise.race([
+      new Promise(resolve => {
+        stream.on('end', () => resolve(true))
+        stream.on('error', () => resolve(true))
+        stream.resume()
+      }),
+      // the xdv/dvi conversion after the grace period gets as long again
+      new Promise(resolve => {
+        timeoutId = setTimeout(() => resolve(false), graceMs * 2 + 5000)
+      }),
+    ])
+    clearTimeout(timeoutId)
+    if (!ended) {
+      return false
+    }
+    const { ExitCode } = await dockerCall(exec, 'inspect')
+    return ExitCode === GracefulStop.STOPPED_CLEANLY
+  },
+
+  // Pauses a running compile. Its processes are frozen and its time budget
+  // stops counting until it is resumed.
+  suspend(containerId, callback) {
+    const entry = runningContainers.get(containerId)
+    if (!entry || entry.stopping) {
+      return callback(new Errors.NotFoundError('no running compile'))
+    }
+    if (entry.paused) {
+      return callback()
+    }
+    const container = dockerode.getContainer(containerId)
+    container.pause(error => {
+      if (error) {
+        return callback(error)
+      }
+      clearTimeout(entry.timeoutId)
+      entry.remainingMs = Math.max(
+        0,
+        entry.remainingMs - (Date.now() - entry.runningSince)
+      )
+      entry.paused = true
+      entry.pausedTimeoutId = setTimeout(() => {
+        logger.warn({ containerId }, 'compile paused for too long, stopping')
+        entry.timedOut = true
+        DockerRunner._stop(containerId)
+      }, maxPausedMs())
+      logger.debug(
+        { containerId, remainingMs: entry.remainingMs },
+        'paused compile'
+      )
+      callback()
+    })
+  },
+
+  resume(containerId, callback) {
+    const entry = runningContainers.get(containerId)
+    if (!entry || entry.stopping) {
+      return callback(new Errors.NotFoundError('no running compile'))
+    }
+    if (!entry.paused) {
+      return callback()
+    }
+    const container = dockerode.getContainer(containerId)
+    container.unpause(error => {
+      if (error) {
+        return callback(error)
+      }
+      clearTimeout(entry.pausedTimeoutId)
+      entry.paused = false
+      entry.startTimer()
+      logger.debug({ containerId }, 'resumed compile')
+      callback()
+    })
+  },
+
+  // After a restart nobody will resume compiles that were paused, so stop them.
+  killPausedContainers(callback) {
+    dockerode.listContainers(
+      { filters: { status: ['paused'] } },
+      (error, containers) => {
+        if (error) {
+          return callback(error)
+        }
+        const jobs = (containers || [])
+          .filter(container =>
+            (container.Names || []).some(name => name.startsWith('/project-'))
+          )
+          .map(({ Id }) => cb => {
+            const container = dockerode.getContainer(Id)
+            container.unpause(() => container.kill(() => cb()))
+          })
+        async.series(jobs, callback)
+      }
+    )
   },
 
   destroyContainer(containerName, containerId, shouldForce, callback) {
@@ -590,6 +792,14 @@ const DockerRunner = {
     // guarantee only one monitor is running
     DockerRunner.stopContainerMonitor()
 
+    pausedContainerSweepTimeout = setTimeout(() => {
+      DockerRunner.killPausedContainers(err => {
+        if (err) {
+          logger.error({ err }, 'failed to stop paused containers')
+        }
+      })
+    }, 10 * 1000)
+
     // randomise the start time
     const randomDelay = Math.floor(Math.random() * 5 * 60 * 1000)
     containerMonitorTimeout = setTimeout(() => {
@@ -606,6 +816,10 @@ const DockerRunner = {
   },
 
   stopContainerMonitor() {
+    if (pausedContainerSweepTimeout) {
+      clearTimeout(pausedContainerSweepTimeout)
+      pausedContainerSweepTimeout = undefined
+    }
     if (containerMonitorTimeout) {
       clearTimeout(containerMonitorTimeout)
       containerMonitorTimeout = undefined
@@ -626,5 +840,7 @@ DockerRunner.startContainerMonitor()
 DockerRunner.promises = {
   run: promisify(DockerRunner.run),
   kill: promisify(DockerRunner.kill),
+  suspend: promisify(DockerRunner.suspend),
+  resume: promisify(DockerRunner.resume),
 }
 export default DockerRunner

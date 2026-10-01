@@ -5,6 +5,7 @@ import logger from '@overleaf/logger'
 import CommandRunner from './CommandRunner.js'
 import LatexMetrics from './LatexMetrics.js'
 import fs from 'node:fs'
+import Errors from './Errors.js'
 
 const { addLatexMkMetrics } = LatexMetrics
 
@@ -161,8 +162,31 @@ function killLatex(projectId, callback) {
   }
 }
 
+// latexmk's stdin holds the answer "X" (quit) for the prompt that an
+// interrupted TeX engine shows, so that a stopped compile still finishes the
+// PDF with the pages typeset so far (see GracefulStop.js).
+const ANSWER_QUIT_ON_STDIN = ['sh', '-c', 'printf "X\\n" | "$@"', 'latexmk']
+
+// Pauses or resumes a running compile (see CompileManager.suspendCompile).
+function suspendLatex(projectId, callback) {
+  _signalRunningCompile('suspend', projectId, callback)
+}
+
+function resumeLatex(projectId, callback) {
+  _signalRunningCompile('resume', projectId, callback)
+}
+
+function _signalRunningCompile(action, projectId, callback) {
+  const id = `${projectId}`
+  if (!isRunning(projectId)) {
+    return callback(new Errors.NotFoundError('no running compile'))
+  }
+  logger.debug({ id }, `${action} running compile`)
+  CommandRunner[action](ProcessTable[id], callback)
+}
+
 function _buildLatexCommand(mainFile, opts = {}) {
-  const command = []
+  const command = [...ANSWER_QUIT_ON_STDIN]
 
   if (Settings.clsi?.strace) {
     command.push('strace', '-o', 'strace', '-ff')
@@ -217,8 +241,12 @@ export default {
   isRunning,
   runLatex,
   killLatex,
+  suspendLatex,
+  resumeLatex,
   promises: {
     runLatex: promisify(runLatex),
     killLatex: promisify(killLatex),
+    suspendLatex: promisify(suspendLatex),
+    resumeLatex: promisify(resumeLatex),
   },
 }

@@ -226,6 +226,32 @@ function stopCompile(req, res, next) {
   })
 }
 
+// Pause or resume a running compile, so that the web compile queue can give
+// its CPU to someone waiting. 404 when no compile is running.
+function suspendCompile(req, res, next) {
+  _pauseOrResume(CompileManager.suspendCompile, req, res, next)
+}
+
+function resumeCompile(req, res, next) {
+  _pauseOrResume(CompileManager.resumeCompile, req, res, next)
+}
+
+function _pauseOrResume(action, req, res, next) {
+  const { params } = parseReq(req, projectOrUserOnlyParamsSchema, {
+    logOnly: true,
+  })
+  const { project_id: projectId, user_id: userId } = params
+  action(projectId, userId, function (error) {
+    if (error?.name === 'NotFoundError') {
+      return res.sendStatus(404)
+    }
+    if (error) {
+      return next(error)
+    }
+    res.sendStatus(204)
+  })
+}
+
 function clearCache(req, res, next) {
   const { params } = parseReq(req, projectOrUserOnlyParamsSchema, {
     logOnly: true,
@@ -481,6 +507,8 @@ function status(req, res, next) {
 export default {
   compile,
   stopCompile,
+  suspendCompile,
+  resumeCompile,
   clearCache,
   syncFromCode,
   syncFromPdf,

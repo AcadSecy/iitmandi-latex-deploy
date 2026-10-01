@@ -230,6 +230,31 @@ async function stopCompile(projectId, userId, options) {
   )
 }
 
+// Pause a running compile so that its slot can go to someone waiting, or
+// resume it. Fails when the compile is no longer running.
+async function suspendCompile(projectId, userId, options = {}) {
+  await _postCompileAction(projectId, userId, options, 'compile/suspend')
+}
+
+async function resumeCompile(projectId, userId, options = {}) {
+  await _postCompileAction(projectId, userId, options, 'compile/resume')
+}
+
+async function _postCompileAction(projectId, userId, options, action) {
+  const { compileBackendClass, compileGroup } = options
+  const url = _getCompilerUrl(
+    compileBackendClass,
+    compileGroup,
+    projectId,
+    userId,
+    action
+  )
+  await _makeRequest(projectId, userId, compileGroup, compileBackendClass, url, {
+    method: 'POST',
+    signal: AbortSignal.timeout(30 * 1000),
+  })
+}
+
 /**
  * @param {PromiseSettledResult} result
  * @private
@@ -1423,6 +1448,8 @@ export default {
     'outputUrlPrefix',
   ]),
   stopCompile: callbackify(stopCompile),
+  suspendCompile: callbackify(suspendCompile),
+  resumeCompile: callbackify(resumeCompile),
   deleteAuxFiles: callbackify(deleteAuxFiles),
   getOutputFileStream: callbackify(getOutputFileStream),
   wordCount: callbackify(wordCount),
@@ -1433,6 +1460,8 @@ export default {
     sendRequest,
     sendExternalRequest,
     stopCompile,
+    suspendCompile,
+    resumeCompile,
     deleteAuxFiles,
     getOutputFileStream,
     wordCount,

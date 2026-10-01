@@ -2,6 +2,7 @@ import { vi, expect, describe, beforeEach, afterEach, it } from 'vitest'
 
 import sinon from 'sinon'
 import Path from 'node:path'
+import { EventEmitter } from 'node:events'
 
 const modulePath = Path.join(
   import.meta.dirname,
@@ -1145,6 +1146,158 @@ describe('DockerRunner', () => {
           })
         })
       })
+    })
+  })
+
+  describe('stopping a compile', () => {
+    beforeEach(ctx => {
+      ctx.containerId = 'container-id'
+      ctx.Settings.clsi.gracefulStopTimeout = 1000
+      ctx.exitCode = 0
+      ctx.exec = {
+        start: sinon.stub().callsFake((options, callback) => {
+          const stream = new EventEmitter()
+          stream.resume = () => setImmediate(() => stream.emit('end'))
+          callback(null, stream)
+        }),
+        inspect: sinon
+          .stub()
+          .callsFake(callback => callback(null, { ExitCode: ctx.exitCode })),
+      }
+      ctx.container.exec = sinon.stub().yields(null, ctx.exec)
+      ctx.container.pause = sinon.stub().yields()
+      ctx.container.unpause = sinon.stub().yields()
+      // the container exits once it is killed
+      ctx.container.wait = callback => {
+        ctx.containerExits = () => callback(null, { StatusCode: 137 })
+      }
+      ctx.container.kill = sinon.stub().callsFake(callback => {
+        if (ctx.containerExits) {
+          setImmediate(ctx.containerExits)
+        }
+        callback()
+      })
+      ctx.waitForContainer = timeout =>
+        new Promise(resolve => {
+          ctx.DockerRunner.waitForContainer(
+            ctx.containerId,
+            timeout,
+            {},
+            (...args) => resolve(args)
+          )
+        })
+    })
+
+    describe('when the time is up', () => {
+      it('lets TeX finish the PDF before killing the container', async ctx => {
+        const [error] = await ctx.waitForContainer(5)
+        expect(ctx.container.exec).to.have.been.calledWithMatch({
+          Cmd: ['sh', '-c', sinon.match(/kill -INT/)],
+        })
+        expect(ctx.container.exec.calledBefore(ctx.container.kill)).to.equal(
+          true
+        )
+        expect(ctx.container.kill).to.have.been.calledOnce
+        expect(error.timedout).to.equal(true)
+        expect(error.stoppedCleanly).to.equal(true)
+      })
+
+      it('reports when the files may be incomplete', async ctx => {
+        ctx.exitCode = 3
+        const [error] = await ctx.waitForContainer(5)
+        expect(error.timedout).to.equal(true)
+        expect(error.stoppedCleanly).to.equal(false)
+      })
+
+      it('still kills the container when the stop script fails', async ctx => {
+        ctx.container.exec = sinon.stub().yields(new Error('exec failed'))
+        const [error] = await ctx.waitForContainer(5)
+        expect(ctx.container.kill).to.have.been.calledOnce
+        expect(error.timedout).to.equal(true)
+        expect(error.stoppedCleanly).to.equal(false)
+      })
+    })
+
+    describe('when the user stops the compile', () => {
+      it('stops it gracefully', async ctx => {
+        const waiting = ctx.waitForContainer(60_000)
+        await ctx.DockerRunner.promises.kill(ctx.containerId)
+        const [error, exitCode, info] = await waiting
+        expect(error).not.to.exist
+        expect(exitCode).to.equal(137)
+        expect(info.stoppedCleanly).to.equal(true)
+        expect(ctx.container.exec).to.have.been.calledOnce
+      })
+
+      it('kills a container it is not waiting for', async ctx => {
+        await ctx.DockerRunner.promises.kill('another-container')
+        expect(ctx.container.exec).not.to.have.been.called
+        expect(ctx.container.kill).to.have.been.calledOnce
+      })
+    })
+
+    describe('suspend and resume', () => {
+      it('does not count the time a compile is paused', async ctx => {
+        const waiting = ctx.waitForContainer(40)
+        await ctx.DockerRunner.promises.suspend(ctx.containerId)
+        expect(ctx.container.pause).to.have.been.calledOnce
+        await new Promise(resolve => setTimeout(resolve, 80))
+        expect(ctx.container.kill).not.to.have.been.called
+
+        await ctx.DockerRunner.promises.resume(ctx.containerId)
+        expect(ctx.container.unpause).to.have.been.calledOnce
+        const [error] = await waiting
+        expect(error.timedout).to.equal(true)
+        expect(ctx.container.kill).to.have.been.calledOnce
+      })
+
+      it('resumes a paused compile before stopping it', async ctx => {
+        const waiting = ctx.waitForContainer(60_000)
+        await ctx.DockerRunner.promises.suspend(ctx.containerId)
+        await ctx.DockerRunner.promises.kill(ctx.containerId)
+        await waiting
+        expect(ctx.container.unpause.calledBefore(ctx.container.exec)).to.equal(
+          true
+        )
+      })
+
+      it('stops a compile that stays paused for too long', async ctx => {
+        ctx.Settings.clsi.docker.maxPausedTime = 20
+        const waiting = ctx.waitForContainer(60_000)
+        await ctx.DockerRunner.promises.suspend(ctx.containerId)
+        const [error] = await waiting
+        expect(error.timedout).to.equal(true)
+        expect(ctx.container.unpause).to.have.been.calledOnce
+      })
+
+      it('fails for a container that is not running', async ctx => {
+        let error
+        try {
+          await ctx.DockerRunner.promises.suspend('another-container')
+        } catch (err) {
+          error = err
+        }
+        expect(error?.name).to.equal('NotFoundError')
+        expect(ctx.container.pause).not.to.have.been.called
+      })
+    })
+  })
+
+  describe('killPausedContainers', () => {
+    it('stops paused compile containers', async ctx => {
+      ctx.listContainers.callsArgWith(1, null, [
+        { Id: 'paused-compile', Names: ['/project-abc-123'] },
+        { Id: 'something-else', Names: ['/other'] },
+      ])
+      ctx.container.unpause = sinon.stub().yields()
+      ctx.container.kill = sinon.stub().yields()
+      await new Promise(resolve => ctx.DockerRunner.killPausedContainers(resolve))
+      expect(ctx.listContainers).to.have.been.calledWith({
+        filters: { status: ['paused'] },
+      })
+      expect(ctx.getContainer).to.have.been.calledWith('paused-compile')
+      expect(ctx.getContainer).not.to.have.been.calledWith('something-else')
+      expect(ctx.container.kill).to.have.been.calledOnce
     })
   })
 })

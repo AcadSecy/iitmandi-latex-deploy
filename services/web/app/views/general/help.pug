@@ -41,9 +41,40 @@ block content
 							|
 							| in the Recompile menu.
 						li
-							| Every compile has a time limit. Large images are the most common cause of slow compiles: scale them down to the size at which they are printed.
-						li
 							| When many people compile at the same time, your compile waits for a free slot and starts on its own.
+
+					h2.h3#compile-time Long documents and compile time
+					ul
+						li
+							| Every compile has a time limit.
+							if settings.compileQueue && settings.compileQueue.turnMs
+								|
+								| While others are waiting, a long compile pauses every #{Math.round(settings.compileQueue.turnMs / 1000)} seconds and carries on when a slot is free, so a thesis still compiles when the server is busy. Time spent paused does not count towards the limit.
+						li
+							| When a compile reaches its limit, or you stop it, the PDF shows the pages typeset up to that point. The next compile reuses the files it left behind, so it is usually faster.
+						li
+							| LaTeX typesets the whole document in every compile, but it does not have to draw every picture again. Load
+							|
+							code \usepackage[extract=tex]{memoize}
+							|
+							| before TikZ or pgfplots: each picture is then drawn once and reused until you change it. In our test, a document with eight plots went from 78 seconds for the first compile to 3 seconds for the next ones.
+						li
+							| For a thesis, put each chapter in its own file and load it with
+							|
+							code \include{chapter3}
+							| . While you work on one chapter, add
+							|
+							code \includeonly{chapter3}
+							|
+							| to the preamble: only that chapter is typeset, and its page numbers and references to other chapters stay correct.
+						li
+							| The
+							|
+							strong Fast [draft]
+							|
+							| compile mode in the Recompile menu leaves out images while you write.
+						li
+							| Large images slow every compile down: scale them to the size at which they are printed.
 
 					h2.h3 Sharing and collaborating
 					ul

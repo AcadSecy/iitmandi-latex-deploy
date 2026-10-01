@@ -251,6 +251,12 @@ async function doCompile(request, stats, timings) {
       error.validate = 'fail'
     }
 
+    // A stopped compile keeps the PDF of the pages typeset so far, unless the
+    // engine was killed before it could finish the file.
+    if (error.terminated || error.timedout) {
+      await _removeUnfinishedPdf(compileDir)
+    }
+
     const { outputFiles, allEntries, buildId } = await _saveOutputFiles({
       request,
       compileDir,
@@ -260,8 +266,10 @@ async function doCompile(request, stats, timings) {
     })
     error.outputFiles = outputFiles // return output files so user can check logs
     error.buildId = buildId
-    // Clear project if this compile was abruptly terminated
-    if (error.terminated || error.timedout) {
+    // Clear project if this compile was abruptly terminated. After a graceful
+    // stop every file is complete, so the next compile can reuse the .aux,
+    // .bbl and cached figures instead of starting from scratch.
+    if ((error.terminated || error.timedout) && !error.stoppedCleanly) {
       await clearProjectWithListing(
         request.project_id,
         request.user_id,
@@ -367,6 +375,33 @@ async function doCompile(request, stats, timings) {
   return { outputFiles, buildId, baseHistoryVersion }
 }
 
+// A PDF ends with "%%EOF" once TeX has written its cross-reference table.
+// Without it no viewer can open the file.
+async function _removeUnfinishedPdf(compileDir) {
+  const pdfPath = Path.join(compileDir, 'output.pdf')
+  let handle
+  try {
+    handle = await fsPromises.open(pdfPath, 'r')
+    const { size } = await handle.stat()
+    const length = Math.min(size, 1024)
+    const { buffer } = await handle.read({
+      buffer: Buffer.alloc(length),
+      position: size - length,
+    })
+    if (buffer.includes('%%EOF')) {
+      return
+    }
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      return
+    }
+    logger.warn({ err, pdfPath }, 'cannot check the PDF of a stopped compile')
+  } finally {
+    await handle?.close()
+  }
+  await fsPromises.rm(pdfPath, { force: true })
+}
+
 async function _saveOutputFiles({
   request,
   compileDir,
@@ -420,6 +455,16 @@ async function stopCompile(projectId, userId) {
   }
   await LatexRunner.promises.killLatex(compileName)
   await lockReleased
+}
+
+// Pauses a running compile, which keeps its processes but frees the CPU, or
+// resumes it. Throws NotFoundError when no compile is running.
+async function suspendCompile(projectId, userId) {
+  await LatexRunner.promises.suspendLatex(getCompileName(projectId, userId))
+}
+
+async function resumeCompile(projectId, userId) {
+  await LatexRunner.promises.resumeLatex(getCompileName(projectId, userId))
 }
 
 async function clearProject(projectId, userId) {
@@ -998,6 +1043,8 @@ function _emitMetrics(request, status, stats, timings) {
 export default {
   doCompileWithLock: callbackify(doCompileWithLock),
   stopCompile: callbackify(stopCompile),
+  suspendCompile: callbackify(suspendCompile),
+  resumeCompile: callbackify(resumeCompile),
   clearProject: callbackify(clearProject),
   clearExpiredProjects: callbackify(clearExpiredProjects),
   syncFromCode: callbackifyMultiResult(syncFromCode, [
@@ -1012,6 +1059,8 @@ export default {
   promises: {
     doCompileWithLock,
     stopCompile,
+    suspendCompile,
+    resumeCompile,
     clearProject,
     clearExpiredProjects,
     syncFromCode,

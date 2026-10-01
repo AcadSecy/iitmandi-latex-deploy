@@ -9,7 +9,8 @@
   --pdf-bg: var(--neutral-10);
 }
 
-.pdf-code-check-failed-banner-container {
+.pdf-code-check-failed-banner-container,
+.pdf-partial-banner-container {
   position: absolute;
   top: calc(var(--toolbar-small-height) + var(--spacing-04));
   left: 0;
@@ -20,7 +21,8 @@
   padding: 0 var(--spacing-06);
 }
 
-.pdf-code-check-failed-banner {
+.pdf-code-check-failed-banner,
+.pdf-partial-banner {
   display: flex;
   align-items: center;
   gap: var(--spacing-02);

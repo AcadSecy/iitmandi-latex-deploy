@@ -52,6 +52,11 @@ app.post(
   CompileController.compile
 )
 app.post('/project/:project_id/compile/stop', CompileController.stopCompile)
+app.post(
+  '/project/:project_id/compile/suspend',
+  CompileController.suspendCompile
+)
+app.post('/project/:project_id/compile/resume', CompileController.resumeCompile)
 app.delete('/project/:project_id', CompileController.clearCache)
 
 app.get('/project/:project_id/sync/code', CompileController.syncFromCode)
@@ -74,6 +79,14 @@ app.post(
 app.post(
   '/project/:project_id/user/:user_id/compile/stop',
   CompileController.stopCompile
+)
+app.post(
+  '/project/:project_id/user/:user_id/compile/suspend',
+  CompileController.suspendCompile
+)
+app.post(
+  '/project/:project_id/user/:user_id/compile/resume',
+  CompileController.resumeCompile
 )
 app.delete('/project/:project_id/user/:user_id', CompileController.clearCache)
 

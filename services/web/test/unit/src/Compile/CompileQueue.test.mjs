@@ -211,4 +211,178 @@ describe('CompileQueue', function () {
     release()
     expect(queue.getStatus('p1', 'a').state).toBe('idle')
   })
+
+  describe('taking turns', function () {
+    function pauseHandlers(budgetMs = 60_000) {
+      return {
+        budgetMs,
+        suspend: vi.fn().mockResolvedValue(),
+        resume: vi.fn().mockResolvedValue(),
+      }
+    }
+
+    it('pauses a compile after its turn while someone waits, and resumes it later', async function () {
+      vi.useFakeTimers()
+      const queue = new CompileQueue({ slots: 1, turnMs: 1000 })
+      const releaseA = await queue.acquire({ userKey: 'a', projectId: 'p1' })
+      const handlers = pauseHandlers()
+      queue.allowPausing('p1', 'a', handlers)
+      const b = track(queue, { userKey: 'b', projectId: 'p2' }, started)
+
+      await vi.advanceTimersByTimeAsync(999)
+      expect(handlers.suspend).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(1)
+      expect(handlers.suspend).toHaveBeenCalledOnce()
+      expect(started).toEqual(['b/p2'])
+      expect(queue.getStatus('p1', 'a')).toMatchObject({
+        state: 'waiting',
+        paused: true,
+        position: 1,
+      })
+      expect(queue.hasActive('p1', 'a')).toBe(true)
+
+      const releaseB = await b
+      releaseB()
+      await vi.advanceTimersByTimeAsync(0)
+      expect(handlers.resume).toHaveBeenCalledOnce()
+      expect(queue.getStatus('p1', 'a').state).toBe('running')
+
+      releaseA()
+      expect(queue.getStatus('p1', 'a').state).toBe('idle')
+      expect(queue.hasActive('p1', 'a')).toBe(false)
+    })
+
+    it('lets a compile run on while nobody waits', async function () {
+      vi.useFakeTimers()
+      const queue = new CompileQueue({ slots: 1, turnMs: 1000 })
+      await queue.acquire({ userKey: 'a', projectId: 'p1' })
+      const handlers = pauseHandlers()
+      queue.allowPausing('p1', 'a', handlers)
+      await vi.advanceTimersByTimeAsync(5000)
+      expect(handlers.suspend).not.toHaveBeenCalled()
+
+      // someone arrives after the turn is over
+      track(queue, { userKey: 'b', projectId: 'p2' }, started)
+      await vi.advanceTimersByTimeAsync(0)
+      expect(handlers.suspend).toHaveBeenCalledOnce()
+      expect(started).toEqual(['b/p2'])
+    })
+
+    it('never pauses compiles when turns are off', async function () {
+      vi.useFakeTimers()
+      const queue = new CompileQueue({ slots: 1 })
+      await queue.acquire({ userKey: 'a', projectId: 'p1' })
+      const handlers = pauseHandlers()
+      queue.allowPausing('p1', 'a', handlers)
+      track(queue, { userKey: 'b', projectId: 'p2' }, started)
+      await vi.advanceTimersByTimeAsync(60_000)
+      expect(handlers.suspend).not.toHaveBeenCalled()
+      expect(queue.getStatus('p2', 'b').state).toBe('waiting')
+    })
+
+    it('lets a compile run on when it cannot be paused', async function () {
+      vi.useFakeTimers()
+      const queue = new CompileQueue({ slots: 1, turnMs: 1000 })
+      await queue.acquire({ userKey: 'a', projectId: 'p1' })
+      const handlers = pauseHandlers()
+      handlers.suspend.mockRejectedValue(new Error('not running'))
+      queue.allowPausing('p1', 'a', handlers)
+      track(queue, { userKey: 'b', projectId: 'p2' }, started)
+      await vi.advanceTimersByTimeAsync(5000)
+      expect(handlers.suspend).toHaveBeenCalledOnce()
+      expect(queue.getStatus('p1', 'a').state).toBe('running')
+      expect(started).toEqual([])
+    })
+
+    it('does not pause a compile that could then miss its deadline', async function () {
+      vi.useFakeTimers()
+      const queue = new CompileQueue({
+        slots: 1,
+        turnMs: 1000,
+        maxRequestMs: 4000,
+      })
+      await queue.acquire({ userKey: 'a', projectId: 'p1' })
+      const handlers = pauseHandlers(3000)
+      queue.allowPausing('p1', 'a', handlers)
+      track(queue, { userKey: 'b', projectId: 'p2' }, started)
+      await vi.advanceTimersByTimeAsync(3000)
+      expect(handlers.suspend).not.toHaveBeenCalled()
+    })
+
+    it('resumes a paused compile first when it would otherwise miss its deadline', async function () {
+      vi.useFakeTimers()
+      const queue = new CompileQueue({
+        slots: 1,
+        turnMs: 1000,
+        maxRequestMs: 10_000,
+      })
+      await queue.acquire({ userKey: 'a', projectId: 'p1' })
+      const handlers = pauseHandlers(3000)
+      queue.allowPausing('p1', 'a', handlers)
+      const b = track(queue, { userKey: 'b', projectId: 'p2' }, started)
+      track(queue, { userKey: 'c', projectId: 'p3' }, started)
+
+      await vi.advanceTimersByTimeAsync(1000)
+      expect(handlers.suspend).toHaveBeenCalledOnce()
+      expect(queue.getStatus('p1', 'a').position).toBe(2)
+
+      // a needs 2 s more and the request ends at 10 s: from 7 s it goes first
+      await vi.advanceTimersByTimeAsync(6000)
+      expect(queue.getStatus('p1', 'a').position).toBe(1)
+      const releaseB = await b
+      releaseB()
+      await vi.advanceTimersByTimeAsync(0)
+      expect(handlers.resume).toHaveBeenCalledOnce()
+      expect(started).toEqual(['b/p2'])
+    })
+
+    it('pauses at most maxPaused compiles', async function () {
+      vi.useFakeTimers()
+      const queue = new CompileQueue({ slots: 2, turnMs: 1000, maxPaused: 1 })
+      await queue.acquire({ userKey: 'a', projectId: 'p1' })
+      await queue.acquire({ userKey: 'b', projectId: 'p2' })
+      const handlersA = pauseHandlers()
+      const handlersB = pauseHandlers()
+      queue.allowPausing('p1', 'a', handlersA)
+      queue.allowPausing('p2', 'b', handlersB)
+      track(queue, { userKey: 'c', projectId: 'p3' }, started)
+      track(queue, { userKey: 'd', projectId: 'p4' }, started)
+      await vi.advanceTimersByTimeAsync(1000)
+      expect(
+        handlersA.suspend.mock.calls.length +
+          handlersB.suspend.mock.calls.length
+      ).toBe(1)
+      expect(started).toEqual(['c/p3'])
+    })
+
+    it('keeps a paused compile when its user cancels other requests', async function () {
+      vi.useFakeTimers()
+      const queue = new CompileQueue({ slots: 1, turnMs: 1000 })
+      await queue.acquire({ userKey: 'a', projectId: 'p1' })
+      queue.allowPausing('p1', 'a', pauseHandlers())
+      track(queue, { userKey: 'b', projectId: 'p2' }, started)
+      await vi.advanceTimersByTimeAsync(1000)
+      expect(queue.getStatus('p1', 'a').paused).toBe(true)
+
+      expect(queue.cancel('p1', 'a')).toBe(false)
+      expect(queue.hasActive('p1', 'a')).toBe(true)
+    })
+
+    it('does not start a second compile of a user whose compile is paused', async function () {
+      vi.useFakeTimers()
+      const queue = new CompileQueue({ slots: 2, turnMs: 1000 })
+      await queue.acquire({ userKey: 'a', projectId: 'p1' })
+      const releaseB = await queue.acquire({ userKey: 'b', projectId: 'p2' })
+      queue.allowPausing('p1', 'a', pauseHandlers())
+      track(queue, { userKey: 'a', projectId: 'p3' }, started)
+      track(queue, { userKey: 'c', projectId: 'p4' }, started)
+      await vi.advanceTimersByTimeAsync(1000)
+      expect(started).toEqual(['c/p4'])
+      releaseB()
+      await vi.advanceTimersByTimeAsync(0)
+      // the free slot resumes the paused compile, not the second request
+      expect(queue.getStatus('p1', 'a').state).toBe('running')
+      expect(queue.getStatus('p3', 'a').state).toBe('waiting')
+    })
+  })
 })
