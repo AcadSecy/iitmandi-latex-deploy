@@ -181,14 +181,15 @@ export class CompileQueue {
   }
 
   /**
-   * Whether the user has a compile for the project that is running or paused.
+   * Whether the user has a paused compile for the project. It is still
+   * running on the CLSI, so stopping it needs the CLSI.
    */
-  hasActive(projectId, userKey) {
-    const isMine = entry =>
-      entry.projectId === projectId && entry.userKey === userKey
-    return (
-      [...this.#running].some(isMine) ||
-      this.#waiting.some(entry => entry.paused && isMine(entry))
+  hasPaused(projectId, userKey) {
+    return this.#waiting.some(
+      entry =>
+        entry.paused &&
+        entry.projectId === projectId &&
+        entry.userKey === userKey
     )
   }
 
@@ -327,26 +328,29 @@ export class CompileQueue {
   #pause(entry) {
     entry.pausing = true
     clearTimeout(entry.turnTimer)
-    entry.handlers.suspend().then(
-      () => {
-        entry.pausing = false
-        if (entry.released || !this.#running.has(entry)) {
-          return
+    const { suspend } = entry.handlers
+    Promise.resolve()
+      .then(suspend)
+      .then(
+        () => {
+          entry.pausing = false
+          if (entry.released || !this.#running.has(entry)) {
+            return
+          }
+          entry.activeMs += Date.now() - entry.turnStartedAt
+          this.#running.delete(entry)
+          this.#runningUsers.delete(entry.userKey)
+          entry.paused = true
+          this.#pausedUsers.add(entry.userKey)
+          this.#waiting.push(entry)
+          this.#dispatch()
+        },
+        () => {
+          // The compile has just finished, or cannot be paused: let it run.
+          entry.pausing = false
+          entry.handlers = null
         }
-        entry.activeMs += Date.now() - entry.turnStartedAt
-        this.#running.delete(entry)
-        this.#runningUsers.delete(entry.userKey)
-        entry.paused = true
-        this.#pausedUsers.add(entry.userKey)
-        this.#waiting.push(entry)
-        this.#dispatch()
-      },
-      () => {
-        // The compile has just finished, or cannot be paused: let it run.
-        entry.pausing = false
-        entry.handlers = null
-      }
-    )
+      )
   }
 
   #startTurnTimer(entry) {
@@ -371,9 +375,11 @@ export class CompileQueue {
       entry.paused = false
       this.#pausedUsers.delete(entry.userKey)
       this.#startTurnTimer(entry)
-      entry.handlers.resume().catch(() => {
-        // The compile has ended while paused; its release follows.
-      })
+      Promise.resolve()
+        .then(entry.handlers.resume)
+        .catch(() => {
+          // The compile has ended while paused; its release follows.
+        })
       return
     }
     entry.resolve(() => {

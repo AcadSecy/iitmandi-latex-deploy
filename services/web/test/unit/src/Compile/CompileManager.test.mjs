@@ -445,6 +445,109 @@ describe('CompileManager', function () {
     })
   })
 
+  describe('taking turns', function () {
+    let finishFirstCompile
+
+    beforeEach(async function (ctx) {
+      // compiles are paused after 50 ms while someone waits
+      ctx.settings.compileQueue = { slots: 1, maxWaitMs: 60_000, turnMs: 50 }
+      vi.resetModules()
+      ctx.CompileManager = (await import(MODULE_PATH)).default
+      ctx.CompileManager._checkIfRecentlyCompiled = sinon.stub().resolves(false)
+      ctx.CompileManager._checkIfAutoCompileLimitHasBeenHit = sinon
+        .stub()
+        .resolves(true)
+      ctx.ProjectRootDocManager.promises.ensureRootDocumentIsValid = sinon
+        .stub()
+        .resolves({
+          rootDocId: 'mock-root-doc-id-123',
+          rootResourcePath: '/main.tex',
+        })
+      ctx.ClsiManager.promises.suspendCompile = sinon.stub().resolves()
+      ctx.ClsiManager.promises.resumeCompile = sinon.stub().resolves()
+      ctx.ClsiManager.promises.stopCompile = sinon.stub().resolves()
+      ctx.ClsiManager.promises.sendRequest = sinon
+        .stub()
+        .resolves({ status: 'success', outputFiles: [] })
+      ctx.ClsiManager.promises.sendRequest.onFirstCall().returns(
+        new Promise(resolve => {
+          finishFirstCompile = () =>
+            resolve({ status: 'success', outputFiles: [] })
+        })
+      )
+    })
+
+    async function startCompileThatRuns(ctx) {
+      const compile = ctx.CompileManager.promises.compile(
+        'project-1',
+        'user-1',
+        {}
+      )
+      await vi.waitFor(() =>
+        expect(ctx.ClsiManager.promises.sendRequest.callCount).to.equal(1)
+      )
+      return { compile }
+    }
+
+    it('pauses a running compile on the CLSI while another one waits', async function (ctx) {
+      const { compile: first } = await startCompileThatRuns(ctx)
+      const second = ctx.CompileManager.promises.compile(
+        'project-2',
+        'user-2',
+        {}
+      )
+
+      expect((await second).status).to.equal('success')
+      expect(
+        ctx.ClsiManager.promises.suspendCompile
+      ).to.have.been.calledWithMatch('project-1', 'user-1', {
+        compileGroup: 'standard',
+      })
+
+      // the free slot goes back to the paused compile
+      await vi.waitFor(() =>
+        expect(ctx.ClsiManager.promises.resumeCompile.callCount).to.equal(1)
+      )
+      expect(
+        ctx.CompileManager.getCompileQueueStatus('project-1', 'user-1').state
+      ).to.equal('running')
+      finishFirstCompile()
+      expect((await first).status).to.equal('success')
+    })
+
+    it('stops a paused compile on the CLSI', async function (ctx) {
+      let finishSecondCompile
+      ctx.ClsiManager.promises.sendRequest.onSecondCall().returns(
+        new Promise(resolve => {
+          finishSecondCompile = () =>
+            resolve({ status: 'success', outputFiles: [] })
+        })
+      )
+      const { compile: first } = await startCompileThatRuns(ctx)
+      const second = ctx.CompileManager.promises.compile(
+        'project-2',
+        'user-2',
+        {}
+      )
+      await vi.waitFor(() =>
+        expect(
+          ctx.CompileManager.getCompileQueueStatus('project-1', 'user-1')
+            .paused
+        ).to.equal(true)
+      )
+
+      await ctx.CompileManager.promises.stopCompile('project-1', 'user-1')
+      expect(ctx.ClsiManager.promises.stopCompile).to.have.been.calledWith(
+        'project-1',
+        'user-1'
+      )
+
+      finishFirstCompile()
+      finishSecondCompile()
+      await Promise.all([first, second])
+    })
+  })
+
   describe('getProjectCompileLimits', function () {
     beforeEach(async function (ctx) {
       ctx.features = {

@@ -288,7 +288,7 @@ async function stopCompile(projectId, userId) {
   const userKey = _compileQueueUserKey(projectId, userId)
   const cancelled = compileQueue.cancel(projectId.toString(), userKey)
   // a paused compile is still running on the CLSI
-  if (cancelled && !compileQueue.hasActive(projectId.toString(), userKey)) {
+  if (cancelled && !compileQueue.hasPaused(projectId.toString(), userKey)) {
     return
   }
 

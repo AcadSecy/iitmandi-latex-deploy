@@ -239,7 +239,7 @@ describe('CompileQueue', function () {
         paused: true,
         position: 1,
       })
-      expect(queue.hasActive('p1', 'a')).toBe(true)
+      expect(queue.hasPaused('p1', 'a')).toBe(true)
 
       const releaseB = await b
       releaseB()
@@ -247,9 +247,9 @@ describe('CompileQueue', function () {
       expect(handlers.resume).toHaveBeenCalledOnce()
       expect(queue.getStatus('p1', 'a').state).toBe('running')
 
+      expect(queue.hasPaused('p1', 'a')).toBe(false)
       releaseA()
       expect(queue.getStatus('p1', 'a').state).toBe('idle')
-      expect(queue.hasActive('p1', 'a')).toBe(false)
     })
 
     it('lets a compile run on while nobody waits', async function () {
@@ -365,7 +365,7 @@ describe('CompileQueue', function () {
       expect(queue.getStatus('p1', 'a').paused).toBe(true)
 
       expect(queue.cancel('p1', 'a')).toBe(false)
-      expect(queue.hasActive('p1', 'a')).toBe(true)
+      expect(queue.hasPaused('p1', 'a')).toBe(true)
     })
 
     it('does not start a second compile of a user whose compile is paused', async function () {
