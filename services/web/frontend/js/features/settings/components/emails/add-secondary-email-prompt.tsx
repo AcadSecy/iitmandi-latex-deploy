@@ -155,7 +155,8 @@ function ErrorMessage({ error }: { error: AddSecondaryEmailError }) {
         <>
           Your company email address has been registered under a verified
           domain, and cannot be added as a secondary email. Please create a new{' '}
-          <strong>Overleaf</strong> account linked to this email address.
+          <strong>{getMeta('ol-ExposedSettings').appName}</strong> account
+          linked to this email address.
         </>
       )
       break

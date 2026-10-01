@@ -633,7 +633,7 @@ describe('EmailBuilder', function () {
           }
           const email = ctx.EmailBuilder.buildEmail('groupSSODisabled', opts)
           expect(email.subject).to.equal(
-            'A change to your Overleaf login options'
+            `A change to your ${ctx.settings.appName} login options`
           )
           const dom = cheerio.load(email.html)
           expect(email.html).to.exist
@@ -641,7 +641,7 @@ describe('EmailBuilder', function () {
             'Your group administrator has disabled single sign-on for your group.'
           )
           expect(email.html).to.contain(
-            'You can still log in to Overleaf using one of our other'
+            `You can still log in to ${ctx.settings.appName} using one of our other`
           )
           const loginLink = dom('a:contains("login options")')
           expect(loginLink.attr('href')).to.equal(
@@ -662,7 +662,7 @@ describe('EmailBuilder', function () {
             '',
             'What does this mean for you?',
             '',
-            'You can still log in to Overleaf using one of our other login options or with your email address and password.',
+            `You can still log in to ${ctx.settings.appName} using one of our other login options or with your email address and password.`,
             '',
             "If you don't have a password, you can set one now.",
             '',
@@ -686,7 +686,7 @@ describe('EmailBuilder', function () {
           }
           const email = ctx.EmailBuilder.buildEmail('groupSSODisabled', opts)
           expect(email.subject).to.equal(
-            'Action required: Set your Overleaf password'
+            `Action required: Set your ${ctx.settings.appName} password`
           )
           const dom = cheerio.load(email.html)
           expect(email.html).to.exist
@@ -694,7 +694,7 @@ describe('EmailBuilder', function () {
             'Your group administrator has disabled single sign-on for your group.'
           )
           expect(email.html).to.contain(
-            'You now need an email address and password to sign in to your Overleaf account.'
+            `You now need an email address and password to sign in to your ${ctx.settings.appName} account.`
           )
           const ctaLink = dom('a:contains("Set your new password")')
           expect(ctaLink.attr('href')).to.equal(
@@ -712,7 +712,7 @@ describe('EmailBuilder', function () {
             '',
             'What does this mean for you?',
             '',
-            'You now need an email address and password to sign in to your Overleaf account.',
+            `You now need an email address and password to sign in to your ${ctx.settings.appName} account.`,
             '',
             `Set your new password: ${setNewPasswordUrl}`,
             '',
@@ -1014,11 +1014,11 @@ describe('EmailBuilder', function () {
             const dom = cheerio.load(ctx.email.html)
             const plainText = dom.text()
             expect(ctx.email.subject).to.equal(
-              'Action needed: your Overleaf group is nearly out of licenses'
+              `Action needed: your ${ctx.settings.appName} group is nearly out of licenses`
             )
             expect(ctx.email.html).to.exist
             expect(ctx.email.html).to.contain(
-              `Your Overleaf group <b>${ctx.opts.groupName}</b> is close to its license limit.`
+              `Your ${ctx.settings.appName} group <b>${ctx.opts.groupName}</b> is close to its license limit.`
             )
             expect(plainText).to.contain(
               `${ctx.opts.currentMembers} of ${ctx.opts.membersLimit} ` +
@@ -1091,10 +1091,10 @@ describe('EmailBuilder', function () {
         it('should describe the at-capacity state and CTA', function (ctx) {
           const dom = cheerio.load(ctx.email.html)
           expect(ctx.email.subject).to.equal(
-            'Action needed: your Overleaf group is out of licenses'
+            `Action needed: your ${ctx.settings.appName} group is out of licenses`
           )
           expect(ctx.email.html).to.contain(
-            `Your Overleaf group <b>${ctx.opts.groupName}</b> has used all ${ctx.opts.membersLimit} of its licenses.`
+            `Your ${ctx.settings.appName} group <b>${ctx.opts.groupName}</b> has used all ${ctx.opts.membersLimit} of its licenses.`
           )
           expect(ctx.email.html).to.contain(
             'new users from your domain can no longer'

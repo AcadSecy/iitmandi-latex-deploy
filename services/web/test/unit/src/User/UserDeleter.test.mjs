@@ -24,6 +24,7 @@ describe('UserDeleter', function () {
     ctx.DeletedUserMock = sinon.mock(DeletedUser)
 
     ctx.settings = {
+      appName: 'IIT Mandi LaTeX',
       shuttingDown: false,
       userHardDeletionDelay: 1000 * 60 * 60 * 24 * 90, // 90 days
       overleaf: {}, // needed for Features.hasFeature('saas') to return true
@@ -353,7 +354,7 @@ describe('UserDeleter', function () {
               const emailOptions = {
                 to: 'bob@bob.com',
                 action: 'account deleted',
-                actionDescribed: 'your Overleaf account was deleted',
+                actionDescribed: 'your IIT Mandi LaTeX account was deleted',
               }
               expect(
                 ctx.EmailHandler.promises.sendEmail

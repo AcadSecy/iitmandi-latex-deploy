@@ -734,7 +734,7 @@ const UserEmailsController = {
             res.status(403).json({
               message: {
                 key: 'confirm-email-wrong-user',
-                text: `We can’t confirm this email. You must be logged in with the Overleaf account that requested the new secondary email.`,
+                text: `We can’t confirm this email. You must be logged in with the ${Settings.appName} account that requested the new secondary email.`,
               },
             })
           } else if (error instanceof Errors.NotFoundError) {

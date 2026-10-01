@@ -330,6 +330,7 @@ async function _buildTemplate(templateName, userId, projectName) {
   )
   const template = fs.readFileSync(templatePath)
   const data = {
+    app_name: Settings.appName,
     project_name: projectName,
     user,
     year: new Date().getUTCFullYear(),

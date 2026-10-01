@@ -93,6 +93,7 @@ describe('ProjectDownloadsController', function () {
 
     vi.doMock('@overleaf/settings', () => ({
       default: (ctx.Settings = {
+        appName: 'IIT Mandi LaTeX',
         siteUrl: 'https://overleaf.example.com',
       }),
     }))
@@ -307,7 +308,7 @@ describe('ProjectDownloadsController', function () {
     it('should name the downloaded file after the project', function (ctx) {
       ctx.res.headers.should.deep.equal({
         'Content-Disposition':
-          'attachment; filename="Overleaf Projects (2 items).zip"',
+          'attachment; filename="IIT Mandi LaTeX Projects (2 items).zip"',
         'Content-Type': 'application/zip',
         'X-Accel-Buffering': 'no',
         'X-Content-Type-Options': 'nosniff',

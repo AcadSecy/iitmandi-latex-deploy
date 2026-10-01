@@ -173,7 +173,7 @@ async function _sendDeleteEmail(user, force) {
   const emailOptions = {
     to: user.email,
     action: 'account deleted',
-    actionDescribed: 'your Overleaf account was deleted',
+    actionDescribed: `your ${Settings.appName} account was deleted`,
   }
   try {
     await EmailHandler.promises.sendEmail('securityAlert', emailOptions)
