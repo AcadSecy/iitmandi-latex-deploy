@@ -11,12 +11,14 @@ IIT Mandi LaTeX runs on the DCS server with the upstream [Toolkit](https://githu
 
 ## Images
 
-Both images are built from this repository, on the server or any Linux machine with Docker, and pinned in `docker-compose.override.yml`:
+Both images are built from this repository, on the server or any Linux machine with Docker, from the same commit, and pinned in `docker-compose.override.yml`:
 
 | Image | What it is | Build |
 | --- | --- | --- |
 | `iitmandi/latex` | The web app and all its services | `cd server-ce && make build-base && OVERLEAF_TAG=iitmandi/latex:<tag> make build-community` |
 | `iitmandi/latex-x-iit-mandi` | **Latex X IIT-Mandi**, git access to projects | `docker build -t iitmandi/latex-x-iit-mandi:<tag> services/git-bridge` |
+
+Build from a clean checkout of a commit that is on `main`: `make build-community` refuses uncommitted changes. It packs the source of that commit into the image, and the app serves it to logged-in users at `/source`, linked from the footer and the License page. This is how we meet the AGPL-3.0, which entitles everyone who uses the platform to the source of the version they use. The archive covers both images, so the repository itself can stay private.
 
 The git image has the same layout as the upstream one, so the Toolkit runs it unchanged. Git users see the name from `GIT_BRIDGE_SERVICE_NAME` ("Latex X IIT-Mandi"). Its error messages link to `OVERLEAF_SITE_URL/learn` and give `OVERLEAF_ADMIN_EMAIL` as the contact. Projects are cloned with `git clone https://git@latex.iitmandi.ac.in/git/<project id>`, using a git authentication token from the account settings as the password.
 
@@ -29,6 +31,7 @@ The git image has the same layout as the upstream one, so the Toolkit runs it un
 | `/srv/iitmandi-latex/data/mongo` | MongoDB |
 | `/srv/iitmandi-latex/data/redis` | Redis append-only file |
 | `/srv/iitmandi-latex/data/git-bridge` | Git access data |
+| `/srv/iitmandi-latex/images` | Archives of the TeX Live images, about 3 GB each |
 
 Put `/srv/iitmandi-latex` on the 1 TB SSD. MongoDB recommends XFS for its data.
 
@@ -60,8 +63,29 @@ Share links, invitations and emails contain `OVERLEAF_SITE_URL`, which is `https
 
 Shared links open only after an IIT Mandi login. Whether people without an account may open view-only links is not decided yet. If it is approved, set `OVERLEAF_ALLOW_PUBLIC_ACCESS=true`, which also opens pages that need no account (help, licence, templates). Anonymous editing stays off.
 
+## TeX Live images
+
+Compiles run in the TeX Live images listed in [`texlive/images.txt`](texlive/images.txt). Each image is pinned by digest, the exact bytes rather than a tag like `latest`, which Docker Hub rebuilds every week. A document that compiles today therefore compiles the same way next semester, and CI tests the very image the server runs.
+
+Install them once, before the first start (as root, or as a member of the docker group):
+
+```sh
+deploy/iitmandi/texlive/texlive-images.sh install
+deploy/iitmandi/texlive/texlive-images.sh list
+```
+
+For each image this pulls the pinned digest, tags it under its local name (`iitmandi/texlive:2026.1`), compiles a test document with pdflatex, xelatex and lualatex as the compile service does, and saves an archive with a checksum in `/srv/iitmandi-latex/images`. The nightly backup includes the archives. If Docker Hub ever changes its terms, removes the images or is unreachable, `install` loads them from the archives instead. `SIBLING_CONTAINERS_PULL=false` in `overleaf.rc` stops the Toolkit from asking Docker Hub for these local names.
+
+To move to a newer TeX Live (once a year, outside exam periods):
+
+1. Get the digest of the new image, add a line with a new local name (`2027.1`) at the top of `images.txt`, and run CI with every job (`gh workflow run CI --ref main -f all=true`).
+2. On the server, run `texlive-images.sh install`, put the new name first in `ALL_TEX_LIVE_DOCKER_IMAGES` and `TEX_LIVE_DOCKER_IMAGE` (and its label in `ALL_TEX_LIVE_DOCKER_IMAGE_NAMES`), then `bin/up -d`. New projects use the new image; existing projects keep theirs until their owners switch in the project settings.
+3. Remove an old image only when no project uses it any more. Projects record the image they were created with, and the app checks at startup that every recorded image is in `ALL_TEX_LIVE_DOCKER_IMAGES`. To move projects off an old image: `bin/run-script scripts/update_project_image_name.mjs <old name> <new name>`.
+
+Projects created before the switch to pinned images (for example while testing) still record `texlive/texlive:latest-full` or `texlive/texlive:TL2025-historic`. Move them with the same script to `iitmandi/texlive:2026.1` and `iitmandi/texlive:2025.1`.
+
 ## Upgrades
 
 1. Take a backup (`systemctl start iitmandi-latex-backup.service`) and check that it finished.
-2. Build and tag the new images, set them in `docker-compose.override.yml`, then run `bin/up -d`. Database migrations run when the app starts.
+2. Build and tag the new images from a clean checkout of `main` (see Images), set them in `docker-compose.override.yml`, then run `bin/up -d`. Database migrations run when the app starts. Check that `/source` downloads the archive of the new commit.
 3. Upgrade MongoDB one major version at a time. After each step, set `featureCompatibilityVersion` to the new version before taking the next.

@@ -10,6 +10,7 @@ Nightly, off-host, encrypted backups of IIT Mandi LaTeX with 7 days of retention
 | Uploaded files, project history, templates (`OVERLEAF_DATA_PATH`) | Files, excluding compile output and caches |
 | Git access data (`GIT_BRIDGE_DATA_PATH`) | Files, if git-bridge is enabled |
 | Toolkit config (`config/`, includes secrets) | Files |
+| TeX Live images (`IMAGES_DIR`, archives made by `texlive-images.sh`) | Files; restic uploads an archive once and only references it afterwards |
 
 Before the dump, edits still held in Redis are flushed to the database. Redis itself is not backed up: it only holds sessions and in-flight edits, and a restore empties it.
 
@@ -65,6 +66,14 @@ iitmandi-latex-restore 4bba301e   # a specific snapshot, IDs from `restic snapsh
 The script asks for confirmation, stops the platform, replaces the data directories and the database with the snapshot, empties Redis and starts the platform again. Compile output is rebuilt on the next compile, and everyone has to log in again. The snapshot's Toolkit config is restored next to the staging directory for comparison, not over the live config.
 
 `STAGING_DIR` (or `RESTORE_DIR`) needs free space for a full copy of the data.
+
+The TeX Live images are not part of the restore, because a running server already has them. On a new server, get the archives back before starting the platform, then install them without Docker Hub:
+
+```sh
+set -a; . /etc/iitmandi-latex/backup.env; set +a
+restic restore latest --target / --include "$IMAGES_DIR"
+deploy/iitmandi/texlive/texlive-images.sh install   # loads from the archives
+```
 
 ## Restore drill
 

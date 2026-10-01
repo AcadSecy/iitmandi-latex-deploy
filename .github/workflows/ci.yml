@@ -72,9 +72,9 @@ jobs:
           }
           deps='libraries/|package\.json$|yarn\.lock$|\.yarnrc\.yml$|\.yarn/|tsconfig'
           area branding '^(services/web/|tools/branding/)'
-          area templates '^services/web/modules/iitmandi-templates/'
+          area templates '^(services/web/modules/iitmandi-templates/|deploy/iitmandi/texlive/)'
           area web "^(services/web/|$deps)"
-          area clsi "^(services/clsi/|server-ce/|$deps)"
+          area clsi "^(services/clsi/|server-ce/|deploy/iitmandi/texlive/|$deps)"
           area git_bridge '^services/git-bridge/'
 
   branding:
@@ -108,15 +108,19 @@ jobs:
     if: needs.changes.outputs.templates == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
-    env:
-      # The TeX Live image the platform compiles in (deploy/iitmandi/variables.env.example)
-      TEXLIVE_IMAGE: texlive/texlive:latest-full
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
           node-version: 24
           package-manager-cache: false
+      # The TeX Live image the platform compiles in: the first one pinned in
+      # deploy/iitmandi/texlive/images.txt, under the same name as on the server
+      - name: Fetch the pinned TeX Live image
+        run: |
+          name=$(grep -Ev '^[[:space:]]*(#|$)' deploy/iitmandi/texlive/images.txt | awk 'NR == 1 {print $1}')
+          IMAGES_DIR="$RUNNER_TEMP/images" bash deploy/iitmandi/texlive/texlive-images.sh fetch "$name"
+          echo "TEXLIVE_IMAGE=$name" >> "$GITHUB_ENV"
       - name: Assemble the IIT Mandi templates
         run: >
           node services/web/modules/iitmandi-templates/scripts/assemble.mjs
@@ -238,7 +242,7 @@ jobs:
           test/unit/src/Compile/CompileController.test.mjs
           --testNamePattern '^CompileController (compile|stopCompile) '
 
-      - name: Unit tests (editor waiting room against Redis, storage quota)
+      - name: Unit tests (editor waiting room against Redis, storage quota, source code)
         working-directory: services/web
         env:
           TEST_REDIS_HOST: localhost
@@ -246,6 +250,7 @@ jobs:
           yarn vitest run --project=Parallel
           modules/editor-waiting-room
           modules/storage-quota
+          modules/source-code
 
       - name: Frontend tests (project list, welcome message, Ask AI)
         working-directory: services/web
@@ -266,9 +271,6 @@ jobs:
     if: needs.changes.outputs.clsi == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
-    env:
-      # The TeX Live image the platform compiles in (deploy/iitmandi/variables.env.example)
-      TEXLIVE_IMAGE: texlive/texlive:latest-full
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -294,8 +296,15 @@ jobs:
           test/unit/js/LatexRunner.test.js
           test/unit/js/CompileManager.test.js
 
-      - name: Pull the TeX Live image
-        run: docker pull "$TEXLIVE_IMAGE"
+      # The TeX Live image the platform compiles in: the first one pinned in
+      # deploy/iitmandi/texlive/images.txt, under the same name as on the server
+      - name: Fetch the pinned TeX Live image
+        run: |
+          name=$(grep -Ev '^[[:space:]]*(#|$)' deploy/iitmandi/texlive/images.txt | awk 'NR == 1 {print $1}')
+          IMAGES_DIR="$RUNNER_TEMP/images" bash deploy/iitmandi/texlive/texlive-images.sh fetch "$name"
+          echo "TEXLIVE_IMAGE=$name" >> "$GITHUB_ENV"
+      - name: Check the image as the server does
+        run: IMAGES_DIR="$RUNNER_TEMP/images" bash deploy/iitmandi/texlive/texlive-images.sh check "$TEXLIVE_IMAGE"
 
       # Real compiles in Docker with the production seccomp profile: a stopped
       # or timed-out compile keeps a valid PDF of the pages already typeset,

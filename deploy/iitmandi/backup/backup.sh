@@ -6,9 +6,10 @@
 #  2. Dump MongoDB with --oplog, which makes the dump consistent at one point
 #     in time while the platform keeps running.
 #  3. Store the dump, the app data directory (without compile output and
-#     caches), git-bridge data and the Toolkit config in an off-host restic
-#     repository (encrypted and deduplicated), then keep one snapshot per day
-#     for KEEP_DAILY days.
+#     caches), git-bridge data, the Toolkit config and the TeX Live image
+#     archives in an off-host restic repository (encrypted and deduplicated,
+#     so an unchanged image archive is uploaded once), then keep one snapshot
+#     per day for KEEP_DAILY days.
 #
 # Settings are read from /etc/iitmandi-latex/backup.env (see backup.env.example).
 # Run as root: the data directories belong to root.
@@ -24,6 +25,7 @@ fi
 : "${TOOLKIT_DIR:=/opt/iitmandi-latex/toolkit}"
 : "${STAGING_DIR:=/var/backups/iitmandi-latex}"
 : "${KEEP_DAILY:=7}"
+: "${IMAGES_DIR:=/srv/iitmandi-latex/images}"
 : "${APP_CONTAINER:=sharelatex}"
 : "${MONGO_CONTAINER:=mongo}"
 : "${RESTIC_REPOSITORY:?set RESTIC_REPOSITORY in $CONFIG_FILE}"
@@ -87,6 +89,8 @@ fi
 
 paths=("$dump" "$APP_DATA" "$TOOLKIT_DIR/config")
 [[ -d $GIT_BRIDGE_DATA ]] && paths+=("$GIT_BRIDGE_DATA")
+# TeX Live images (deploy/iitmandi/texlive), so a new server compiles the same
+[[ -d $IMAGES_DIR ]] && paths+=("$IMAGES_DIR")
 
 log "uploading to $RESTIC_REPOSITORY"
 restic backup --quiet --tag iitmandi-latex \
@@ -94,6 +98,7 @@ restic backup --quiet --tag iitmandi-latex \
   --exclude "$APP_DATA/data/output" \
   --exclude "$APP_DATA/data/cache" \
   --exclude "$APP_DATA/tmp" \
+  --exclude "$IMAGES_DIR/*.partial" \
   "${paths[@]}"
 
 log "keeping the last $KEEP_DAILY daily snapshots"

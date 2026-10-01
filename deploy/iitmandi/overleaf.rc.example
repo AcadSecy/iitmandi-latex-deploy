@@ -11,7 +11,10 @@ SERVER_PRO=true
 # socket into the app container, which gives it root-level control of the
 # host: run the platform on a VM that hosts nothing else.
 SIBLING_CONTAINERS_ENABLED=true
-SIBLING_CONTAINERS_PULL=true
+# The TeX Live images are installed by deploy/iitmandi/texlive/texlive-images.sh,
+# pinned and archived. Pulling them at startup would ask Docker Hub for our
+# local names, so it is off.
+SIBLING_CONTAINERS_PULL=false
 
 # Clone and push projects with git. The git image is our own (Latex X
 # IIT-Mandi, pinned in docker-compose.override.yml). Keep config/version at the

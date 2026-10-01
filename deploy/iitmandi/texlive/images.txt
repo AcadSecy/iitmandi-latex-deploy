@@ -1,0 +1,15 @@
+# TeX Live images for compiles, pinned by digest so that the server, a rebuilt
+# server and CI all get exactly the same bytes. One image per line:
+#
+#   <local name>   <source on Docker Hub, by digest>   <TeX Live year>
+#
+# texlive-images.sh installs each one under its local name, checks that it
+# compiles, and keeps an archive of it, so a change or outage at Docker Hub
+# cannot stop compiles. The first line is the default for new projects
+# (TEX_LIVE_DOCKER_IMAGE); list all of them in ALL_TEX_LIVE_DOCKER_IMAGES.
+#
+# Projects store the name they compile with. Never point an existing name at
+# other bytes: to upgrade, add a line with a new name (2026.2, 2027.1, ...) at
+# the top and keep the old lines while projects still use them.
+iitmandi/texlive:2026.1  texlive/texlive:latest-full@sha256:16c556aeb4095b47245fcd05db47061529e5df8fc8c04d97fb0f049055244526  2026
+iitmandi/texlive:2025.1  texlive/texlive:TL2025-historic@sha256:7056390eac37715fd3e01875037ceb4016cb17d44c611f7bbbfa7a012007979f  2025
