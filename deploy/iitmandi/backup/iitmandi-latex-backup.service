@@ -1,0 +1,10 @@
+[Unit]
+Description=IIT Mandi LaTeX backup
+Wants=network-online.target
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/iitmandi-latex-backup
+Nice=10
+IOSchedulingClass=idle
