@@ -44,6 +44,8 @@ jobs:
       NODE_OPTIONS: --max-old-space-size=6144
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # the type check diffs against the base commit
       - uses: actions/setup-node@v5
         with:
           node-version: 24
@@ -63,8 +65,28 @@ jobs:
       - name: Generate editor parsers
         run: yarn workspace @overleaf/web run lezer-latex:generate
 
-      - name: Type-check frontend
-        run: yarn workspace @overleaf/web run type-check
+      # Upstream's public repository leaves out some private modules, so the full
+      # type check always reports "Cannot find module" errors for them. Fail only
+      # on type errors in files that this change touches.
+      - name: Type-check changed files
+        working-directory: services/web
+        run: |
+          case "${{ github.event_name }}" in
+            pull_request) base="${{ github.event.pull_request.base.sha }}" ;;
+            push) base="${{ github.event.before }}" ;;
+            *) base="HEAD~1" ;;
+          esac
+          yarn tsc --noEmit --pretty false > "$RUNNER_TEMP/tsc.log" || true
+          echo "$(grep -c 'error TS' "$RUNNER_TEMP/tsc.log" || true) type errors in total"
+          git diff --name-only "$base"...HEAD -- . | sed -e 's#^services/web/##' -e '/^$/d' > "$RUNNER_TEMP/changed.txt"
+          grep 'error TS' "$RUNNER_TEMP/tsc.log" \
+            | grep -vE "error TS2307: Cannot find module '([^']*/(modules|stories)/|@wf/|@modules/|[^']*webpack\.config\.dev')" \
+            | grep -F -f "$RUNNER_TEMP/changed.txt" > "$RUNNER_TEMP/errors.txt" || true
+          if [ -s "$RUNNER_TEMP/errors.txt" ]; then
+            cat "$RUNNER_TEMP/errors.txt"
+            exit 1
+          fi
+          echo "No type errors in changed files"
 
       # The upstream repository does not publish its ESLint, Stylelint or
       # Prettier configuration, so linting is not part of CI yet.
