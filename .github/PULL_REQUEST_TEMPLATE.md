@@ -1,11 +1,17 @@
 ## Description
 
-<!-- Goal of the pull request -->
+<!-- What this changes and why -->
 
-## Related issues / Pull Requests
+## Related issues
 
-<!-- Fixes #xyz, Contributes to #xyz, Related to #xyz-->
+<!-- Fixes #xyz, Related to #xyz -->
 
-## Contributor Agreement
+## Testing
 
-- [ ] I confirm I have signed the [Contributor License Agreement](https://github.com/overleaf/overleaf/blob/main/CONTRIBUTING.md#contributor-license-agreement)
+<!-- How you checked it: CI, local build, manual steps on a test instance -->
+
+## Checklist
+
+- [ ] CI passes
+- [ ] New user-facing text uses `__appName__` (or `settings.appName`), not a hard-coded product name
+- [ ] Configuration changes are documented in the README

@@ -1,80 +1,88 @@
 <h1 align="center">
-  <br>
-  <a href="https://www.overleaf.com"><img src="doc/logo.png" alt="Overleaf" width="300"></a>
+  <img src="doc/logo.png" alt="IIT Mandi LaTeX" width="420">
 </h1>
 
-<h4 align="center">An open-source online real-time collaborative LaTeX editor.</h4>
+<p align="center">Institute-hosted collaborative LaTeX platform for IIT Mandi</p>
 
-<p align="center">
-  <a href="https://github.com/overleaf/overleaf/wiki">Wiki</a> •
-  <a href="https://www.overleaf.com/for/enterprises">Server Pro</a> •
-  <a href="#contributing">Contributing</a> •
-  <a href="https://mailchi.mp/overleaf.com/community-edition-and-server-pro">Mailing List</a> •
-  <a href="#authors">Authors</a> •
-  <a href="#license">License</a>
-</p>
+IIT Mandi LaTeX gives students, researchers and staff real-time collaborative LaTeX editing with PDF preview and project history, hosted on Institute servers and open to IIT Mandi accounts. It is proposed by the UG Academic Council as an Institute-owned alternative to a commercial subscription.
 
-<img src="doc/screenshot.png" alt="A screenshot of a project being edited in Overleaf Community Edition">
-<p align="center">
-  Figure 1: A screenshot of a project being edited in Overleaf Community Edition.
-</p>
+## Roadmap
 
-## Community Edition
+From the implementation plan of 30 September 2026:
 
-[Overleaf](https://www.overleaf.com) is an open-source online real-time collaborative LaTeX editor. We run a hosted version at [www.overleaf.com](https://www.overleaf.com), but you can also run your own local version, and contribute to the development of Overleaf.
+| Month | Deliverables |
+| --- | --- |
+| October 2026 | Platform on the DCS server, Institute login, isolated compilation with a queue, templates |
+| November 2026 | Comments and track changes, admin dashboard, quotas, waiting queue, backups (feature-complete by 30 November) |
+| December 2026 | Pilot, 50-user load test, security review, documentation and handover to DCS (go-live recommendation by 31 December) |
 
-> [!CAUTION]
-> Overleaf Community Edition is intended for use in environments where **all** users are trusted. Community Edition is **not** appropriate for scenarios where isolation of users is required due to Sandbox Compiles not being available. When not using Sandboxed Compiles, users have full read and write access to the `sharelatex` container resources (filesystem, network, environment variables) when running LaTeX compiles.
+Target capacity: about 3,500 registered and 50 simultaneous users, with a 60-second compile limit and a 500 MB default storage quota per user.
 
-For more information on Sandbox Compiles check out our [documentation](https://docs.overleaf.com/on-premises/configuration/overleaf-toolkit/server-pro-only-configuration/sandboxed-compiles).
+## Repository layout
 
-## Enterprise
+| Path | Contents |
+| --- | --- |
+| `services/web` | Web app: UI, API, accounts, projects, admin |
+| `services/clsi` | LaTeX compile service |
+| `services/real-time`, `services/document-updater` | Real-time collaborative editing |
+| `services/history-v1`, `services/project-history` | Project history |
+| `services/docstore`, `services/filestore`, `services/chat`, `services/notifications` | Storage and supporting services |
+| `services/git-bridge` | Git access to projects |
+| `libraries/` | Shared packages used by the services |
+| `server-ce/` | Dockerfiles, service scripts, nginx and runtime settings for the all-in-one image |
+| `tools/branding/` | Logo generator and locale rebranding script ([README](tools/branding/README.md)) |
 
-If you want help installing and maintaining Overleaf in your lab or workplace, we offer an officially supported version called [Overleaf Server Pro](https://www.overleaf.com/for/enterprises). It also includes more features for security (SSO with LDAP or SAML), administration and collaboration (e.g. tracked changes). [Find out more!](https://www.overleaf.com/for/enterprises)
+## Branches and upstream
 
-## Keeping up to date
+- `main` is the production branch. Changes land through pull requests, and CI must pass.
+- The `upstream` remote points at the open-source project this platform is built on (see [License](#license)). Merge it regularly to pick up security fixes:
 
-Sign up to the [mailing list](https://mailchi.mp/overleaf.com/community-edition-and-server-pro) to get updates on Overleaf releases and development.
+  ```sh
+  git fetch upstream
+  git switch -c sync/upstream-$(date +%Y-%m-%d) main
+  git merge upstream/main
+  node tools/branding/rebrand-locales.mjs   # rebrand any new UI strings
+  # resolve conflicts, then open a pull request
+  ```
 
-## Installation
+  The `upstream` remote is fetch-only.
 
-We have detailed installation instructions in the [Overleaf Toolkit](https://github.com/overleaf/toolkit/).
+## Building
 
-## Upgrading
+The platform runs as one Docker image on Linux (Ubuntu 22.04 or 24.04). Building on Windows is not supported; use a Linux machine or VM.
 
-If you are upgrading from a previous version of Overleaf, please see the [Release Notes section on the Wiki](https://github.com/overleaf/overleaf/wiki#release-notes) for all of the versions between your current version and the version you are upgrading to.
+```sh
+cd server-ce
+make build-base        # system packages and TeX Live (slow, rarely needs rebuilding)
+make build-community   # the application image
+```
 
-## Overleaf Docker Image
+The image tags default to the upstream names (`sharelatex/sharelatex:<branch>-<commit>`); override them with `OVERLEAF_TAG=...` and `OVERLEAF_BASE_TAG=...`.
 
-This repo contains two dockerfiles, [`Dockerfile-base`](server-ce/Dockerfile-base), which builds the
-`sharelatex/sharelatex-base` image, and [`Dockerfile`](server-ce/Dockerfile) which builds the
-`sharelatex/sharelatex` (or "community") image.
+The root `docker-compose.yml` is the upstream sample and still pulls the upstream image. The production setup for the DCS server (compose file, HTTPS, backups) will be added with the October milestone.
 
-The Base image generally contains the basic dependencies like `wget`, plus `texlive`.
-We split this out because it's a pretty heavy set of
-dependencies, and it's nice to not have to rebuild all of that every time.
+## Configuration
 
-The `sharelatex/sharelatex` image extends the base image and adds the actual Overleaf code
-and services.
+The image is configured with environment variables, using the upstream names (`OVERLEAF_*`). Settings specific to this platform:
 
-Use `make build-base` and `make build-community` from `server-ce/` to build these images.
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `OVERLEAF_APP_NAME` | `IIT Mandi LaTeX` | Name in the UI, page titles and emails |
+| `OVERLEAF_SOURCE_CODE_URL` | `https://github.com/TayalAditya/iitmandi-latex` | Footer "Source code" link (see [License](#license)) |
+| `OVERLEAF_NAV_TITLE` | unset | Show this text in the navbar instead of the logo |
 
-We use the [Phusion base-image](https://github.com/phusion/baseimage-docker)
-(which is extended by our `base` image) to provide us with a VM-like container
-in which to run the Overleaf services. Baseimage uses the `runit` service
-manager to manage services, and we add our init-scripts from the `server-ce/runit`
-folder.
+`OVERLEAF_SITE_URL`, `OVERLEAF_ADMIN_EMAIL`, the email (SMTP) settings and the rest are described in [`server-ce/config/settings.js`](server-ce/config/settings.js).
 
-## Contributing
+## Branding
 
-Please see the [CONTRIBUTING](CONTRIBUTING.md) file for information on contributing to the development of Overleaf.
+Colours follow the IIT Mandi website: navy `#00237d` for the navbar and a blue accent scale built on it, with orange `#ff652f` in the logo. Success states stay green. See [tools/branding](tools/branding/README.md) for the palette, the logo generator and how to change the name.
 
-## Authors
-
-[The Overleaf Team](https://www.overleaf.com/about)
+Internal identifiers (package names such as `@overleaf/settings`, `OVERLEAF_*` variables, file paths inside the image) keep their upstream names so that upstream fixes still merge cleanly. Users do not see them.
 
 ## License
 
-The code in this repository is released under the GNU AFFERO GENERAL PUBLIC LICENSE, version 3. A copy can be found in the [`LICENSE`](LICENSE) file.
+This platform is based on [Overleaf Community Edition](https://github.com/overleaf/overleaf), copyright (c) Overleaf, 2014-2025, and is released under the GNU Affero General Public License v3.0. See [`LICENSE`](LICENSE). Changes for IIT Mandi are copyright (c) 2026 their contributors and are released under the same license.
 
-Copyright (c) Overleaf, 2014-2025.
+The AGPL requires that everyone who uses a modified version over a network can get its source code. The footer links to `OVERLEAF_SOURCE_CODE_URL` for this. This repository is private, so before go-live point that variable at a copy of the source that all users can reach.
+
+"Overleaf" is a trademark of its owner. This platform does not use the name or logo in its interface.

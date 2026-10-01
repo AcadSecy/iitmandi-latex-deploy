@@ -4,3 +4,14 @@
 # user defined files
 .env
 docker-compose.override.yml
+
+# Yarn (Plug'n'Play) install artifacts; .pnp.register.mjs and .yarn/patches are tracked
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+.pnp.cjs
+.pnp.loader.mjs
+.cache/
