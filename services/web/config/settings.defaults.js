@@ -869,6 +869,14 @@ module.exports = {
     maxWaitMs: intFromEnv('COMPILE_QUEUE_MAX_WAIT_SECONDS', 300) * 1000,
   },
 
+  // At most `limit` users can have the editor open at once; the others wait in
+  // a first-come-first-served queue (modules/editor-waiting-room). A place is
+  // given up after `idleMinutes` without activity. A limit of 0 turns this off.
+  editorPlaces: {
+    limit: intFromEnv('EDITOR_SESSION_LIMIT', 0),
+    idleMinutes: intFromEnv('EDITOR_SESSION_IDLE_MINUTES', 30),
+  },
+
   analytics: {
     enabled: false,
   },
@@ -1063,7 +1071,12 @@ module.exports = {
     sourceEditorToolbarButtonGroups: [],
     sourceEditorToolbarComponents: [],
     sourceEditorToolbarEndButtons: [],
-    rootContextProviders: [],
+    rootContextProviders: [
+      Path.resolve(
+        __dirname,
+        '../modules/editor-waiting-room/frontend/js/components/editor-place-keeper.tsx'
+      ),
+    ],
     mainEditorLayoutModals: [
       Path.resolve(
         __dirname,
@@ -1217,6 +1230,7 @@ module.exports = {
     'git-bridge',
     'github-sync',
     'zotero',
+    'editor-waiting-room',
   ],
   viewIncludes: {},
 

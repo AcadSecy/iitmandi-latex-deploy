@@ -1,0 +1,8 @@
+extends ../../../../app/views/layout-react
+
+block entrypointVar
+	- entrypoint = 'modules/editor-waiting-room/pages/waiting-room'
+
+block content
+	main#main-content.content.content-alt
+		#editor-waiting-room-root(data-position=position data-limit=limit)

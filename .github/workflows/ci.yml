@@ -42,6 +42,16 @@ jobs:
     timeout-minutes: 60
     env:
       NODE_OPTIONS: --max-old-space-size=6144
+    services:
+      redis:
+        image: redis:7.4
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v5
         with:
@@ -119,6 +129,12 @@ jobs:
           yarn vitest run --project=Parallel
           test/unit/src/Compile/CompileController.test.mjs
           --testNamePattern '^CompileController (compile|stopCompile) '
+
+      - name: Unit tests (editor waiting room, against Redis)
+        working-directory: services/web
+        env:
+          TEST_REDIS_HOST: localhost
+        run: yarn vitest run --project=Parallel modules/editor-waiting-room
 
       - name: Frontend tests (project list, welcome message)
         working-directory: services/web
