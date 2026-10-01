@@ -120,7 +120,8 @@ const AuthenticationController = {
       analyticsId: user.analyticsId || user._id,
       alphaProgram: user.alphaProgram || undefined, // only store if set
       betaProgram: user.betaProgram || undefined, // only store if set
-      labsProgram: user.labsProgram, // always store, we could revert about 1 week after deploying this change.
+      labsProgram: user.labsProgram || undefined, // only store if set
+      externalAuth: user.externalAuth || false,
     }
     if (user.isAdmin) {
       lightUser.isAdmin = true

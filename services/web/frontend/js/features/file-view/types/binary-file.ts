@@ -15,6 +15,14 @@ export type LinkedFileData = {
     source_project_id: string
     source_output_file_path: string
   }
+  zotero: {
+    provider: 'zotero'
+    group_id: string | null
+    format: 'bibtex' | 'biblatex'
+    importedAt: Date | string
+    importer_id: string
+    importer_name: string
+  }
 }
 
 export type BinaryFile<T extends keyof LinkedFileData = keyof LinkedFileData> =

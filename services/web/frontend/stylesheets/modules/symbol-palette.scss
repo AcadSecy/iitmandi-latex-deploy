@@ -8,6 +8,7 @@
   --symbol-palette-selected-tab-color: var(--content-primary-dark);
   --symbol-palette-text-shadow-color: var(--bg-dark-primary);
   --symbol-palette-overlay-bg: #{rgb($bg-dark-tertiary, 0.75)};
+  --symbol-palette-close-invert: 1;
 }
 
 @include theme('light') {
@@ -20,6 +21,7 @@
   --symbol-palette-selected-tab-color: var(--blue-50);
   --symbol-palette-text-shadow-color: var(--bg-light-tertiary);
   --symbol-palette-overlay-bg: #{rgb($bg-light-primary, 0.75)};
+  --symbol-palette-close-invert: 0;
 }
 
 .symbol-palette-container {
@@ -185,12 +187,12 @@
 
 .symbol-palette-close-button-outer {
   display: flex;
+  align-items: center;
+  margin-right: var(--spacing-05);
 }
 
 .symbol-palette-close-button {
-  margin-top: var(--spacing-04);
-  margin-left: var(--spacing-05);
-  margin-right: var(--spacing-03);
+  filter: invert(var(--symbol-palette-close-invert));
 
   .symbol-palette-unavailable & {
     visibility: hidden;

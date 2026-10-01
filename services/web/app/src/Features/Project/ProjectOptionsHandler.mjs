@@ -39,14 +39,13 @@ const ProjectOptionsHandler = {
     if (!imageName || !Array.isArray(settings.allowedImageNames)) {
       return undefined
     }
-    imageName = imageName.toLowerCase()
     const isAllowed = settings.allowedImageNames.find(
       allowed => imageName === allowed.imageName
     )
     if (!isAllowed) {
       throw new OError('invalid imageName', { imageName })
     }
-    return settings.imageRoot + '/' + imageName
+    return imageName
   },
 
   async setImageName(projectId, imageName) {

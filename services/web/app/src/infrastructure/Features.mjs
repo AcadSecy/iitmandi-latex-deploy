@@ -34,6 +34,7 @@ const Features = {
     return (
       (Boolean(Settings.ldap) && Boolean(Settings.ldap.enable)) ||
       (Boolean(Settings.saml) && Boolean(Settings.saml.enable)) ||
+      (Boolean(Settings.oidc) && Boolean(Settings.oidc.enable)) ||
       Boolean(Settings.overleaf)
     )
   },
@@ -51,10 +52,7 @@ const Features = {
       case 'homepage':
         return Boolean(Settings.enableHomepage)
       case 'registration-page':
-        return (
-          !Features.externalAuthenticationSystemUsed() ||
-          Boolean(Settings.overleaf)
-        )
+        return Boolean(Settings.enableRegistrationPage)
       case 'registration':
         return Boolean(Settings.overleaf)
       case 'chat':
@@ -68,7 +66,7 @@ const Features = {
       case 'oauth':
         return Boolean(Settings.oauth)
       case 'templates-server-pro':
-        return Boolean(Settings.templates?.user_id)
+        return Boolean(Settings.templates)
       case 'affiliations':
       case 'analytics':
         return Boolean(_.get(Settings, ['apis', 'v1', 'url']))

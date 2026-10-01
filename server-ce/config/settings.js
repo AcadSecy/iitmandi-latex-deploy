@@ -193,6 +193,8 @@ const settings = {
   maintenanceMessage: process.env.OVERLEAF_MAINTENANCE_MESSAGE,
   maintenanceMessageHTML: process.env.OVERLEAF_MAINTENANCE_MESSAGE_HTML,
 
+  enableRegiserPage: process.env.OVERLEAF_ENABLE_REGISTER_PAGE === 'true',
+
   // The name used to describe this installation in the UI and in emails.
   // The navbar logo is an image (see tools/branding); regenerate it if you
   // change the name, or set OVERLEAF_NAV_TITLE to show text instead.
@@ -407,7 +409,16 @@ if (process.env.OVERLEAF_EMAIL_FROM_ADDRESS != null) {
   }
 
   if (
-    process.env.OVERLEAF_EMAIL_SMTP_USER != null ||
+    process.env.OVERLEAF_EMAIL_SMTP_USER != null &&
+    process.env.OVERLEAF_EMAIL_SMTP_PASS_FILE != null
+  ) {
+    settings.email.parameters.auth = {
+      user: process.env.OVERLEAF_EMAIL_SMTP_USER,
+      pass: require("fs").readFileSync(process.env.OVERLEAF_EMAIL_SMTP_PASS_FILE, "utf8")
+    }
+  }
+  else if (
+    process.env.OVERLEAF_EMAIL_SMTP_USER != null &&
     process.env.OVERLEAF_EMAIL_SMTP_PASS != null
   ) {
     settings.email.parameters.auth = {

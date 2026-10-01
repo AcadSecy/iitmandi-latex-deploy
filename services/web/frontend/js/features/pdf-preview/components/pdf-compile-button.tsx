@@ -18,6 +18,7 @@ import OLButton from '@/shared/components/ol/ol-button'
 import OLButtonGroup from '@/shared/components/ol/ol-button-group'
 import { useLayoutContext } from '@/shared/context/layout-context'
 import { useCommandProvider } from '@/features/ide-react/hooks/use-command-provider'
+import { useCompileQueueStatus } from '../hooks/use-compile-queue-status'
 
 const modifierKey = /Mac/i.test(navigator.platform) ? 'Cmd' : 'Ctrl'
 
@@ -54,6 +55,13 @@ function PdfCompileButton() {
     useStopOnFirstError({ eventSource: 'dropdown' })
 
   const { t } = useTranslation()
+
+  // A waiting auto-compile leaves the button usable: pressing it asks the
+  // server to treat the waiting compile as a requested one.
+  const queueStatus = useCompileQueueStatus(compiling)
+  const waitingAutoCompile =
+    queueStatus?.state === 'waiting' && queueStatus.isAutoCompile
+  const compileButtonBusy = compiling && !waitingAutoCompile
 
   // The two compile modes (Normal / Fast [draft]) are mutually exclusive.
   const setCompileMode = useCallback(
@@ -147,13 +155,19 @@ function PdfCompileButton() {
       >
         <OLButton
           variant="primary"
-          disabled={compiling || isNetworkStalled}
-          isLoading={compiling}
+          disabled={compileButtonBusy || isNetworkStalled}
+          isLoading={compileButtonBusy}
           onClick={() => startCompile()}
           className={buttonClassName}
-          loadingLabel={`${t('compiling')}…`}
+          loadingLabel={
+            queueStatus?.state === 'waiting'
+              ? `${t('compile_queued', { position: queueStatus.position })}…`
+              : `${t('compiling')}…`
+          }
         >
-          {t('recompile')}
+          {waitingAutoCompile
+            ? t('compile_now_queued', { position: queueStatus?.position })
+            : t('recompile')}
         </OLButton>
       </OLTooltip>
 

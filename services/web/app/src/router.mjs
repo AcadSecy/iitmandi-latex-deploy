@@ -248,6 +248,8 @@ async function initialize(webRouter, privateApiRouter, publicApiRouter) {
     CaptchaMiddleware.canSkipCaptcha
   )
 
+  await Modules.applyRouter(webRouter, privateApiRouter, publicApiRouter)
+
   webRouter.get('/login', UserPagesController.loginPage)
   AuthenticationController.addEndpointToLoginWhitelist('/login')
 
@@ -292,6 +294,8 @@ async function initialize(webRouter, privateApiRouter, publicApiRouter) {
   AuthenticationController.addEndpointToLoginWhitelist(
     '/read-only/one-time-login'
   )
+
+  await Modules.applyRouter(webRouter, privateApiRouter, publicApiRouter)
 
   webRouter.get('/logout', UserPagesController.logout)
   webRouter.post('/logout', UserController.logout)
@@ -633,6 +637,18 @@ async function initialize(webRouter, privateApiRouter, publicApiRouter) {
     '/project/:Project_id/compile/stop',
     AuthorizationMiddleware.ensureUserCanReadProject,
     CompileController.stopCompile
+  )
+
+  webRouter.get(
+    '/project/:Project_id/compile/queue',
+    AuthorizationMiddleware.ensureUserCanReadProject,
+    CompileController.getCompileQueueStatus
+  )
+
+  webRouter.post(
+    '/project/:Project_id/compile/queue/promote',
+    AuthorizationMiddleware.ensureUserCanReadProject,
+    CompileController.promoteQueuedCompile
   )
 
   webRouter.get(
@@ -1307,6 +1323,10 @@ async function initialize(webRouter, privateApiRouter, publicApiRouter) {
       TokenAccessController.grantTokenAccessReadOnly
     )
   }
+
+  webRouter.get(['/learn*', '/blog*', '/latex*', '/for/*', '/contact*'], (req, res) => {
+    res.redirect(301, `https://www.overleaf.com${req.originalUrl}`)
+  })
 
   webRouter.get('/unsupported-browser', renderUnsupportedBrowserPage)
 

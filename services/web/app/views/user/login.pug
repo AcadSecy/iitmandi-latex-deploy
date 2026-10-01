@@ -26,8 +26,9 @@ block content
 							label(for='email') #{translate("email")}
 							input#email.form-control(
 								name='email'
-								type='email'
+								type=(settings.ldap && settings.ldap.enable) ? 'text' : 'email'
 								required
+								placeholder=(settings.ldap && settings.ldap.enable) ? settings.ldap.placeholder : 'email@example.com'
 								autofocus='true'
 								autocomplete='username'
 							)
@@ -47,3 +48,21 @@ block content
 						if login_support_text
 							hr
 							p.text-center !{login_support_text}
+					if settings.saml && settings.saml.enable
+						.actions(style='margin-top: 30px;')
+							a.button.btn-secondary.btn(
+							href='/saml/login',
+								style="width: 100%;"
+								data-ol-disabled-inflight
+							)
+								span(data-ol-inflight="idle") #{settings.saml.identityServiceName}
+								span(hidden data-ol-inflight="pending") #{translate("logging_in")}…
+					if settings.oidc && settings.oidc.enable
+						.actions(style='margin-top: 30px;')
+							a.button.btn-secondary.btn(
+								href='/oidc/login',
+								style="width: 100%;"
+								data-ol-disabled-inflight
+							)
+								span(data-ol-inflight="idle") #{settings.oidc.identityServiceName}
+								span(hidden data-ol-inflight="pending") #{translate("logging_in")}…

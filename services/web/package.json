@@ -78,6 +78,7 @@
     "last 1 year",
     "safari >= 15"
   ],
+
   "dependencies": {
     "@ai-sdk/google-vertex": "^4.0.113",
     "@ai-sdk/mcp": "patch:@ai-sdk/mcp@npm%3A1.0.37#~/.yarn/patches/@ai-sdk-mcp-npm-1.0.37-8cd89b8972.patch",
@@ -147,6 +148,7 @@
     "jose": "^4.3.8",
     "json2csv": "^4.3.3",
     "jsonwebtoken": "^9.0.3",
+    "ldapjs": "^2.3.3",
     "lodash": "^4.18.1",
     "lru-cache": "^7.10.1",
     "marked": "^4.1.0",
@@ -161,6 +163,7 @@
     "nocache": "^2.1.0",
     "node-fetch": "^2.7.0",
     "nodemailer": "^8.0.5",
+    "oauth-1.0a": "^2.2.6",
     "on-headers": "^1.0.2",
     "otplib": "^12.0.1",
     "overleaf-editor-core": "workspace:*",
@@ -170,9 +173,10 @@
     "parse-data-url": "^2.0.0",
     "passport": "^0.6.0",
     "passport-google-oauth20": "^2.0.0",
-    "passport-ldapauth": "^2.1.4",
+    "passport-ldapauth": "^3.0.1",
     "passport-local": "^1.0.0",
     "passport-oauth2": "patch:passport-oauth2@npm%3A1.6.1#~/.yarn/patches/passport-oauth2-npm-1.6.1.patch",
+    "passport-openidconnect": "^0.1.2",
     "passport-orcid": "0.0.4",
     "pug": "^3.0.3",
     "pug-runtime": "^3.0.1",

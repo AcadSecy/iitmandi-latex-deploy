@@ -72,6 +72,7 @@ async function getUserForPasswordResetToken(token) {
     'overleaf.id': 1,
     email: 1,
     must_reconfirm: 1,
+    hashedPassword: 1,
   })
 
   await assertUserPermissions(user, ['change-password'])

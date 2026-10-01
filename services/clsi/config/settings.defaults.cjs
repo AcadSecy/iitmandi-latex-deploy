@@ -98,7 +98,7 @@ module.exports = {
   parallelFileDownloads:
     parseInt(process.env.FILESTORE_PARALLEL_FILE_DOWNLOADS, 10) || 1,
   filestoreDomainOveride: process.env.FILESTORE_DOMAIN_OVERRIDE,
-  texliveImageNameOveride: process.env.TEX_LIVE_IMAGE_NAME_OVERRIDE,
+  texliveImageNameOveride: process.env.TEX_LIVE_DOCKER_IMAGE_ROOT,
   texliveOpenoutAny: process.env.TEXLIVE_OPENOUT_ANY,
   texliveMaxPrintLine: process.env.TEXLIVE_MAX_PRINT_LINE,
   enablePdfCaching: process.env.ENABLE_PDF_CACHING === 'true',
@@ -130,7 +130,7 @@ if (process.env.ALLOWED_COMPILE_GROUPS) {
 
 if ((process.env.DOCKER_RUNNER || process.env.SANDBOXED_COMPILES) === 'true') {
   if (
-    !fs.existsSync(Path.join(__dirname, '..', 'app', 'js', 'DockerRunner.js'))
+    !fs.existsSync(Path.join(__dirname, '..', 'app', 'js', 'DockerRunner.mjs'))
   ) {
     console.error(
       'Sandboxed compiles are only available with Overleaf Server Pro. Compare Server Pro with Community Edition here: https://docs.overleaf.com/on-premises/welcome/server-pro-vs.-community-edition'
@@ -145,13 +145,13 @@ if ((process.env.DOCKER_RUNNER || process.env.SANDBOXED_COMPILES) === 'true') {
       image:
         process.env.TEXLIVE_IMAGE ||
         process.env.TEX_LIVE_DOCKER_IMAGE ||
-        'quay.io/sharelatex/texlive-full:2017.1',
+        process.env.ALL_TEX_LIVE_DOCKER_IMAGES.split(',')[0].trim(),
       env: {
         HOME: '/tmp',
         CLSI: 1,
       },
       socketPath: '/var/run/docker.sock',
-      user: process.env.TEXLIVE_IMAGE_USER || 'tex',
+      user: process.env.TEXLIVE_IMAGE_USER || 'www-data',
     },
     optimiseInDocker: true,
     expireProjectAfterIdleMs: 24 * 60 * 60 * 1000,

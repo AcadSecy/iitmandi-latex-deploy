@@ -421,6 +421,13 @@ const _CompileController = {
     const fileLineErrors = !!query.file_line_errors
     const stopOnFirstError = !!body.stopOnFirstError
     const userId = SessionManager.getLoggedInUserId(req.session)
+    // Leave the compile queue if the browser goes away while waiting.
+    const abortController = new AbortController()
+    res.on('close', () => {
+      if (!res.writableFinished) {
+        abortController.abort()
+      }
+    })
     const options = {
       isAutoCompile,
       fileLineErrors,
@@ -482,7 +489,9 @@ const _CompileController = {
       clsiCacheShard,
       instanceType,
     } = await CompileManager.promises
-      .compile(projectId, userId, options)
+      .compile(projectId, userId, options, {
+        signal: abortController.signal,
+      })
       .catch(error => {
         Metrics.inc('compile-error')
         throw error
@@ -596,6 +605,22 @@ const _CompileController = {
     const userId = SessionManager.getLoggedInUserId(req.session)
     await CompileManager.promises.stopCompile(projectId, userId)
     res.sendStatus(200)
+  },
+
+  async getCompileQueueStatus(req, res) {
+    const { params } = parseReq(req, stopCompileSchema, { logOnly: true })
+    const userId = SessionManager.getLoggedInUserId(req.session)
+    res.json(CompileManager.getCompileQueueStatus(params.Project_id, userId))
+  },
+
+  async promoteQueuedCompile(req, res) {
+    const { params } = parseReq(req, stopCompileSchema, { logOnly: true })
+    const userId = SessionManager.getLoggedInUserId(req.session)
+    const promoted = CompileManager.promoteQueuedCompile(
+      params.Project_id,
+      userId
+    )
+    res.json({ promoted })
   },
 
   // Used for submissions through the public API
@@ -1116,6 +1141,8 @@ const CompileController = {
   COMPILE_TIMEOUT_MS,
   compile: expressify(_CompileController.compile),
   stopCompile: expressify(_CompileController.stopCompile),
+  getCompileQueueStatus: expressify(_CompileController.getCompileQueueStatus),
+  promoteQueuedCompile: expressify(_CompileController.promoteQueuedCompile),
   compileSubmission: expressify(_CompileController.compileSubmission),
   downloadPdf: expressify(_CompileController.downloadPdf), //
   compileAndDownloadPdf: expressify(_CompileController.compileAndDownloadPdf),

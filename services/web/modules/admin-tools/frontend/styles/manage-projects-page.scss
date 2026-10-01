@@ -1,0 +1,16 @@
+.project-ds-nav-page {
+  .manage-projects-page {
+    .nav-item-projects {
+      display: initial !important;
+    }
+  }
+}
+
+@include theme('default') {
+  #manage-projects-root {
+    .website-redesign-navbar,
+    .website-redesign .navbar-default {
+      @include navbar-dark;
+    }
+  }
+}
