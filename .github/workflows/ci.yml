@@ -91,10 +91,13 @@ jobs:
       # The upstream repository does not publish its ESLint, Stylelint or
       # Prettier configuration, so linting is not part of CI yet.
 
-      - name: Unit tests (rebranded backend code)
+      - name: Unit tests (rebranded backend code and compile queue)
         working-directory: services/web
         run: >
           yarn vitest run --project=Parallel
+          test/unit/src/Compile/CompileQueue.test.mjs
+          test/unit/src/Compile/CompileManager.test.mjs
+          test/unit/src/Compile/CompileController.test.mjs
           test/unit/src/Email
           test/unit/src/Downloads/ProjectDownloadsController.test.mjs
           test/unit/src/User/UserDeleter.test.mjs
