@@ -516,6 +516,15 @@ describe('CompileManager', function () {
     })
 
     it('stops a paused compile on the CLSI', async function (ctx) {
+      // only the first compile can be paused, so it stays paused while the
+      // second one runs
+      ctx.ClsiManager.promises.suspendCompile = sinon
+        .stub()
+        .callsFake(projectId =>
+          projectId === 'project-1'
+            ? Promise.resolve()
+            : Promise.reject(new Error('not running'))
+        )
       let finishSecondCompile
       ctx.ClsiManager.promises.sendRequest.onSecondCall().returns(
         new Promise(resolve => {
