@@ -1,5 +1,5 @@
 {
-  "name": "Overleaf",
+  "name": "IIT Mandi LaTeX",
   "icons": [
     {
       "src": "/overleaf-logo.svg",
@@ -7,7 +7,7 @@
       "sizes": "any"
     }
   ],
-  "theme_color": "#1b222c",
+  "theme_color": "#00237d",
   "background_color": "#ffffff",
   "start_url": "/",
   "display": "standalone"

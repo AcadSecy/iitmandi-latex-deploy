@@ -4,7 +4,7 @@ import overleafLogo from '@/shared/svgs/overleaf-a-ds-solution-mallard.svg'
 import overleafLogoDark from '@/shared/svgs/overleaf-a-ds-solution-mallard-dark.svg'
 
 export function DsNavOverleafLogo() {
-  const appName = getMeta('ol-ExposedSettings')?.appName ?? 'Overleaf'
+  const appName = getMeta('ol-ExposedSettings')?.appName
   const activeOverallTheme = useActiveOverallTheme()
 
   return (
@@ -12,7 +12,7 @@ export function DsNavOverleafLogo() {
       <a href="/" aria-label={appName}>
         <img
           src={activeOverallTheme === 'dark' ? overleafLogoDark : overleafLogo}
-          alt="Overleaf, A Digital Science Solution"
+          alt={appName}
           height="59"
           width="130"
         />

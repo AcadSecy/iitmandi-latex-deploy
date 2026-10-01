@@ -1,0 +1,13 @@
+{
+  "name": "iitmandi-latex-branding",
+  "private": true,
+  "description": "Generates the platform's logos, favicons and app icons. Not part of the Yarn workspaces.",
+  "type": "module",
+  "scripts": {
+    "generate": "node generate.mjs"
+  },
+  "dependencies": {
+    "fontkit": "^2.0.4",
+    "sharp": "^0.35.5"
+  }
+}
