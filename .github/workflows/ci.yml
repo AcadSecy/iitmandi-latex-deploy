@@ -141,7 +141,7 @@ jobs:
           modules/editor-waiting-room
           modules/storage-quota
 
-      - name: Frontend tests (project list, welcome message)
+      - name: Frontend tests (project list, welcome message, Ask AI)
         working-directory: services/web
         env:
           NODE_ENV: test
@@ -152,6 +152,7 @@ jobs:
           --require test/frontend/bootstrap.js
           test/frontend/features/project-list/components/project-list-root.test.tsx
           test/frontend/features/project-list/components/welcome-message.test.tsx
+          modules/ask-ai/test/frontend/open-assistant.test.ts
 
   git-bridge:
     name: Git bridge

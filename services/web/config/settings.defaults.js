@@ -884,6 +884,14 @@ module.exports = {
     defaultMB: intFromEnv('STORAGE_QUOTA_MB', 0),
   },
 
+  // "Ask AI" buttons in the editor toolbar and on compile errors open an
+  // outside assistant beside the editor (modules/ask-ai). `url` ends with the
+  // query parameter that takes the prompt. Empty turns the buttons off.
+  askAi: {
+    url: process.env.ASK_AI_URL || '',
+    name: process.env.ASK_AI_NAME || 'ChatGPT',
+  },
+
   analytics: {
     enabled: false,
   },
@@ -1062,7 +1070,12 @@ module.exports = {
     sourceEditorExtensions: [],
     sourceEditorVisualExtensions: [],
     sourceEditorComponents: [],
-    pdfLogEntryHeaderActionComponents: [],
+    pdfLogEntryHeaderActionComponents: [
+      Path.resolve(
+        __dirname,
+        '../modules/ask-ai/frontend/js/components/ask-ai-log-entry-action.tsx'
+      ),
+    ],
     pdfLogEntryComponents: [],
     pdfLogEntriesComponents: [],
     pdfPreviewPromotions: [],
@@ -1077,7 +1090,12 @@ module.exports = {
     sourceEditorToolbarStartButtons: [],
     sourceEditorToolbarButtonGroups: [],
     sourceEditorToolbarComponents: [],
-    sourceEditorToolbarEndButtons: [],
+    sourceEditorToolbarEndButtons: [
+      Path.resolve(
+        __dirname,
+        '../modules/ask-ai/frontend/js/components/ask-ai-toolbar-button.tsx'
+      ),
+    ],
     rootContextProviders: [
       Path.resolve(
         __dirname,

@@ -29,6 +29,8 @@ export type ExposedSettings = {
   projectUploadTimeout: number
   propensityId?: string
   maxUploadSize: number
+  askAiUrl?: string
+  askAiName?: string
   recaptchaDisabled: {
     invite: boolean
     login: boolean

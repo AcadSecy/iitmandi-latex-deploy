@@ -389,6 +389,8 @@ export default async function (webRouter, privateApiRouter, publicApiRouter) {
       emailConfirmationDisabled: Settings.emailConfirmationDisabled,
       maxEntitiesPerProject: Settings.maxEntitiesPerProject,
       maxUploadSize: Settings.maxUploadSize,
+      askAiUrl: Settings.askAi?.url || undefined,
+      askAiName: Settings.askAi?.name,
       projectUploadTimeout: Settings.projectUploadTimeout,
       recaptchaSiteKey: Settings.recaptcha?.siteKey,
       recaptchaSiteKeyV3: Settings.recaptcha?.siteKeyV3,

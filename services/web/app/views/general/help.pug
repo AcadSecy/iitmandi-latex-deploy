@@ -82,6 +82,18 @@ block content
 								a(href='mailto:' + settings.adminEmail) #{settings.adminEmail}
 								| .
 
+					if settings.askAi && settings.askAi.url
+						h2.h3#ask-ai Ask AI
+						ul
+							li
+								strong Ask AI
+								|
+								| in the editor toolbar opens #{settings.askAi.name} in a window beside the editor, with the text you selected. The sparkle button on a compile error asks it what causes the error and how to fix it.
+							li
+								| #{settings.askAi.name} is an outside service, not part of #{settings.appName}. You use it with your own account, and what you send goes to its provider, so leave out anything confidential.
+							li
+								| To see both at once, move the editor window to the left half of your screen.
+
 					if settings.editorPlaces && settings.editorPlaces.limit > 0
 						h2.h3#editor-waiting-room When the editor is full
 						ul
