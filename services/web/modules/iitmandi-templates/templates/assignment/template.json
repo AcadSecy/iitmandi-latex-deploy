@@ -1,0 +1,10 @@
+{
+  "name": "IIT Mandi Assignment",
+  "category": "homework",
+  "description": "Assignment, homework or tutorial sheet for IIT Mandi courses: course heading with the Institute logo, student name and roll number on every page, numbered problems with marks, and solutions.",
+  "author": "IIT Mandi LaTeX",
+  "license": "cc_by_4.0",
+  "mainFile": "main.tex",
+  "compiler": "pdflatex",
+  "shared": ["iitmandi-logo.jpg"]
+}

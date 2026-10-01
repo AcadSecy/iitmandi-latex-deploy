@@ -1,0 +1,85 @@
+%% IIT Mandi project report template: Design Practicum (DP), Interactive
+%% Socio-Technical Practicum (ISTP), Major Technical Project (MTP), and M.Tech
+%% or M.Sc projects. Fill in the details below and write the report in the
+%% sections that follow. Use [twoside] for two-sided printing.
+\documentclass[report]{iitmandi-thesis}
+
+% The class already loads amsmath, amsthm and the AMS symbols.
+\usepackage{booktabs}
+\usepackage[backend=biber,style=numeric-comp,sorting=none]{biblatex}
+\addbibresource{references.bib}
+
+\title{Title of the Project}
+% One line per team member: name and roll number.
+\author{First Student (B21001)\\ Second Student (B21002)\\ Third Student (B21003)}
+\course{DP 301P: Design Practicum}      % or: Major Technical Project (MTP), M.Tech Project, ...
+\school[SCEE]{School of Computing and Electrical Engineering}
+\supervisor{Dr.\ Faculty Mentor}{Assistant Professor}
+\submitted{November 2026}
+% \declarant{I}   % for a report by one student
+
+\begin{document}
+
+\maketitle
+
+\frontmatter
+\makedeclaration
+\makecertificate
+
+\begin{acknowledgements}
+Thank your mentor, the course instructors, the lab staff and anyone else who
+helped with the project.
+\end{acknowledgements}
+
+\begin{abstract}
+Summarise the problem, your approach, the result and what it means, in one or
+two paragraphs.
+\end{abstract}
+
+\tableofcontents
+\listoffigures
+
+\mainmatter
+
+\chapter{Introduction}
+Describe the problem, who it matters to, and the goals of the project. Cite
+related work where it helps~\cite{lamport1994latex}.
+
+\chapter{Design and Methodology}
+Explain the design, the alternatives you considered, and why you chose this one.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.3\textwidth]{iitmandi-logo}
+  \caption{Replace with a block diagram or a photo of the prototype.}
+  \label{fig:design}
+\end{figure}
+
+\chapter{Implementation}
+Describe what you built: hardware, software, experiments, and the work done by
+each team member.
+
+\chapter{Results and Discussion}
+Present the results (Table~\ref{tab:results}) and discuss what they show.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Summary of results.}
+  \label{tab:results}
+  \begin{tabular}{@{}lrr@{}}
+    \toprule
+    Test & Target & Measured \\
+    \midrule
+    Accuracy (\%) & 90 & 92.5 \\
+    Power (W) & 5.0 & 4.6 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\chapter{Conclusion and Future Work}
+State what was achieved, the limitations, and what could be done next.
+
+\backmatter
+\printbibliography[heading=bibintoc,title={References}]
+
+\end{document}

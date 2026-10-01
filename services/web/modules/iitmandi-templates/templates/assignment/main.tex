@@ -1,0 +1,105 @@
+%% IIT Mandi assignment template: problem sets, homework and tutorial sheets.
+%% Fill in the course and student details, then add one \begin{problem} per question.
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[a4paper,margin=25mm,headheight=28pt]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage[hidelinks]{hyperref}
+
+%% ---------------------------------------------------------------- details
+\newcommand{\coursecode}{IC 152}
+\newcommand{\coursename}{Computing and Data Science}
+\newcommand{\assignment}{Assignment 1}
+\newcommand{\studentname}{Your Name}
+\newcommand{\rollnumber}{B25001}
+\newcommand{\instructor}{Dr.\ Instructor Name}
+\newcommand{\duedate}{15 August 2026}
+
+%% ---------------------------------------------------------------- layout
+\definecolor{iitmnavy}{HTML}{00237D}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\coursecode: \assignment}
+\fancyhead[R]{\small\studentname\ (\rollnumber)}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\newcounter{problem}
+\newenvironment{problem}[1][]
+  {\refstepcounter{problem}\par\medskip\noindent
+   {\color{iitmnavy}\bfseries Problem \theproblem\if\relax\detokenize{#1}\relax\else\ (#1)\fi.}\ }
+  {\par\medskip}
+\newenvironment{solution}
+  {\par\noindent\textit{Solution.}\ }
+  {\hfill$\square$\par\medskip}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt}
+
+\begin{document}
+
+%% ---------------------------------------------------------------- heading
+\thispagestyle{plain}
+\begin{minipage}[c]{0.18\textwidth}
+  \includegraphics[width=\linewidth]{iitmandi-logo}
+\end{minipage}\hfill
+\begin{minipage}[c]{0.78\textwidth}
+  \raggedleft
+  {\Large\bfseries\color{iitmnavy}\coursecode: \coursename\par}
+  \medskip
+  {\large\assignment\par}
+  \smallskip
+  {\small Instructor: \instructor \quad\textbar\quad Due: \duedate\par}
+\end{minipage}
+
+\medskip
+\noindent\rule{\textwidth}{0.8pt}
+\noindent\textbf{Name:} \studentname \hfill \textbf{Roll number:} \rollnumber
+\par\noindent\rule{\textwidth}{0.4pt}
+
+%% ---------------------------------------------------------------- problems
+\begin{problem}[10 marks]
+Show that $\sum_{k=1}^{n} k = \frac{n(n+1)}{2}$ for every positive integer $n$.
+\end{problem}
+
+\begin{solution}
+By induction on $n$. For $n = 1$ both sides equal $1$. If the identity holds
+for $n$, then
+\[
+  \sum_{k=1}^{n+1} k = \frac{n(n+1)}{2} + (n+1) = \frac{(n+1)(n+2)}{2},
+\]
+so it holds for $n + 1$.
+\end{solution}
+
+\begin{problem}[5 marks]
+Answer the following.
+\begin{enumerate}[label=(\alph*)]
+  \item First part of the question.
+  \item Second part of the question.
+\end{enumerate}
+\end{problem}
+
+\begin{solution}
+\begin{enumerate}[label=(\alph*)]
+  \item Answer to the first part.
+  \item Answer to the second part, with a table if needed:
+
+  \begin{tabular}{@{}lr@{}}
+    \toprule
+    Input & Output \\
+    \midrule
+    1 & 1 \\
+    2 & 3 \\
+    \bottomrule
+  \end{tabular}
+\end{enumerate}
+\end{solution}
+
+\end{document}

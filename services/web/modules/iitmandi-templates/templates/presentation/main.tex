@@ -1,0 +1,95 @@
+%% IIT Mandi presentation template (beamer, 16:9).
+%% The theme is in beamerthemeIITMandi.sty. For 4:3 slides use aspectratio=43.
+\documentclass[aspectratio=169,11pt]{beamer}
+\usetheme{IITMandi}
+
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{booktabs}
+
+\title{Title of the Presentation}
+\subtitle{Seminar, synopsis or project review}
+\author[Your Name]{Your Name}
+\institute{School of Computing and Electrical Engineering\\ Indian Institute of Technology Mandi}
+\date{12 August 2026}
+
+\begin{document}
+
+\begin{frame}[plain]
+  \titlepage
+\end{frame}
+
+\begin{frame}{Outline}
+  \tableofcontents
+\end{frame}
+
+\section{Introduction}
+
+\begin{frame}{Motivation}
+  \begin{itemize}
+    \item State the problem in one sentence.
+    \item Say why it matters, and to whom.
+    \item \alert{Highlight} the one thing the audience should remember.
+  \end{itemize}
+\end{frame}
+
+\section{Method}
+
+\begin{frame}{Approach}
+  \begin{columns}[T]
+    \begin{column}{0.55\textwidth}
+      \begin{enumerate}
+        \item Collect the data.
+        \item Build the model.
+        \item Evaluate against the baseline.
+      \end{enumerate}
+    \end{column}
+    \begin{column}{0.4\textwidth}
+      \begin{block}{Key idea}
+        Put the main insight here.
+      \end{block}
+      \begin{exampleblock}{Example}
+        A short worked example.
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\section{Results}
+
+\begin{frame}{Results}
+  \centering
+  \begin{tabular}{@{}lrr@{}}
+    \toprule
+    Method & Accuracy (\%) & Time (s) \\
+    \midrule
+    Baseline & 81.2 & 12.4 \\
+    Proposed & \textbf{88.7} & \textbf{9.8} \\
+    \bottomrule
+  \end{tabular}
+  \vspace{1em}
+  \begin{alertblock}{Takeaway}
+    The proposed method is more accurate and faster.
+  \end{alertblock}
+\end{frame}
+
+\section{Conclusion}
+
+\begin{frame}{Conclusion}
+  \begin{itemize}
+    \item What was done.
+    \item What was found.
+    \item What comes next.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[plain]
+  \centering
+  \vfill
+  {\Large\bfseries\color{iitmnavy} Thank you}\par
+  \medskip
+  Questions?
+  \vfill
+\end{frame}
+
+\end{document}

@@ -1,0 +1,10 @@
+{
+  "name": "IIT Mandi Project Report",
+  "category": "report",
+  "description": "Report for B.Tech DP, ISTP and MTP projects and for M.Tech and M.Sc projects at IIT Mandi: title page with the Institute logo and team members, declaration, mentor's certificate, chapters and references.",
+  "author": "IIT Mandi LaTeX",
+  "license": "lppl_1.3c",
+  "mainFile": "main.tex",
+  "compiler": "pdflatex",
+  "shared": ["iitmandi-thesis.cls", "iitmandi-logo.jpg"]
+}

@@ -1,0 +1,10 @@
+{
+  "name": "IIT Mandi Research Poster",
+  "category": "poster",
+  "description": "A0 research poster in IIT Mandi colours with the Institute logo in the title, two columns of blocks and a highlighted key result. Switches to landscape or A1 with one option.",
+  "author": "IIT Mandi LaTeX",
+  "license": "cc_by_4.0",
+  "mainFile": "main.tex",
+  "compiler": "pdflatex",
+  "shared": ["iitmandi-logo.jpg"]
+}

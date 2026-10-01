@@ -1,0 +1,80 @@
+%% beamerthemeIITMandi.sty
+%% Beamer theme for IIT Mandi presentations: navy frame titles, orange accents
+%% and the Institute logo on the title slide and in the footer.
+%% Released under the LaTeX Project Public License 1.3c or later.
+\ProvidesPackage{beamerthemeIITMandi}[2026/10/01 v1.0 IIT Mandi beamer theme]
+
+\RequirePackage{graphicx}
+
+\definecolor{iitmnavy}{HTML}{00237D}
+\definecolor{iitmorange}{HTML}{E07B1A}
+\definecolor{iitmblue}{HTML}{0091D5}
+\definecolor{iitmgrey}{HTML}{484848}
+
+\usefonttheme{professionalfonts}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{itemize items}[circle]
+\setbeamertemplate{enumerate items}[default]
+\setbeamertemplate{blocks}[rounded][shadow=false]
+
+\setbeamercolor{normal text}{fg=iitmgrey!90!black,bg=white}
+\setbeamercolor{structure}{fg=iitmnavy}
+\setbeamercolor{alerted text}{fg=iitmorange!90!black}
+\setbeamercolor{frametitle}{fg=white,bg=iitmnavy}
+\setbeamercolor{title}{fg=iitmnavy}
+\setbeamercolor{subtitle}{fg=iitmgrey}
+\setbeamercolor{item}{fg=iitmorange}
+\setbeamercolor{block title}{fg=white,bg=iitmnavy}
+\setbeamercolor{block body}{bg=iitmnavy!6}
+\setbeamercolor{block title alerted}{fg=white,bg=iitmorange}
+\setbeamercolor{block body alerted}{bg=iitmorange!8}
+\setbeamercolor{block title example}{fg=white,bg=iitmblue}
+\setbeamercolor{block body example}{bg=iitmblue!8}
+\setbeamercolor{footline}{fg=iitmgrey,bg=white}
+
+\setbeamerfont{title}{size=\LARGE,series=\bfseries}
+\setbeamerfont{frametitle}{size=\large,series=\bfseries}
+\setbeamerfont{footline}{size=\tiny}
+
+\newcommand{\iitmlogo}{iitmandi-logo}
+
+%% Title slide: logo, title, people, orange rule.
+\setbeamertemplate{title page}{%
+  \begin{center}
+    \includegraphics[height=0.2\paperheight]{\iitmlogo}\par
+    \vspace{0.5em}
+    {\usebeamerfont{title}\usebeamercolor[fg]{title}\inserttitle\par}
+    \ifx\insertsubtitle\@empty\else
+      \vspace{0.3em}
+      {\usebeamerfont{subtitle}\usebeamercolor[fg]{subtitle}\insertsubtitle\par}
+    \fi
+    \vspace{0.4em}
+    {\color{iitmorange}\rule{0.35\textwidth}{1.5pt}\par}
+    \vspace{0.6em}
+    {\normalsize\insertauthor\par}
+    \vspace{0.2em}
+    {\small\insertinstitute\par}
+    \vspace{0.4em}
+    {\small\insertdate\par}
+  \end{center}}
+
+%% Frame title: full-width navy bar.
+\setbeamertemplate{frametitle}{%
+  \nointerlineskip
+  \begin{beamercolorbox}[wd=\paperwidth,ht=2.4ex,dp=1.2ex,leftskip=1em,rightskip=1em]{frametitle}
+    \usebeamerfont{frametitle}\insertframetitle
+  \end{beamercolorbox}
+  \vspace{0.3em}}
+
+%% Footer: orange rule, logo, short author and title, slide number.
+\setbeamertemplate{footline}{%
+  \leavevmode
+  {\color{iitmorange}\rule{\paperwidth}{0.8pt}}\par
+  \begin{beamercolorbox}[wd=\paperwidth,ht=3.2ex,dp=1.2ex,leftskip=0.8em,rightskip=0.8em]{footline}
+    \usebeamerfont{footline}%
+    \raisebox{-0.35\height}{\includegraphics[height=2.6ex]{\iitmlogo}}\hspace{0.8em}%
+    \insertshortauthor\hfill\insertshorttitle\hfill
+    \insertframenumber\,/\,\inserttotalframenumber
+  \end{beamercolorbox}}
+
+\endinput

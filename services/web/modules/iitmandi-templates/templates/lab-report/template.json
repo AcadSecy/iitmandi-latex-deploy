@@ -1,0 +1,10 @@
+{
+  "name": "IIT Mandi Lab Report",
+  "category": "report",
+  "description": "Laboratory report for IIT Mandi courses: heading with the Institute logo, experiment and student details, and sections for aim, apparatus, theory, procedure, observations, calculations, results and discussion.",
+  "author": "IIT Mandi LaTeX",
+  "license": "cc_by_4.0",
+  "mainFile": "main.tex",
+  "compiler": "pdflatex",
+  "shared": ["iitmandi-logo.jpg"]
+}

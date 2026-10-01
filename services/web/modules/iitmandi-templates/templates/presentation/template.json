@@ -1,0 +1,10 @@
+{
+  "name": "IIT Mandi Presentation",
+  "category": "presentation",
+  "description": "Beamer slides in IIT Mandi colours: title slide with the Institute logo, navy frame titles, orange accents, and a footer with the logo and slide numbers. 16:9 by default.",
+  "author": "IIT Mandi LaTeX",
+  "license": "lppl_1.3c",
+  "mainFile": "main.tex",
+  "compiler": "pdflatex",
+  "shared": ["iitmandi-logo.jpg"]
+}

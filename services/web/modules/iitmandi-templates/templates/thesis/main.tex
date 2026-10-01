@@ -1,0 +1,47 @@
+%% IIT Mandi thesis template (PhD, MS by Research, M.Tech by Research, I-PhD).
+%% Fill in the details below, then write your chapters in the chapters/ folder.
+%% Options: [twoside] for two-sided printing, [cmfont] for Computer Modern.
+\documentclass{iitmandi-thesis}
+
+% The class already loads amsmath, amsthm and the AMS symbols.
+\usepackage{booktabs}
+\usepackage[backend=biber,style=numeric-comp,sorting=none]{biblatex}
+\addbibresource{references.bib}
+
+\title{Title of the Thesis}
+\author{Your Full Name}
+\enrolment{D00000}
+\degree{Doctor of Philosophy}          % or: Master of Science (by Research)
+\discipline{Computer Science and Engineering}
+\school[SCEE]{School of Computing and Electrical Engineering}
+\supervisor{Dr.\ Supervisor Name}{Associate Professor}
+% \cosupervisor{Dr.\ Co-supervisor Name}{Assistant Professor}
+\submitted{June 2027}
+
+\begin{document}
+
+\maketitle
+
+\frontmatter
+\makedeclaration
+\makecertificate
+\input{frontmatter/dedication}
+\input{frontmatter/acknowledgements}
+\input{frontmatter/abstract}
+\tableofcontents
+\listoffigures
+\listoftables
+\input{frontmatter/abbreviations}
+
+\mainmatter
+\input{chapters/introduction}
+\input{chapters/conclusion}
+
+\appendix
+\input{chapters/appendix}
+
+\backmatter
+\printbibliography[heading=bibintoc,title={References}]
+\input{frontmatter/publications}
+
+\end{document}

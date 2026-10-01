@@ -1,0 +1,96 @@
+%% One-page resume for IIT Mandi students (placements and internships).
+%% Check the Career and Placement Cell's current instructions before applying;
+%% sections can be reordered or removed freely.
+\documentclass[10pt,a4paper]{article}
+
+\usepackage[a4paper,margin=12mm,top=10mm,bottom=10mm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage[hidelinks]{hyperref}
+
+\definecolor{iitmnavy}{HTML}{00237D}
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\setlist[itemize]{leftmargin=1.2em,itemsep=0pt,topsep=1pt,parsep=0pt}
+
+%% Section headings: bold, with a rule.
+\titleformat{\section}{\normalsize\bfseries\color{iitmnavy}}{}{0pt}{\MakeUppercase}[\vspace{-2pt}\titlerule]
+\titlespacing*{\section}{0pt}{6pt}{3pt}
+
+%% \entry{title}{right-aligned date}{subtitle}
+\newcommand{\entry}[3]{%
+  \textbf{#1}\hfill{\small #2}\\
+  \ifx\relax#3\relax\else{\small\itshape #3}\\\fi}
+
+\begin{document}
+
+%% ---------------------------------------------------------------- header
+\begin{minipage}[c]{0.15\textwidth}
+  \includegraphics[width=\linewidth]{iitmandi-logo}
+\end{minipage}\hfill
+\begin{minipage}[c]{0.82\textwidth}
+  {\LARGE\bfseries Your Name}\\[2pt]
+  B.Tech, Computer Science and Engineering \textbar\ Roll number B22001\\
+  Indian Institute of Technology Mandi\\
+  \href{mailto:b22001@students.iitmandi.ac.in}{b22001@students.iitmandi.ac.in}
+  \textbar\ +91 98765 43210
+  \textbar\ \href{https://github.com/username}{github.com/username}
+\end{minipage}
+
+%% ---------------------------------------------------------------- education
+\section{Education}
+\begin{tabularx}{\textwidth}{@{}lXlr@{}}
+  \toprule
+  \textbf{Degree} & \textbf{Institute or board} & \textbf{Year} & \textbf{CGPA / \%} \\
+  \midrule
+  B.Tech (CSE) & Indian Institute of Technology Mandi & 2026 & 8.50 / 10 \\
+  Class XII & CBSE & 2022 & 94.2\% \\
+  Class X & CBSE & 2020 & 96.0\% \\
+  \bottomrule
+\end{tabularx}
+
+%% ---------------------------------------------------------------- experience
+\section{Internships}
+\entry{Software Engineering Intern, Company Name}{May--Jul 2025}{Team or project}
+\begin{itemize}
+  \item What you built, with a measurable result (for example, cut query time by 40\%).
+  \item Tools and technologies used.
+\end{itemize}
+
+\section{Projects}
+\entry{Major Technical Project: Project Title}{Aug 2025 -- present}{Guide: Dr.\ Faculty Name}
+\begin{itemize}
+  \item The problem, your approach and the outcome.
+\end{itemize}
+\entry{Design Practicum: Project Title}{Jan--Apr 2024}{}
+\begin{itemize}
+  \item The problem, your approach and the outcome.
+\end{itemize}
+
+\section{Technical Skills}
+\textbf{Languages:} Python, C++, Java \quad
+\textbf{Tools:} Git, Linux, Docker \quad
+\textbf{Areas:} Machine learning, systems
+
+\section{Achievements}
+\begin{itemize}
+  \item Award, competition rank or scholarship, with the year.
+\end{itemize}
+
+\section{Positions of Responsibility}
+\begin{itemize}
+  \item Role, club or society, IIT Mandi (year): what you led and the result.
+\end{itemize}
+
+\section{Extracurricular Activities}
+\begin{itemize}
+  \item Sports, cultural activities, volunteering.
+\end{itemize}
+
+\end{document}

@@ -1,0 +1,10 @@
+{
+  "name": "IIT Mandi Thesis",
+  "category": "thesis",
+  "description": "Thesis for the PhD, MS (by Research), M.Tech (by Research) and I-PhD programmes at IIT Mandi: title page with the Institute logo, declaration, supervisor's certificate, front matter, chapters and references.",
+  "author": "IIT Mandi LaTeX",
+  "license": "lppl_1.3c",
+  "mainFile": "main.tex",
+  "compiler": "pdflatex",
+  "shared": ["iitmandi-thesis.cls", "iitmandi-logo.jpg"]
+}

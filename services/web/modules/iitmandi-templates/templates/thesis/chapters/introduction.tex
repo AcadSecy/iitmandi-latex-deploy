@@ -1,0 +1,50 @@
+\chapter{Introduction}
+\label{chap:introduction}
+
+This chapter shows how to use the template. Replace it with your own text.
+
+\section{Motivation}
+Cite your sources with \verb|\cite|, for example~\cite{lamport1994latex,knuth1984texbook}.
+Add entries to \texttt{references.bib}; the reference list is built for you.
+
+\section{Figures and tables}
+Upload image files to the project (a \texttt{figures} folder keeps them
+tidy) and include them as in Figure~\ref{fig:logo}. Tables use the \texttt{booktabs} rules, as in
+Table~\ref{tab:example}.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.35\textwidth]{iitmandi-logo}
+  \caption{A figure with a caption. Captions go below figures.}
+  \label{fig:logo}
+\end{figure}
+
+\begin{table}[htbp]
+  \centering
+  \caption{A table with a caption. Captions go above tables.}
+  \label{tab:example}
+  \begin{tabular}{@{}lrr@{}}
+    \toprule
+    Method & Accuracy (\%) & Time (s) \\
+    \midrule
+    Baseline & 81.2 & 12.4 \\
+    Proposed & 88.7 & 9.8 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{Equations}
+Number the equations you refer to, such as Equation~\eqref{eq:energy}:
+\begin{equation}
+  E = mc^2 .
+  \label{eq:energy}
+\end{equation}
+
+\section{Organisation of the thesis}
+Chapter~\ref{chap:conclusion} summarises the work.
+
+\section*{Before you submit}
+Submit a plagiarism report with the thesis. For the PhD programme, the overall
+similarity index must not exceed 20\% and the similarity from any single source
+must not exceed 2\% (Ph.D.\ Ordinance, R.22). Check the current ordinance of your
+programme and the Academic Section's guidelines for the required format.

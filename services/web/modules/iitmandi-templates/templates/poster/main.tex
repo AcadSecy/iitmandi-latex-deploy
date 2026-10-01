@@ -1,0 +1,99 @@
+%% IIT Mandi research poster template (A0 portrait, tikzposter).
+%% For landscape use "landscape" instead of "portrait"; for A1 use a1paper.
+\documentclass[25pt,a0paper,portrait,margin=0mm,innermargin=15mm,blockverticalspace=15mm,colspace=15mm,subcolspace=8mm]{tikzposter}
+
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{graphicx}
+
+%% ---------------------------------------------------------------- colours
+\definecolor{iitmnavy}{HTML}{00237D}
+\definecolor{iitmorange}{HTML}{E07B1A}
+\definecolor{iitmlight}{HTML}{EEF1F8}
+
+\definecolorstyle{IITMandi}{}{
+  \colorlet{backgroundcolor}{white}
+  \colorlet{framecolor}{iitmnavy}
+  \colorlet{titlefgcolor}{iitmnavy}
+  \colorlet{titlebgcolor}{white}
+  \colorlet{blocktitlebgcolor}{iitmnavy}
+  \colorlet{blocktitlefgcolor}{white}
+  \colorlet{blockbodybgcolor}{iitmlight}
+  \colorlet{blockbodyfgcolor}{black}
+  \colorlet{innerblocktitlebgcolor}{iitmorange}
+  \colorlet{innerblocktitlefgcolor}{white}
+  \colorlet{innerblockbodybgcolor}{white}
+  \colorlet{innerblockbodyfgcolor}{black}
+  \colorlet{notefgcolor}{black}
+  \colorlet{notebgcolor}{iitmorange!20}
+  \colorlet{notefrcolor}{iitmorange}
+}
+\usetheme{Simple}
+\usecolorstyle{IITMandi}
+
+%% ---------------------------------------------------------------- details
+\title{Title of the Research Poster}
+\author{First Author, Second Author and Supervisor Name}
+\institute{School of Computing and Electrical Engineering, Indian Institute of Technology Mandi}
+\titlegraphic{\includegraphics[width=14cm]{iitmandi-logo}}
+\makeatletter
+\settitle{%
+  \centering
+  \@titlegraphic\par\vspace{1em}
+  {\color{titlefgcolor}\bfseries\Huge\@title\par}
+  \vspace{0.6em}
+  {\huge\@author\par}
+  \vspace{0.3em}
+  {\Large\@institute\par}
+  \vspace{0.6em}
+  {\color{iitmorange}\rule{0.6\linewidth}{6pt}\par}}
+\makeatother
+
+\begin{document}
+
+\maketitle
+
+\begin{columns}
+  \column{0.5}
+  \block{Introduction}{
+    State the problem, why it matters, and the question the work answers.
+    Keep each block short: a poster is read from two metres away.
+  }
+  \block{Method}{
+    Describe the approach in a few sentences and one diagram.
+    \begin{tikzfigure}[A figure on the poster]
+      \includegraphics[width=0.4\linewidth]{iitmandi-logo}
+    \end{tikzfigure}
+  }
+
+  \column{0.5}
+  \block{Results}{
+    \begin{center}
+      \begin{tabular}{@{}lrr@{}}
+        \toprule
+        Method & Accuracy (\%) & Time (s) \\
+        \midrule
+        Baseline & 81.2 & 12.4 \\
+        Proposed & 88.7 & 9.8 \\
+        \bottomrule
+      \end{tabular}
+    \end{center}
+    \innerblock{Key result}{The proposed method is more accurate and faster.}
+  }
+  \block{Conclusion}{
+    \begin{itemize}
+      \item What was found.
+      \item What it means.
+      \item What comes next.
+    \end{itemize}
+  }
+  \block{References}{
+    \small
+    [1] Author, Title, Venue, Year.\par
+    [2] Author, Title, Venue, Year.
+  }
+\end{columns}
+
+\end{document}

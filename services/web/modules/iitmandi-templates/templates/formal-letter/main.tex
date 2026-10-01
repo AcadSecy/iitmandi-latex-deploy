@@ -1,0 +1,64 @@
+%% Formal letter template for IIT Mandi students and staff: requests to the
+%% Dean or a School, letters to companies, recommendation requests.
+%% This is a personal letter, not the Institute's official letterhead.
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[a4paper,margin=25mm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[hidelinks]{hyperref}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{8pt}
+\pagestyle{empty}
+
+%% ---------------------------------------------------------------- details
+\newcommand{\sendername}{Your Name}
+\newcommand{\senderdetails}{%
+  Roll number B25001, B.Tech (Computer Science and Engineering)\\
+  Room 101, Hostel Name\\
+  Indian Institute of Technology Mandi\\
+  Kamand, Mandi, Himachal Pradesh 175075\\
+  \href{mailto:b25001@students.iitmandi.ac.in}{b25001@students.iitmandi.ac.in}}
+\newcommand{\recipient}{%
+  The Dean (Academics)\\
+  Indian Institute of Technology Mandi\\
+  Kamand, Mandi, Himachal Pradesh 175075}
+\newcommand{\lettersubject}{Request for permission to register for an additional course}
+\newcommand{\letterdate}{12 August 2026}
+
+\begin{document}
+
+\begin{flushright}
+  \textbf{\sendername}\\
+  \senderdetails
+\end{flushright}
+
+\letterdate
+
+\recipient
+
+\textbf{Subject:} \lettersubject
+
+Respected Sir/Madam,
+
+State the purpose of the letter in the first paragraph.
+
+Give the details the reader needs to act on it: dates, course codes,
+reference numbers and any documents you have attached.
+
+Close with the action you are asking for, and thank the reader.
+
+\vspace{4mm}
+Yours sincerely,
+
+\vspace{14mm}
+\sendername
+
+\vspace{6mm}
+\textbf{Enclosures:}
+\begin{enumerate}
+  \item Copy of the relevant document.
+\end{enumerate}
+
+\end{document}
