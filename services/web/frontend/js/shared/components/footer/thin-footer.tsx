@@ -44,11 +44,12 @@ function Separator() {
 
 function ThinFooter({
   showPoweredBy,
+  sourceCodeUrl,
   subdomainLang,
   leftItems,
   rightItems,
 }: FooterMetadata) {
-  const { env } = getMeta('ol-ExposedSettings')
+  const { env, appName } = getMeta('ol-ExposedSettings')
   const showLanguagePicker = Boolean(
     subdomainLang && Object.keys(subdomainLang).length > 1
   )
@@ -63,10 +64,7 @@ function ThinFooter({
             {showPoweredBy ? (
               <>
                 <li>
-                  {/* year of Server Pro release, static */}© 2026{' '}
-                  <a href="https://www.overleaf.com/for/enterprises">
-                    Powered by Overleaf
-                  </a>
+                  {appName} · <a href={sourceCodeUrl}>Source code</a>
                 </li>
                 {showLanguagePicker || hasCustomLeftNav ? <Separator /> : null}
               </>
@@ -93,12 +91,11 @@ function ThinFooter({
           <OLRow>
             <OLCol lg={12}>
               <p className="copyright-notice">
-                Overleaf Community Edition™ is a free unsupported software that
-                may contain vulnerabilities and used at your own risk. Use of
-                Overleaf Community Edition™ here is not operated, supported or
-                endorsed by Overleaf®. It has been provided "AS IS" with all
-                liability disclaimed (to the fullest extent lawful) and all
-                rights reserved.
+                {appName} is free software, licensed under the{' '}
+                <a href="https://www.gnu.org/licenses/agpl-3.0.html">
+                  GNU Affero General Public License v3.0
+                </a>
+                . It is provided "as is", without warranty of any kind.
               </p>
             </OLCol>
           </OLRow>

@@ -6,10 +6,9 @@ footer.site-footer
 			ul.site-footer-items.col-lg-9
 				if !settings.nav.hide_powered_by
 					li
-						//- year of Server Pro release, static
-						| © 2026
+						| #{settings.appName} ·
 						|
-						a(href='https://www.overleaf.com/for/enterprises') Powered by Overleaf
+						a(href=settings.sourceCodeUrl) Source code
 
 					if showLanguagePicker || hasCustomLeftNav
 						li
@@ -40,4 +39,7 @@ footer.site-footer
 			.row
 				.col-12
 					p.copyright-notice
-						| Overleaf Community Edition™ is a free unsupported software that may contain vulnerabilities and used at your own risk. Use of Overleaf Community Edition™ here is not operated, supported or endorsed by Overleaf®. It has been provided "AS IS" with all liability disclaimed (to the fullest extent lawful) and all rights reserved.
+						| #{settings.appName} is free software, licensed under the
+						|
+						a(href='https://www.gnu.org/licenses/agpl-3.0.html') GNU Affero General Public License v3.0
+						| . It is provided "as is", without warranty of any kind.

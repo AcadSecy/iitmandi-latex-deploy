@@ -193,17 +193,23 @@ const settings = {
   maintenanceMessage: process.env.OVERLEAF_MAINTENANCE_MESSAGE,
   maintenanceMessageHTML: process.env.OVERLEAF_MAINTENANCE_MESSAGE_HTML,
 
-  // The name this is used to describe your Overleaf Community Edition Installation
-  appName: process.env.OVERLEAF_APP_NAME || 'Overleaf Community Edition',
+  // The name used to describe this installation in the UI and in emails.
+  // The navbar logo is an image (see tools/branding); regenerate it if you
+  // change the name, or set OVERLEAF_NAV_TITLE to show text instead.
+  appName: process.env.OVERLEAF_APP_NAME || 'IIT Mandi LaTeX',
+
+  // Linked from the footer. The AGPL-3.0 requires offering the source code of
+  // this modified version to all users; point this at a location they can reach.
+  sourceCodeUrl:
+    process.env.OVERLEAF_SOURCE_CODE_URL ||
+    'https://github.com/TayalAditya/iitmandi-latex',
 
   restrictInvitesToExistingAccounts:
     process.env.OVERLEAF_RESTRICT_INVITES_TO_EXISTING_ACCOUNTS === 'true',
 
   nav: {
-    title:
-      process.env.OVERLEAF_NAV_TITLE ||
-      process.env.OVERLEAF_APP_NAME ||
-      'Overleaf Community Edition',
+    // Unset by default so the navbar shows the wordmark logo.
+    title: process.env.OVERLEAF_NAV_TITLE,
   },
 
   // The email address which users will be directed to as the main point of

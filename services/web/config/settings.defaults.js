@@ -781,7 +781,14 @@ module.exports = {
     userId: process.env.SMOKE_TEST_USER_ID,
   },
 
-  appName: process.env.APP_NAME || 'Overleaf (Community Edition)',
+  appName: process.env.APP_NAME || 'IIT Mandi LaTeX',
+
+  // Where users can get the source code of this deployment. The AGPL-3.0
+  // requires offering the source of a modified version to everyone who uses it
+  // over a network; the footer links here.
+  sourceCodeUrl:
+    process.env.SOURCE_CODE_URL ||
+    'https://github.com/TayalAditya/iitmandi-latex',
 
   adminEmail: process.env.ADMIN_EMAIL || 'placeholder@example.com',
   adminDomains: process.env.ADMIN_DOMAINS
@@ -789,16 +796,13 @@ module.exports = {
     : undefined,
 
   nav: {
-    title: process.env.APP_NAME || 'Overleaf Community Edition',
+    // When set, the navbar shows this text instead of the wordmark logo.
+    title: process.env.NAV_TITLE,
 
     hide_powered_by: process.env.NAV_HIDE_POWERED_BY === 'true',
     left_footer: [],
 
-    right_footer: [
-      {
-        text: '<a href="https://github.com/overleaf/overleaf">Fork on GitHub!</a>',
-      },
-    ],
+    right_footer: [],
 
     showSubscriptionLink: false,
 
