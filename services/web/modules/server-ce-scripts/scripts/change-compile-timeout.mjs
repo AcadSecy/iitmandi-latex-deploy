@@ -15,7 +15,7 @@ async function main() {
     Number.isNaN(compileTimeout)
   ) {
     console.error(
-      `Usage: node ${import.meta.filename} --user-id=5a9414f259776c7900b300e6 --timeout=90`
+      `Usage: node ${import.meta.filename} --user-id=5a9414f259776c7900b300e6 --compile-timeout=90`
     )
     process.exit(101)
   }
