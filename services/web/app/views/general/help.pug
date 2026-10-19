@@ -83,9 +83,9 @@ block content
 						li
 							| LaTeX typesets the whole document in every compile, but it does not have to draw every picture again. Load
 							|
-							code \usepackage[extract=tex]{memoize}
+							code \usepackage{memoize}
 							|
-							| before TikZ or pgfplots: each picture is then drawn once and reused until you change it. In our test, a document with eight plots went from 78 seconds for the first compile to 3 seconds for the next ones.
+							| before TikZ or pgfplots: each picture is then drawn once and reused until you change it. In our test, a document with eight plots went from 78 seconds for the first compile to 3 seconds for the next ones. After you change a picture, it can appear once more on an extra page at the end of the PDF; the next compile removes it. The IIT Mandi thesis and project report templates already load memoize and compile again by themselves, so they never show that page.
 						li
 							| For a thesis, put each chapter in its own file and load it with
 							|
