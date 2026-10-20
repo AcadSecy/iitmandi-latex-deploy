@@ -348,8 +348,10 @@ const scrollToReference = useCallback((key: string) => {
                 <ul className="list-unstyled">
                   {results.map((hit, index) => {
                     const key = hit._source.EntryKey
-                    const { title = '', author = '', year = '', journal = '' } =
-                      hit._source.Fields ?? {}
+                    const fields = hit._source.Fields ?? {}
+                    const { title = '', author = '', year = '' } = fields
+                    const journal =
+                      fields.journal || fields.booktitle || fields.publisher || ''
 
                     return (
                       <li
