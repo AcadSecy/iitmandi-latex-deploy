@@ -15,8 +15,9 @@ export function logoBlock(fileName: string) {
 
 /**
  * The edits that insert the logo at the cursor, on lines of its own. In a
- * main file graphicx is loaded if needed, and a cursor in the preamble moves
- * to the start of the document body.
+ * main file graphicx is loaded if needed, a cursor in the preamble moves to
+ * the start of the document body, and a cursor after \end{document} moves to
+ * just before it (text after it is never typeset).
  */
 export function logoInsertion(
   doc: string,
@@ -33,6 +34,10 @@ export function logoInsertion(
   if (bodyStart !== -1 && cursor <= bodyStart) {
     const newline = doc.indexOf('\n', bodyStart)
     at = newline === -1 ? doc.length : newline + 1
+  }
+  const end = doc.lastIndexOf('\\end{document}')
+  if (bodyStart !== -1 && end !== -1 && at > end) {
+    at = doc.lastIndexOf('\n', end - 1) + 1
   }
   const lineStart = doc.lastIndexOf('\n', at - 1) + 1
   const newline = doc.indexOf('\n', at)

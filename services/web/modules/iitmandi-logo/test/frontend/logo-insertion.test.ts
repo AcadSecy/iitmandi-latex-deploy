@@ -45,6 +45,13 @@ describe('IIT Mandi logo insertion', function () {
     )
   })
 
+  it('moves a cursor after \\end{document} to just before it', function () {
+    const withGraphicx = main.replace('amsmath', 'graphicx')
+    expect(insertAt(withGraphicx, withGraphicx.length)).to.equal(
+      withGraphicx.replace('\\end{document}', `${BLOCK}\n\\end{document}`)
+    )
+  })
+
   it('only inserts the logo in a file that is not the main file', function () {
     const chapter = 'Some text\n'
     expect(insertAt(chapter, chapter.length)).to.equal(`Some text\n${BLOCK}\n`)
