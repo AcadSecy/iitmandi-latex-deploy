@@ -22,6 +22,7 @@ import Features from '../../infrastructure/Features.mjs'
 import ClsiCacheController from './ClsiCacheController.mjs'
 import { prepareZipAttachment } from '../../infrastructure/Response.mjs'
 import ClsiCacheHandler from './ClsiCacheHandler.mjs'
+import ChapterCompile from '../../../../modules/chapter-compile/app/src/ChapterCompile.mjs'
 import {
   getFilePath,
   getOutputFileURL,
@@ -170,6 +171,7 @@ const compileSchema = z.object({
     rootDoc_id: zz.objectId().nullish(),
     compiler: z.string().optional(),
     draft: z.boolean().optional(),
+    includeOnly: z.string().max(200).optional(),
     png2pdf: z.boolean().optional(),
     // silently ignored (not rejected) when not one of these three, to
     // match the existing .includes() check below
@@ -445,6 +447,12 @@ const _CompileController = {
     }
     if (body.draft) {
       options.draft = body.draft
+    }
+    if (body.includeOnly) {
+      if (!(await ChapterCompile.hasChapter(projectId, body.includeOnly))) {
+        return res.sendStatus(400)
+      }
+      options.includeOnly = body.includeOnly
     }
     if (['validate', 'error', 'silent'].includes(body.check)) {
       options.check = body.check
