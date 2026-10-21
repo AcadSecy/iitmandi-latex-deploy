@@ -145,6 +145,10 @@ describe('CompileManager', () => {
         .rejects(Object.assign(new Error('not found'), { code: 'ENOENT' })),
     }
     ctx.fsPromises.lstat.withArgs(ctx.compileDir).resolves(ctx.dirStats)
+    // no chapter compile came before
+    ctx.fsPromises.unlink
+      .withArgs(Path.join(ctx.compileDir, 'output.chapter'))
+      .rejects(Object.assign(new Error('not found'), { code: 'ENOENT' }))
     ctx.fsPromises.stat
       .withArgs(Path.join(ctx.compileDir, 'output.synctex.gz'))
       .resolves(ctx.fileStats)
@@ -344,6 +348,8 @@ describe('CompileManager', () => {
             environment: ctx.env,
             compileGroup: ctx.compileGroup,
             stopOnFirstError: ctx.request.stopOnFirstError,
+            includeOnly: ctx.request.includeOnly,
+            forceRebuild: false,
             stats: sinon.match.object,
             timings: sinon.match.object,
           }
@@ -500,6 +506,8 @@ describe('CompileManager', () => {
             },
             compileGroup: ctx.compileGroup,
             stopOnFirstError: ctx.request.stopOnFirstError,
+            includeOnly: ctx.request.includeOnly,
+            forceRebuild: false,
             stats: sinon.match.object,
             timings: sinon.match.object,
           }
@@ -527,6 +535,8 @@ describe('CompileManager', () => {
             environment: ctx.env,
             compileGroup: ctx.compileGroup,
             stopOnFirstError: ctx.request.stopOnFirstError,
+            includeOnly: ctx.request.includeOnly,
+            forceRebuild: false,
             stats: sinon.match.object,
             timings: sinon.match.object,
           }

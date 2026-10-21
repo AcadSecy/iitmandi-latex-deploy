@@ -227,6 +227,47 @@ describe('RequestParser', () => {
     })
   })
 
+  describe('with includeOnly set to a chapter', () => {
+    beforeEach(async ctx => {
+      await new Promise((resolve, reject) => {
+        ctx.validRequest.compile.options.includeOnly = 'part one/my chapter'
+        ctx.RequestParser.parse(ctx.validRequest, (error, data) => {
+          if (error) return reject(error)
+          ctx.data = data
+          resolve()
+        })
+      })
+    })
+
+    it('should set the includeOnly attribute', ctx => {
+      expect(ctx.data.includeOnly).to.equal('part one/my chapter')
+    })
+  })
+
+  describe('with includeOnly set to something unsafe', () => {
+    it('should return an error for each unsafe name', async ctx => {
+      const unsafe = [
+        '',
+        '../up',
+        '/abs',
+        'a}\\input{x',
+        'a"b',
+        'a$(x)',
+        'a\nb',
+        'a'.repeat(201),
+      ]
+      for (const name of unsafe) {
+        const callback = sinon.stub()
+        ctx.validRequest.compile.options.includeOnly = name
+        ctx.RequestParser.parse(ctx.validRequest, callback)
+        expect(callback.called, JSON.stringify(name)).to.equal(true)
+        expect(callback.firstCall.args[0], JSON.stringify(name)).to.be.an(
+          'error'
+        )
+      }
+    })
+  })
+
   describe('without a timeout specified', () => {
     beforeEach(async ctx => {
       await new Promise((resolve, reject) => {

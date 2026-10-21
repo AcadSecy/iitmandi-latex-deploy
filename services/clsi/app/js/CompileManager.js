@@ -233,6 +233,10 @@ async function doCompile(request, stats, timings) {
   enableLatexMkMetrics(stats)
 
   try {
+    const forceRebuild = await _updateChapterMarker(
+      compileDir,
+      request.includeOnly
+    )
     await LatexRunner.promises.runLatex(compileName, {
       directory: compileDir,
       mainFile: request.rootResourcePath,
@@ -243,6 +247,8 @@ async function doCompile(request, stats, timings) {
       environment: env,
       compileGroup: request.compileGroup,
       stopOnFirstError: request.stopOnFirstError,
+      includeOnly: request.includeOnly,
+      forceRebuild,
       stats,
       timings,
     })
@@ -394,6 +400,25 @@ async function doCompile(request, stats, timings) {
 
 // A PDF ends with "%%EOF" once TeX has written its cross-reference table.
 // Without it no viewer can open the file.
+// Remembers that the last compile was a chapter compile. latexmk does not
+// track -pretex, so the next normal compile would report "nothing to do" and
+// keep the partial PDF; the marker makes that compile rebuild (-g). It matches
+// the ^output\. keep rule of ResourceWriter. Returns whether to force a rebuild.
+async function _updateChapterMarker(compileDir, includeOnly) {
+  const marker = Path.join(compileDir, 'output.chapter')
+  if (includeOnly) {
+    await fsPromises.writeFile(marker, includeOnly)
+    return true
+  }
+  try {
+    await fsPromises.unlink(marker)
+    return true
+  } catch (err) {
+    if (err.code === 'ENOENT') return false
+    throw err
+  }
+}
+
 async function _removeUnfinishedPdf(compileDir) {
   const pdfPath = Path.join(compileDir, 'output.pdf')
   let handle

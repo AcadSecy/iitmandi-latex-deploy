@@ -111,4 +111,20 @@ describe('schemas', function () {
       expect(result.success).to.equal(false)
     })
   })
+
+  describe('compileRequestBodySchema includeOnly', function () {
+    it('accepts a chapter to compile alone', function () {
+      const result = compileRequestBodySchema.safeParse({
+        compile: { options: { includeOnly: 'chapters/my chapter' } },
+      })
+      expect(result.success).to.equal(true)
+    })
+
+    it('rejects an includeOnly that is not a string', function () {
+      const result = compileRequestBodySchema.safeParse({
+        compile: { options: { includeOnly: ['a', 'b'] } },
+      })
+      expect(result.success).to.equal(false)
+    })
+  })
 })
