@@ -1349,6 +1349,7 @@ module.exports = {
     'source-code',
     'iitmandi-logo',
     'retention',
+    'chapter-compile',
   ],
   viewIncludes: {},
 
