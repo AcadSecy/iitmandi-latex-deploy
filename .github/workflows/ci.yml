@@ -263,7 +263,7 @@ jobs:
           modules/iitmandi-logo
           modules/chapter-compile
 
-      - name: Frontend tests (project list, welcome message, Ask AI, page setup, logo)
+      - name: Frontend tests (project list, welcome message, Ask AI, page setup, logo, chapter compile)
         working-directory: services/web
         env:
           NODE_ENV: test
@@ -277,6 +277,7 @@ jobs:
           modules/ask-ai/test/frontend/open-assistant.test.ts
           modules/page-setup/test/frontend/preamble.test.ts
           modules/iitmandi-logo/test/frontend/logo-insertion.test.ts
+          modules/chapter-compile/test/frontend/chapter-compile-menu-items.test.tsx
 
   clsi:
     name: Compile service
