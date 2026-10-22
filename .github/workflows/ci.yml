@@ -153,6 +153,21 @@ jobs:
               fi
             done < /work/templates.txt
             exit $status'
+      # "Compile one chapter" in the recompile menu runs latexmk with -pretex,
+      # as here. Numbers and references to the other chapters come from the
+      # full compile above, so none may be undefined.
+      - name: Compile one chapter of the thesis as the platform does
+        run: |
+          docker run --rm -v "$RUNNER_TEMP:/work" -w /work/templates/thesis "$TEXLIVE_IMAGE" bash -c '
+            status=0
+            latexmk -pdf -interaction=nonstopmode -halt-on-error -g -usepretex \
+              "-pretex=\includeonly{chapters/conclusion}\renewcommand\includeonly[1]{}" \
+              main.tex > chapter.log 2>&1 || { echo "FAIL the chapter compile stopped"; status=1; }
+            grep -q "(./chapters/conclusion.tex" main.log || { echo "FAIL the chosen chapter was not typeset"; status=1; }
+            ! grep -q "(./chapters/introduction.tex" main.log || { echo "FAIL another chapter was typeset"; status=1; }
+            ! grep -qE "There were undefined references|(Citation|Reference) .* undefined" main.log || { echo "FAIL undefined references"; status=1; }
+            if [ $status = 0 ]; then echo "ok   thesis, chapters/conclusion alone"; else tail -n 40 chapter.log; fi
+            exit $status'
 
   web:
     name: Web
