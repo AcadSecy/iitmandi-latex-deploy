@@ -398,13 +398,22 @@ async function doCompile(request, stats, timings) {
   return { outputFiles, buildId, baseHistoryVersion }
 }
 
-// Remembers that the last compile was a chapter compile. latexmk does not
-// track -pretex, so the next normal compile would report "nothing to do" and
-// keep the partial PDF; the marker makes that compile rebuild (-g). It matches
-// the ^output\. keep rule of ResourceWriter. Returns whether to force a rebuild.
+// Remembers which chapter the last compile built. latexmk does not track
+// -pretex, so a compile that changes the chapter or goes back to the whole
+// document would report "nothing to do" and keep the old PDF; the marker makes
+// those compiles rebuild (-g). Repeat compiles of the same chapter stay
+// incremental. It matches the ^output\. keep rule of ResourceWriter. Returns
+// whether to force a rebuild.
 async function _updateChapterMarker(compileDir, includeOnly) {
   const marker = Path.join(compileDir, 'output.chapter')
   if (includeOnly) {
+    let previous = null
+    try {
+      previous = await fsPromises.readFile(marker, 'utf8')
+    } catch (err) {
+      if (err.code !== 'ENOENT') throw err
+    }
+    if (previous === includeOnly) return false
     await fsPromises.writeFile(marker, includeOnly)
     return true
   }

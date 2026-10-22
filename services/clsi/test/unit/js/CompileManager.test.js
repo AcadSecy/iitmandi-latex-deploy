@@ -398,6 +398,59 @@ describe('CompileManager', () => {
       })
     })
 
+    describe('chapter compiles', () => {
+      beforeEach(ctx => {
+        ctx.marker = Path.join(ctx.compileDir, 'output.chapter')
+        ctx.fsPromises.writeFile = sinon.stub().resolves()
+        ctx.fsPromises.readFile
+          .withArgs(ctx.marker, 'utf8')
+          .rejects(Object.assign(new Error('not found'), { code: 'ENOENT' }))
+      })
+
+      const forceRebuild = ctx =>
+        ctx.LatexRunner.promises.runLatex.firstCall.args[1].forceRebuild
+
+      it('should rebuild and write the marker after a whole-document compile', async ctx => {
+        ctx.request.includeOnly = 'chapters/two'
+        await ctx.CompileManager.promises.doCompileWithLock(ctx.request, {}, {})
+        expect(forceRebuild(ctx)).to.equal(true)
+        expect(ctx.fsPromises.writeFile).to.have.been.calledWith(
+          ctx.marker,
+          'chapters/two'
+        )
+      })
+
+      it('should not rebuild when the chapter is the same as last time', async ctx => {
+        ctx.request.includeOnly = 'chapters/two'
+        ctx.fsPromises.readFile
+          .withArgs(ctx.marker, 'utf8')
+          .resolves('chapters/two')
+        await ctx.CompileManager.promises.doCompileWithLock(ctx.request, {}, {})
+        expect(forceRebuild(ctx)).to.equal(false)
+        expect(ctx.fsPromises.writeFile).not.to.have.been.called
+      })
+
+      it('should rebuild when the chapter changes', async ctx => {
+        ctx.request.includeOnly = 'chapters/three'
+        ctx.fsPromises.readFile
+          .withArgs(ctx.marker, 'utf8')
+          .resolves('chapters/two')
+        await ctx.CompileManager.promises.doCompileWithLock(ctx.request, {}, {})
+        expect(forceRebuild(ctx)).to.equal(true)
+        expect(ctx.fsPromises.writeFile).to.have.been.calledWith(
+          ctx.marker,
+          'chapters/three'
+        )
+      })
+
+      it('should rebuild and remove the marker when going back to the whole document', async ctx => {
+        ctx.fsPromises.unlink.withArgs(ctx.marker).resolves()
+        await ctx.CompileManager.promises.doCompileWithLock(ctx.request, {}, {})
+        expect(forceRebuild(ctx)).to.equal(true)
+        expect(ctx.fsPromises.unlink).to.have.been.calledWith(ctx.marker)
+      })
+    })
+
     describe('with draft mode', () => {
       beforeEach(async ctx => {
         ctx.request.draft = true

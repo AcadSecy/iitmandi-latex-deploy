@@ -276,14 +276,14 @@ describe('LatexRunner', () => {
         })
       })
 
-      it('should inject \\includeonly with -pretex and force a rebuild', ctx => {
+      it('should inject \\includeonly with -pretex and no -g', ctx => {
         const command = ctx.CommandRunner.run.firstCall.args[1]
         const pretex = command.indexOf('-usepretex')
         expect(pretex).to.be.greaterThan(-1)
         expect(command[pretex + 1]).to.equal(
           '-pretex=\\includeonly{chapters/two}\\renewcommand\\includeonly[1]{}'
         )
-        expect(command).to.include('-g')
+        expect(command).to.not.include('-g')
         expect(command.at(-1)).to.equal('$COMPILE_DIR/main-file.tex')
       })
     })

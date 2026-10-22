@@ -97,16 +97,33 @@ describe.skipIf(!enabled)('chapter compiles in Docker', () => {
     expect((await compile()).chapters).toEqual(['one', 'my two', 'three'])
   }, 120_000)
 
+  // forceRebuild: CompileManager asks for it whenever the chapter changes
   it('compiles only the chosen chapter, with numbers from the last full compile', async () => {
-    const { chapters } = await compile({ includeOnly: 'three' })
+    const { chapters } = await compile({
+      includeOnly: 'three',
+      forceRebuild: true,
+    })
     expect(chapters).toEqual(['three'])
     const aux = await fs.readFile(Path.join(dir.directory, 'three.aux'), 'utf8')
     expect(aux).toContain('{ch:three}{{3}')
   }, 120_000)
 
   it('compiles a chapter whose name has a space', async () => {
-    const { chapters } = await compile({ includeOnly: 'chapters/my two' })
+    const { chapters } = await compile({
+      includeOnly: 'chapters/my two',
+      forceRebuild: true,
+    })
     expect(chapters).toEqual(['my two'])
+  }, 120_000)
+
+  it('picks up an edit when the same chapter compiles again without -g', async () => {
+    await fs.appendFile(
+      Path.join(dir.directory, 'chapters/my two.tex'),
+      '\\typeout{edited chapter two}\n'
+    )
+    const { chapters, log } = await compile({ includeOnly: 'chapters/my two' })
+    expect(chapters).toEqual(['my two'])
+    expect(log).toContain('edited chapter two')
   }, 120_000)
 
   it('compiles everything again after a chapter compile', async () => {
@@ -118,6 +135,7 @@ describe.skipIf(!enabled)('chapter compiles in Docker', () => {
     const { chapters, log } = await compile({
       mainFile: 'own-includeonly.tex',
       includeOnly: 'three',
+      forceRebuild: true,
     })
     expect(chapters).toEqual(['three'])
     expect(log).not.toMatch(/^! /m)
