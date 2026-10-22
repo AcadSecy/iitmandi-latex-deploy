@@ -221,10 +221,14 @@ function _buildLatexCommand(mainFile, opts = {}) {
   }
 
   // Compile one chapter: -pretex puts \includeonly in front of the main file
-  // without rewriting any file. latexmk does not notice a changed pretex, so
-  // -g forces a rebuild, here and in the next normal compile.
+  // without rewriting any file, then turns off any \includeonly in the
+  // preamble so the chosen chapter wins. latexmk does not notice a changed
+  // pretex, so -g forces a rebuild, here and in the next normal compile.
   if (opts.includeOnly) {
-    command.push('-usepretex', `-pretex=\\includeonly{${opts.includeOnly}}`)
+    command.push(
+      '-usepretex',
+      `-pretex=\\includeonly{${opts.includeOnly}}\\renewcommand\\includeonly[1]{}`
+    )
   }
   if (opts.includeOnly || opts.forceRebuild) {
     command.push('-g')

@@ -33,6 +33,7 @@ describe('OutputFileFinder', function () {
         'path.tex': 'a source file',
       },
       'output.pdf': 'a generated pdf file',
+      'output.chapter': 'the chapter of the last compile, kept but not shown',
       extra: {
         'file.tex': 'a generated tex file',
       },
@@ -73,6 +74,7 @@ describe('OutputFileFinder', function () {
       expect(ctx.allEntries).to.deep.equal([
         'extra/file.tex',
         'extra/',
+        'output.chapter',
         'output.pdf',
         'resource/path.tex',
         'resource/',

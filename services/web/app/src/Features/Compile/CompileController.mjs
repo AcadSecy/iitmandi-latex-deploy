@@ -448,10 +448,16 @@ const _CompileController = {
     if (body.draft) {
       options.draft = body.draft
     }
-    if (body.includeOnly) {
-      if (!(await ChapterCompile.hasChapter(projectId, body.includeOnly))) {
-        return res.sendStatus(400)
-      }
+    // a chapter that is gone (renamed, or no longer \include'd) gets a
+    // whole-document compile; the response says which one ran
+    if (
+      body.includeOnly &&
+      (await ChapterCompile.hasChapter(
+        projectId,
+        body.includeOnly,
+        body.rootDoc_id
+      ))
+    ) {
       options.includeOnly = body.includeOnly
     }
     if (['validate', 'error', 'silent'].includes(body.check)) {
@@ -621,6 +627,7 @@ const _CompileController = {
       pdfDownloadDomain,
       pdfCachingMinChunkSize,
       engineSwitch,
+      includeOnly: options.includeOnly,
     })
   },
 

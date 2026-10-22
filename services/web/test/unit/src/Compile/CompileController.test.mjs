@@ -174,6 +174,15 @@ describe('CompileController', function () {
       })
     )
 
+    vi.doMock(
+      '../../../../modules/chapter-compile/app/src/ChapterCompile.mjs',
+      () => ({
+        default: (ctx.ChapterCompile = {
+          hasChapter: sinon.stub().resolves(false),
+        }),
+      })
+    )
+
     ctx.CompileController = (await import(modulePath)).default
     ctx.projectId = 'abc123def456abc123def456'
     ctx.build_id = '18fbe9e7564-30dcb2f71250c690'
@@ -386,6 +395,43 @@ describe('CompileController', function () {
             rootResourcePath: undefined,
           }
         )
+      })
+    })
+
+    describe('with a chapter to compile alone', function () {
+      beforeEach(async function (ctx) {
+        ctx.ChapterCompile.hasChapter.resolves(true)
+        ctx.req.body = { includeOnly: 'chapters/intro' }
+        await ctx.CompileController.compile(ctx.req, ctx.res, ctx.next)
+      })
+
+      it('should check the chapter and pass it to the compiler', function (ctx) {
+        ctx.ChapterCompile.hasChapter.should.have.been.calledWith(
+          ctx.projectId,
+          'chapters/intro'
+        )
+        expect(
+          ctx.CompileManager.promises.compile.firstCall.args[2].includeOnly
+        ).to.equal('chapters/intro')
+      })
+
+      it('should say in the response that one chapter was compiled', function (ctx) {
+        expect(JSON.parse(ctx.res.body).includeOnly).to.equal('chapters/intro')
+      })
+    })
+
+    describe('with a chapter that no longer exists', function () {
+      beforeEach(async function (ctx) {
+        ctx.req.body = { includeOnly: 'chapters/gone' }
+        await ctx.CompileController.compile(ctx.req, ctx.res, ctx.next)
+      })
+
+      it('should compile the whole document', function (ctx) {
+        ctx.res.statusCode.should.equal(200)
+        expect(
+          ctx.CompileManager.promises.compile.firstCall.args[2]
+        ).not.to.have.property('includeOnly')
+        expect(JSON.parse(ctx.res.body)).not.to.have.property('includeOnly')
       })
     })
 

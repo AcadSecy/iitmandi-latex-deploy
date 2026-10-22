@@ -398,8 +398,6 @@ async function doCompile(request, stats, timings) {
   return { outputFiles, buildId, baseHistoryVersion }
 }
 
-// A PDF ends with "%%EOF" once TeX has written its cross-reference table.
-// Without it no viewer can open the file.
 // Remembers that the last compile was a chapter compile. latexmk does not
 // track -pretex, so the next normal compile would report "nothing to do" and
 // keep the partial PDF; the marker makes that compile rebuild (-g). It matches
@@ -419,6 +417,8 @@ async function _updateChapterMarker(compileDir, includeOnly) {
   }
 }
 
+// A PDF ends with "%%EOF" once TeX has written its cross-reference table.
+// Without it no viewer can open the file.
 async function _removeUnfinishedPdf(compileDir) {
   const pdfPath = Path.join(compileDir, 'output.pdf')
   let handle
