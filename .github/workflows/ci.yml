@@ -263,6 +263,13 @@ jobs:
           modules/iitmandi-logo
           modules/chapter-compile
 
+      - name: Unit tests (chapter option in the compile controller)
+        working-directory: services/web
+        run: >
+          yarn vitest run --project=Parallel
+          test/unit/src/Compile/CompileController.test.mjs
+          -t "chapter"
+
       - name: Frontend tests (project list, welcome message, Ask AI, page setup, logo, chapter compile)
         working-directory: services/web
         env:
@@ -309,6 +316,9 @@ jobs:
           test/unit/js/DockerRunner.test.js
           test/unit/js/LatexRunner.test.js
           test/unit/js/CompileManager.test.js
+          test/unit/js/RequestParser.test.js
+          test/unit/js/Schemas.test.js
+          test/unit/js/OutputFileFinder.test.js
 
       # The TeX Live image the platform compiles in: the first one pinned in
       # deploy/iitmandi/texlive/images.txt, under the same name as on the server
@@ -322,8 +332,9 @@ jobs:
 
       # Real compiles in Docker with the production seccomp profile: a stopped
       # or timed-out compile keeps a valid PDF of the pages already typeset,
-      # and a paused compile's time does not count.
-      - name: Stop and pause real compiles
+      # a paused compile's time does not count, and a chapter compile
+      # typesets only the chosen chapter.
+      - name: Stop, pause and chapter-compile real compiles
         working-directory: services/clsi
         run: |
           mkdir -p compiles
