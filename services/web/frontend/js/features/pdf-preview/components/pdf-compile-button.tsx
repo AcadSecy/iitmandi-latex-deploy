@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { memo, useCallback } from 'react'
+import { ElementType, memo, useCallback } from 'react'
 import classNames from 'classnames'
 import { useDetachCompileContext as useCompileContext } from '../../../shared/context/detach-compile-context'
 import { useStopOnFirstError } from '../../../shared/hooks/use-stop-on-first-error'
@@ -19,8 +19,14 @@ import OLButtonGroup from '@/shared/components/ol/ol-button-group'
 import { useLayoutContext } from '@/shared/context/layout-context'
 import { useCommandProvider } from '@/features/ide-react/hooks/use-command-provider'
 import { useCompileQueueStatus } from '../hooks/use-compile-queue-status'
+import importOverleafModules from '../../../../macros/import-overleaf-module.macro'
 
 const modifierKey = /Mac/i.test(navigator.platform) ? 'Cmd' : 'Ctrl'
+
+const compileMenuItems = importOverleafModules('pdfCompileMenuItems') as {
+  import: { default: ElementType }
+  path: string
+}[]
 
 function sendEventAndSet<T extends boolean>(
   value: T,
@@ -230,6 +236,9 @@ function PdfCompileButton() {
             {t('fast')}&nbsp;<span className="subdued">[draft]</span>
           </OLDropdownItem>
         </li>
+        {compileMenuItems.map(({ import: { default: Component }, path }) => (
+          <Component key={path} />
+        ))}
         <OLDropdownDivider />
         <OLDropdownHeader>{t('syntax_checks')}</OLDropdownHeader>
         <li role="none">

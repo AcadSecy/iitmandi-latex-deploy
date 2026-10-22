@@ -290,6 +290,12 @@ export const LocalCompileProvider: FC<React.PropsWithChildren> = ({
     listen: true,
   })
 
+  // the chapter to compile alone, '' for the whole document; chosen in the
+  // compile menu by modules/chapter-compile
+  const [includeOnly] = usePersistedState(`chapter_compile:${projectId}`, '', {
+    listen: true,
+  })
+
   // ol-canUsePng2Pdf is the single source of truth from the backend: it already
   // accounts for both the split-test rollout and the premium entitlement.
   const canUsePng2pdf = Boolean(getMeta('ol-canUsePng2Pdf'))
@@ -377,6 +383,11 @@ export const LocalCompileProvider: FC<React.PropsWithChildren> = ({
   useEffect(() => {
     compiler.setOption('draft', draft)
   }, [compiler, draft])
+
+  // keep the chapter to compile alone in sync with the compiler
+  useEffect(() => {
+    compiler.setOption('includeOnly', includeOnly)
+  }, [compiler, includeOnly])
 
   // keep png2pdf (optimize images) setting in sync with the compiler
   useEffect(() => {

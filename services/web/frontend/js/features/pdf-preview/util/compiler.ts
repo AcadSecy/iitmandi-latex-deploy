@@ -87,6 +87,7 @@ export default class DocumentCompiler {
     this.timer = 0
     this.defaultOptions = {
       draft: false,
+      includeOnly: '',
       png2pdf: false,
       stopOnFirstError: false,
     }
@@ -144,6 +145,7 @@ export default class DocumentCompiler {
         rootDoc_id: rootDocId,
         rootResourcePath,
         draft: options.draft,
+        includeOnly: options.includeOnly || undefined,
         png2pdf: options.png2pdf,
         check: 'silent', // NOTE: 'error' and 'validate' are possible, but unused
         // use incremental compile for all users but revert to a full compile
@@ -172,6 +174,8 @@ export default class DocumentCompiler {
 
       data.options = {
         ...options,
+        // the server compiles the whole document if the chapter is gone
+        includeOnly: data.includeOnly,
         rootResourcePath,
       }
       data.rootDocId = rootDocId

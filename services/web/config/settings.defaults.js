@@ -1131,6 +1131,12 @@ module.exports = {
     pdfLogEntryComponents: [],
     pdfLogEntriesComponents: [],
     pdfPreviewPromotions: [],
+    pdfCompileMenuItems: [
+      Path.resolve(
+        __dirname,
+        '../modules/chapter-compile/frontend/js/components/chapter-compile-menu-items.tsx'
+      ),
+    ],
     diagnosticActions: [],
     sourceEditorCompletionSources: [],
     sourceEditorSymbolPalette: [
