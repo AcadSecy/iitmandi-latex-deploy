@@ -1,7 +1,8 @@
 #!/bin/bash
-# Run inside the Pi image (CI does, before the image is published): compiles
-# every IIT Mandi template the way the compile service does, as the app's user,
-# and checks that TeX cannot read files outside the compile folders.
+# Run inside the compile image (the Pi base image; CI does, before anything is
+# published): compiles every IIT Mandi template the way the compile service
+# does, as the user compiles run as. That the sandbox keeps compiles away from
+# the app's files is tested by smoke-test.py, through the running app.
 #
 #   check-tex.sh LIST
 #
@@ -12,6 +13,8 @@ set -uo pipefail
 LIST=${1:?usage: check-tex.sh LIST}
 ROOT=/var/lib/overleaf/data/compiles
 status=0
+
+biber --version 2>&1 | head -n 1
 
 compile() { # dir compiler main
   local flag
@@ -37,20 +40,5 @@ while read -r id compiler main; do
     status=1
   fi
 done < "$LIST"
-
-# Without the per-compile sandbox, openin_any=p must keep TeX inside the
-# compile folders: an absolute path elsewhere is refused
-dir="$ROOT/read-outside"
-mkdir -p "$dir"
-printf '%s\n' '\documentclass{article}' '\begin{document}' '\input{/etc/passwd}' '\end{document}' > "$dir/main.tex"
-chown -R www-data:www-data "$dir"
-compile "$dir" pdflatex main.tex
-if grep -q "root:" "$dir/output.log" "$dir/output.pdf" 2>/dev/null || ! grep -q "openin_any = p" "$dir/build.log" "$dir/output.log" 2>/dev/null; then
-  echo "FAIL TeX read /etc/passwd, or was not stopped by openin_any"
-  tail -n 20 "$dir/output.log"
-  status=1
-else
-  echo "ok   TeX may not read /etc/passwd"
-fi
 
 exit $status

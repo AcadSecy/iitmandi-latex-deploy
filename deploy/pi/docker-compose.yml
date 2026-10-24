@@ -9,6 +9,9 @@
 #
 # The Pi's 29 GB card also holds other apps, so everything here is capped:
 # memory, CPU, logs, and compile files, which live in RAM.
+#
+# The compile image (pi.env) must exist locally under its name before the app
+# starts: pi-deploy tags it from the image's org.iitmandi.compile-image label.
 name: iitmandi-latex
 
 x-logging: &logging
@@ -41,19 +44,31 @@ services:
       OVERLEAF_MONGO_URL: mongodb://mongo/sharelatex
       OVERLEAF_REDIS_HOST: redis
       REDIS_HOST: redis
+      # Sandboxed compiles, as in production: every compile runs in a
+      # container of its own from the compile image (pi.env), with no network,
+      # no secrets and no files but its project's. The compile service starts
+      # those containers through the Pi's Docker, so it needs the host paths
+      # of the compile folders.
+      SANDBOXED_COMPILES: "true"
+      SANDBOXED_COMPILES_SIBLING_CONTAINERS: "true"
+      SANDBOXED_COMPILES_HOST_DIR_COMPILES: ${LATEX_DATA:-/srv/iitmandi-latex/data}/app/data/compiles
+      SANDBOXED_COMPILES_HOST_DIR_OUTPUT: ${LATEX_DATA:-/srv/iitmandi-latex/data}/app/data/output
     volumes:
       # All data in one folder. To move to an external disk, mount it at
       # /srv/iitmandi-latex (README.md, "Moving to an external disk").
+      # On the Pi, data/compiles and data/output are RAM disks of the host
+      # (setup.sh): compile files are rebuilt by the next compile, so they can
+      # never fill the card, and the card is spared the writes.
       - ${LATEX_DATA:-/srv/iitmandi-latex/data}/app:/var/lib/overleaf
-    # Compile files are rebuilt by the next compile, so they live in RAM:
-    # they can never fill the card, and the card is spared the writes. A
-    # restart only means the next compile starts from scratch.
+      # Starting compile containers needs the Docker socket. This gives the
+      # app container root-level control of the Pi: the price of the sandbox,
+      # accepted for the test server (README.md, "Compiles").
+      - /var/run/docker.sock:/var/run/docker.sock
     tmpfs:
-      - /var/lib/overleaf/data/compiles:size=1536m,uid=33,gid=33,mode=0755
-      - /var/lib/overleaf/data/output:size=768m,uid=33,gid=33,mode=0755
       - /var/lib/overleaf/data/cache:size=256m,uid=33,gid=33,mode=0755
-    # Leaves one of the four cores and most of the memory to the other apps
-    mem_limit: 5g
+    # Leaves one of the four cores and most of the memory to the other apps;
+    # compile containers have limits of their own (pi.env)
+    mem_limit: 3500m
     cpus: 3
     logging: *logging
 

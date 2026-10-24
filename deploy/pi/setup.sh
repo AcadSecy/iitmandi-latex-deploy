@@ -22,6 +22,22 @@ mkdir -p "$ROOT/data/app" "$ROOT/data/mongo" "$ROOT/data/redis" "$ROOT/compose"
 chown "$DEPLOY_USER:$DEPLOY_USER" "$ROOT/compose"
 chmod 700 "$ROOT/compose"
 
+# Compile files live in RAM (docker-compose.yml): two RAM disks of the host,
+# which the compile containers see too. In /etc/fstab, so that they are back
+# after a reboot before Docker starts the platform. www-data is uid 33.
+for disk in compiles:1536m output:768m; do
+  dir="$ROOT/data/app/data/${disk%%:*}"
+  mkdir -p "$dir"
+  if ! grep -qs " $dir tmpfs " /etc/fstab; then
+    echo "tmpfs $dir tmpfs size=${disk#*:},uid=33,gid=33,mode=0755,nosuid,nodev 0 0" >> /etc/fstab
+    echo "added $dir to /etc/fstab"
+  fi
+done
+systemctl daemon-reload
+for dir in "$ROOT/data/app/data/compiles" "$ROOT/data/app/data/output"; do
+  mountpoint -q "$dir" || mount "$dir"
+done
+
 # Never regenerate: a new invite secret breaks every share link, a new
 # session secret logs everyone out.
 SECRETS="$ROOT/compose/secrets.env"

@@ -34,7 +34,7 @@ Target capacity: about 3,500 registered and 50 simultaneous users, with a 60-sec
 
 ## Branches and upstream
 
-- Development happens in the public repository [TayalAditya/iitmandi-latex-deploy](https://github.com/TayalAditya/iitmandi-latex-deploy). Anyone can fork it and open a pull request; collaborators can also create branches in it.
+- Development happens in the public repository [AcadSecy/iitmandi-latex-deploy](https://github.com/AcadSecy/iitmandi-latex-deploy). Anyone can fork it and open a pull request; collaborators can also create branches in it.
 - `staging` is the test branch. Every commit on it is built for the Raspberry Pi test server and deployed there within the hour ([`deploy/pi`](deploy/pi/README.md)). It takes changes only through pull requests with an approval and a passing **Build and check**.
 - `main` is what has been tried on the Pi and goes to production. Changes come from `staging` through pull requests.
 - The `upstream` remote points at the open-source project this platform is built on (see [License](#license)). Merge it regularly to pick up security fixes:
