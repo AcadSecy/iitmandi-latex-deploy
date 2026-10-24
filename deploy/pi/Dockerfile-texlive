@@ -34,7 +34,8 @@ FROM texlive
 # version TeX Live lists, so that it matches the biblatex above (a different
 # version refuses biblatex's files), from its release on GitHub: CPAN lags
 # behind TeX Live. Its XML::LibXSLT does not build from CPAN, so that one comes
-# from Ubuntu. Skipped where TeX Live's own biber runs.
+# from Ubuntu. Text::BibTeX installs a C library of its own (libbtparse), which
+# the linker is then told about. Skipped where TeX Live's own biber runs.
 RUN if ! biber --version > /dev/null 2>&1; then \
       version=$(tlmgr info --data cat-version biber) \
   &&  apt-get update \
@@ -49,6 +50,9 @@ RUN if ! biber --version > /dev/null 2>&1; then \
   &&  ./Build \
   &&  rm -f /usr/local/bin/biber \
   &&  ./Build install \
+  &&  btparse=$(find /usr/local -name 'libbtparse.so*' | head -n 1) \
+  &&  echo "${btparse%/*}" > /etc/ld.so.conf.d/btparse.conf \
+  &&  ldconfig \
   &&  cd / \
   &&  rm -rf /tmp/biber /root/.cpanm /var/lib/apt/lists/*; \
     fi \
