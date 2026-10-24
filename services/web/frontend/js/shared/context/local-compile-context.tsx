@@ -38,6 +38,8 @@ import { useRootDoc } from '@/shared/hooks/use-root-doc'
 import { useUserSettingsContext } from '@/shared/context/user-settings-context'
 import { useFeatureFlag } from '@/shared/context/split-test-context'
 import { useEditorManagerContext } from '@/features/ide-react/context/editor-manager-context'
+import { useOptionalModalsContext } from '@/features/ide-react/context/modals-context'
+import { useTranslation } from 'react-i18next'
 import { useEditorOpenDocContext } from '@/features/ide-react/context/editor-open-doc-context'
 import { getJSON } from '@/infrastructure/fetch-json'
 import { CompileResponseData } from '../../../../types/compile'
@@ -139,9 +141,22 @@ export const LocalCompileContext = createContext<CompileContext | undefined>(
   undefined
 )
 
+const COMPILER_NAMES: Record<string, string> = {
+  pdflatex: 'pdfLaTeX',
+  latex: 'LaTeX',
+  xelatex: 'XeLaTeX',
+  lualatex: 'LuaLaTeX',
+}
+
 export const LocalCompileProvider: FC<React.PropsWithChildren> = ({
   children,
 }) => {
+  const { t } = useTranslation()
+  // a ref: the modals context changes whenever a modal opens or closes, and
+  // the compile data effect below must only run when the data changes
+  const modals = useOptionalModalsContext()
+  const modalsRef = useRef(modals)
+  modalsRef.current = modals
   const { hasPremiumCompile, isProjectOwner } = useEditorContext()
   const { openDocWithId, openDocs } = useEditorManagerContext()
   const { currentDocument } = useEditorOpenDocContext()
@@ -516,6 +531,22 @@ export const LocalCompileProvider: FC<React.PropsWithChildren> = ({
         setClsiServerId(data.clsiServerId) // set in scope, for PdfSynctexController
       }
 
+      // The document needed XeLaTeX or LuaLaTeX, which the server used and
+      // made the project's compiler: say so once, since the menu changed
+      if (data.engineSwitch?.to && modalsRef.current) {
+        const compiler =
+          COMPILER_NAMES[data.engineSwitch.to] ?? data.engineSwitch.to
+        modalsRef.current.showGenericMessageModal(
+          t('compiled_with_compiler', { compiler }),
+          data.engineSwitch.reason === 'magic-comment'
+            ? t('compiler_switched_for_magic_comment', { compiler })
+            : t('compiler_switched_for_package', {
+                compiler,
+                package: data.engineSwitch.reason,
+              })
+        )
+      }
+
       if (data.outputFiles) {
         const outputFiles = new Map()
 
@@ -678,6 +709,7 @@ export const LocalCompileProvider: FC<React.PropsWithChildren> = ({
     setLogEntries,
     setLogEntryAnnotations,
     setPdfFile,
+    t,
   ])
 
   // switch to logs if there's an error, unless the compile left a PDF with

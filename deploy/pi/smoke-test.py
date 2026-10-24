@@ -111,6 +111,21 @@ step("the compile ran in the sandbox: it cannot see the app's settings or code",
      code == 200 and len(found) == 2 and all(r == b"OK" for r, _ in found),
      ", ".join(f"{r.decode()} {w.decode()}" for r, w in found) or f"HTTP {code}, no probe lines in the log")
 
+# A document that needs XeLaTeX, in a project left on the default pdfLaTeX, compiles all the same
+archive = io.BytesIO()
+with zipfile.ZipFile(archive, "w") as z:
+    z.writestr("main.tex", "\\documentclass{article}\n\\usepackage{fontspec}\n\\begin{document}\nUnicode: नमस्ते\n\\end{document}\n")
+code, body = call("POST", "/project/new/upload", {"name": "Engine check.zip"},
+                  files={"qqfile": ("Engine check.zip", archive.getvalue())})
+step("upload a document that loads fontspec", code == 200 and b"project_id" in body, f"HTTP {code} {body[:200]!r}")
+code, body = call("POST", f"/project/{json.loads(body)['project_id']}/compile?auto_compile=false",
+                  {"check": "silent", "draft": False, "incrementalCompilesEnabled": True, "stopOnFirstError": False},
+                  timeout=600)
+result = json.loads(body) if code == 200 else {}
+step("it compiles with XeLaTeX on its own, and the editor is told",
+     result.get("status") == "success" and (result.get("engineSwitch") or {}).get("to") == "xelatex",
+     f"status {result.get('status')}, engineSwitch {result.get('engineSwitch')}")
+
 
 def fresh_login(user, pw):
     """Log in with a new session, as someone else would: (logged in, HTTP code)."""

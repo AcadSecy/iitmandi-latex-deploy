@@ -187,6 +187,7 @@ function compile(req, res, next) {
                 timings,
                 buildId,
                 clsiCacheShard,
+                engineSwitch: request.engineSwitch,
                 instanceType: Settings.apis.clsi.instanceType,
                 zone: Settings.apis.clsi.zone,
                 isSpotInstance: Settings.apis.clsi.isSpotInstance,

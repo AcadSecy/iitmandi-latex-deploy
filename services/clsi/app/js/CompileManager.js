@@ -25,6 +25,7 @@ import LatexMetrics from './LatexMetrics.js'
 import { callbackifyMultiResult } from '@overleaf/promise-utils'
 import * as HistoryResourceWriter from './HistoryResourceWriter.js'
 import Png2Pdf from './Png2Pdf.js'
+import EngineDetector from './EngineDetector.js'
 
 const { downloadLatestCompileCache, downloadOutputDotSynctexFromCompileCache } =
   CLSICacheHandler
@@ -169,6 +170,22 @@ async function doCompile(request, stats, timings) {
     },
     'written files to disk'
   )
+
+  // pdfLaTeX is the default compiler; a document that needs XeTeX or LuaTeX
+  // is compiled with that engine instead (EngineDetector.js). The response
+  // reports the switch, so the web app can keep it and tell the user.
+  const choice = await EngineDetector.chooseCompiler(
+    Path.join(compileDir, request.rootResourcePath),
+    request.compiler
+  )
+  if (choice.compiler !== request.compiler) {
+    request.engineSwitch = {
+      from: request.compiler,
+      to: choice.compiler,
+      reason: choice.reason,
+    }
+    request.compiler = choice.compiler
+  }
 
   // set up environment variables for chktex
   let env = {

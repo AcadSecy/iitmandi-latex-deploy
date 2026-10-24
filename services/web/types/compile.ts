@@ -72,6 +72,10 @@ export type CompileResponseData = {
   stats?: Record<string, number>
   timings?: Record<string, number>
   outputFilesArchive?: CompileOutputFile
+  // set when the document needed XeLaTeX or LuaLaTeX and was compiled with it
+  // instead of pdfLaTeX; `reason` is the package that needs it, or
+  // 'magic-comment' for a "% !TEX program" line
+  engineSwitch?: { from: string; to: string; reason?: string }
 
   // assigned on response body by DocumentCompiler in frontend
   rootDocId?: string | null
