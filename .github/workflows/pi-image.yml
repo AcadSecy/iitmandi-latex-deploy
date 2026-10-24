@@ -61,9 +61,10 @@ jobs:
 
       # Ubuntu, Node and TeX Live change rarely, so the base image is named
       # after the two files it is built from and pulled while they stay the
-      # same. When one changes, only its changed steps run again: the steps
-      # before are reused from the last base stored (:upstream, :latest), so
-      # editing a later step does not reinstall the 2,900 TeX Live packages.
+      # same. When one changes, only its changed steps run again: each stage
+      # is stored as soon as it is built (:upstream, :texlive, :latest) and
+      # the next build reuses its unchanged steps, so a change after the TeX
+      # Live step, or a failure in it, does not reinstall the 2,900 packages.
       - name: Base image
         run: |
           tag=$(cat server-ce/Dockerfile-base deploy/pi/Dockerfile-texlive | sha256sum | cut -c1-16)
@@ -73,19 +74,21 @@ jobs:
             echo "reusing $base"
             exit 0
           fi
-          docker pull -q "$BASE_IMAGE:upstream" || true
-          docker pull -q "$BASE_IMAGE:latest" || true
+          store() { if [ "$STORE_BASE" = true ]; then docker push -q "$1"; fi; }
+          for t in upstream texlive latest; do docker pull -q "$BASE_IMAGE:$t" || true; done
           cp server-ce/.dockerignore .dockerignore
           docker build --progress=plain --file server-ce/Dockerfile-base \
             --build-arg BUILDKIT_INLINE_CACHE=1 --cache-from "$BASE_IMAGE:upstream" \
             --tag "$BASE_IMAGE:upstream" .
-          docker build --progress=plain --file deploy/pi/Dockerfile-texlive \
-            --build-arg BUILDKIT_INLINE_CACHE=1 --cache-from "$BASE_IMAGE:latest" \
-            --build-arg OVERLEAF_BASE_TAG="$BASE_IMAGE:upstream" \
-            --tag "$base" --tag "$BASE_IMAGE:latest" deploy/pi
-          if [ "$STORE_BASE" = true ]; then
-            for t in upstream latest "$tag"; do docker push -q "$BASE_IMAGE:$t"; done
-          fi
+          store "$BASE_IMAGE:upstream"
+          texlive=(--file deploy/pi/Dockerfile-texlive --build-arg BUILDKIT_INLINE_CACHE=1
+            --build-arg OVERLEAF_BASE_TAG="$BASE_IMAGE:upstream"
+            --cache-from "$BASE_IMAGE:texlive" --cache-from "$BASE_IMAGE:latest")
+          docker build --progress=plain "${texlive[@]}" --target texlive --tag "$BASE_IMAGE:texlive" deploy/pi
+          store "$BASE_IMAGE:texlive"
+          docker build --progress=plain "${texlive[@]}" --tag "$base" --tag "$BASE_IMAGE:latest" deploy/pi
+          store "$BASE_IMAGE:latest"
+          store "$base"
 
       # AGPL-3.0: the image carries the source of this commit, served at /source
       - name: Source archive

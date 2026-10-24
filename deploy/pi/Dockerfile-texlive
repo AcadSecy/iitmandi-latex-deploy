@@ -10,7 +10,9 @@
 # Built by .github/workflows/pi-image.yml on top of server-ce/Dockerfile-base.
 
 ARG OVERLEAF_BASE_TAG=sharelatex/sharelatex-base:latest
-FROM $OVERLEAF_BASE_TAG
+# Two stages, so that CI can keep the long TeX Live install (stage "texlive")
+# while the steps after it change
+FROM $OVERLEAF_BASE_TAG AS texlive
 
 ARG TEXLIVE_MIRROR=https://mirror.ox.ac.uk/sites/ctan.org/systems/texlive/tlnet
 
@@ -26,19 +28,23 @@ RUN tlmgr install --repository ${TEXLIVE_MIRROR} \
       newtx fontaxes kastrup txfonts \
 &&  rm -rf /usr/local/texlive/*/tlpkg/backups/*
 
+FROM texlive
+
 # biblatex needs biber, and TeX Live has no working biber for arm64. Build the
 # version TeX Live lists, so that it matches the biblatex above (a different
 # version refuses biblatex's files), from its release on GitHub: CPAN lags
-# behind TeX Live. Skipped where TeX Live's own biber runs.
+# behind TeX Live. Its XML::LibXSLT does not build from CPAN, so that one comes
+# from Ubuntu. Skipped where TeX Live's own biber runs.
 RUN if ! biber --version > /dev/null 2>&1; then \
       version=$(tlmgr info --data cat-version biber) \
   &&  apt-get update \
-  &&  apt-get install -y --no-install-recommends cpanminus libssl-dev libxml2-dev libxslt1-dev \
+  &&  apt-get install -y --no-install-recommends cpanminus pkg-config libssl-dev libxml2-dev libxslt1-dev \
+        libxml-libxslt-perl \
   &&  mkdir /tmp/biber \
   &&  curl -fsSL "https://github.com/plk/biber/archive/refs/tags/v$version.tar.gz" \
       | tar -xz -C /tmp/biber --strip-components=1 \
   &&  cd /tmp/biber \
-  &&  cpanm --notest --quiet --installdeps . \
+  &&  { cpanm --notest --installdeps . || { tail -n 80 /root/.cpanm/build.log; false; }; } \
   &&  perl Build.PL \
   &&  ./Build \
   &&  rm -f /usr/local/bin/biber \
