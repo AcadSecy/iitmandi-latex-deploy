@@ -41,4 +41,23 @@ while read -r id compiler main; do
   fi
 done < "$LIST"
 
+# Microsoft's font names get the free fonts with the same metrics (texmf/fontspec.cfg)
+dir="$ROOT/microsoft-font-names"
+mkdir -p "$dir"
+printf '%s\n' '\documentclass{article}' '\usepackage{fontspec}' '\setmainfont{Calibri}' \
+  '\newfontfamily\headingfont{Times New Roman}' '\begin{document}' \
+  'Body \textbf{bold} \textit{italic} {\headingfont Heading \textbf{bold}}' '\end{document}' > "$dir/main.tex"
+chown -R www-data:www-data "$dir"
+compile "$dir" xelatex main.tex
+fonts=$(pdffonts "$dir/output.pdf" 2> /dev/null)
+if [ -s "$dir/output.pdf" ] && ! grep -q "^! " "$dir/output.log" &&
+  echo "$fonts" | grep -q "Carlito-Bold" && echo "$fonts" | grep -q "LiberationSerif"; then
+  echo "ok   Calibri and Times New Roman load Carlito and Liberation Serif"
+else
+  echo "FAIL Calibri and Times New Roman do not load their free equivalents"
+  grep -A3 -E "^! " "$dir/output.log" | head -n 20
+  echo "$fonts"
+  status=1
+fi
+
 exit $status

@@ -78,7 +78,7 @@ jobs:
       # Live step, or a failure in it, does not reinstall the 2,900 packages.
       - name: Base image
         run: |
-          tag=$(cat server-ce/Dockerfile-base deploy/pi/Dockerfile-texlive | sha256sum | cut -c1-16)
+          tag=$(cat server-ce/Dockerfile-base deploy/pi/Dockerfile-texlive deploy/pi/texmf/* | sha256sum | cut -c1-16)
           base="$BASE_IMAGE:$tag"
           echo "BASE=$base" >> "$GITHUB_ENV"
           if docker pull -q "$base"; then

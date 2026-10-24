@@ -36,7 +36,7 @@ Nothing on GitHub can reach the Pi. The Pi only looks outwards, at the branch an
 | `/srv/iitmandi-latex/data/mongo`, `data/redis` | The databases |
 | Containers | `iitmandi-latex`, `iitmandi-latex-mongo`, `iitmandi-latex-redis` (compose project `iitmandi-latex`), on the network `br-latex` with fixed addresses |
 
-The image is the platform's usual image on a different base ([`Dockerfile-texlive`](Dockerfile-texlive)): all of TeX Live 2026 (every package, the journal and publisher classes, all fonts and languages; about 4.5 GB without the documentation), and biber, which TeX Live has no working arm64 build of. Every project starts on pdfLaTeX; documents that load `fontspec`, `polyglossia` or `unicode-math` need Menu › Compiler › XeLaTeX or LuaLaTeX.
+The image is the platform's usual image on a different base ([`Dockerfile-texlive`](Dockerfile-texlive)): all of TeX Live 2026 (every package, the journal and publisher classes, all fonts and languages; about 4.5 GB without the documentation), and biber, which TeX Live has no working arm64 build of. Every project starts on pdfLaTeX; a document that loads `fontspec`, `polyglossia` or `unicode-math` is compiled with XeLaTeX or LuaLaTeX instead, which then becomes the project's compiler. Documents from Word that ask for Calibri, Cambria, Times New Roman, Arial or Courier New (Microsoft's fonts, which no TeX distribution may include) get Carlito, Caladea and Liberation, free fonts with the same metrics, so lines and pages break the same ([`texmf/fontspec.cfg`](texmf/fontspec.cfg)).
 
 ### Compiles
 

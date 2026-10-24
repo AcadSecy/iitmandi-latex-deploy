@@ -57,3 +57,16 @@ RUN if ! biber --version > /dev/null 2>&1; then \
     fi \
 &&  biber --version
 
+# Documents from Word ask for Calibri, Cambria, Times New Roman, Arial or
+# Courier New, Microsoft's fonts, which no TeX distribution may include. Free
+# fonts with the same metrics, and texmf/fontspec.cfg, which makes fontspec
+# load them for those names.
+RUN apt-get update \
+&&  apt-get install -y --no-install-recommends \
+      fonts-crosextra-carlito fonts-crosextra-caladea fonts-liberation2 \
+&&  rm -rf /var/lib/apt/lists/* \
+&&  fc-cache -f > /dev/null
+COPY texmf/ /usr/local/texlive/texmf-local/tex/latex/iitmandi/
+RUN mktexlsr /usr/local/texlive/texmf-local > /dev/null 2>&1 \
+&&  kpsewhich fontspec.cfg
+
