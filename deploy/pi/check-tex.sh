@@ -13,6 +13,9 @@ LIST=${1:?usage: check-tex.sh LIST}
 ROOT=/var/lib/overleaf/data/compiles
 status=0
 
+echo "openin_any for the app's user: $(/sbin/setuser www-data kpsewhich -var-value=openin_any)"
+echo "$(biber --version 2>&1 | head -n 1)"
+
 compile() { # dir compiler main
   local flag
   case "$2" in
@@ -45,12 +48,14 @@ mkdir -p "$dir"
 printf '%s\n' '\documentclass{article}' '\begin{document}' '\input{/etc/passwd}' '\end{document}' > "$dir/main.tex"
 chown -R www-data:www-data "$dir"
 compile "$dir" pdflatex main.tex
-if grep -q "root:" "$dir/output.log" "$dir/output.pdf" 2>/dev/null || ! grep -q "openin_any = p" "$dir/build.log" "$dir/output.log" 2>/dev/null; then
-  echo "FAIL TeX read /etc/passwd, or was not stopped by openin_any"
-  tail -n 20 "$dir/output.log"
-  status=1
-else
+# Refused, the file is "not found" and the job stops without a PDF; read, its
+# lines are typeset onto a page
+if [ ! -e "$dir/output.pdf" ] && grep -qE "Not reading|File .?/etc/passwd.? not found" "$dir/build.log" "$dir/output.log" 2>/dev/null; then
   echo "ok   TeX may not read /etc/passwd"
+else
+  echo "FAIL TeX read /etc/passwd: openin_any is not in effect"
+  grep -E "openin_any|passwd|Output written" "$dir/build.log" "$dir/output.log" | head -n 10
+  status=1
 fi
 
 exit $status

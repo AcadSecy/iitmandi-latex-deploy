@@ -108,6 +108,7 @@ jobs:
             -c 'chown -R www-data:www-data /var/lib/overleaf/data/compiles && bash /check-tex.sh /var/lib/overleaf/data/compiles/list.txt'
 
       - name: The image starts with the Pi's settings, and a user can compile
+        id: boot
         working-directory: deploy/pi
         env:
           LATEX_DATA: ${{ runner.temp }}/data
@@ -131,7 +132,7 @@ jobs:
           python3 smoke-test.py http://127.0.0.1:8095 admin@iitmandi-latex.test "$PASSWORD"
 
       - name: Container logs
-        if: failure()
+        if: failure() && steps.boot.outcome == 'failure'
         working-directory: deploy/pi
         env:
           LATEX_IMAGE: ${{ env.IMAGE }}:${{ github.sha }}
