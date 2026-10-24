@@ -78,6 +78,34 @@ python3 /srv/iitmandi-latex/compose/smoke-test.py http://127.0.0.1:8095 admin@ii
 
 The password is kept in `~/.config/iitmandi-latex/admin.txt`.
 
+## Run it on your own machine
+
+Test your change before you push it, on Linux or WSL2 with Docker (about 15 GB of disk), with the same compose file and settings as the Pi:
+
+```sh
+# 1. The base image: system packages, TeX Live and biber (slow, once; again only if
+#    server-ce/Dockerfile-base or deploy/pi/Dockerfile-texlive change)
+cd server-ce && make build-base OVERLEAF_BASE_TAG=iitmandi-latex-base:upstream && cd ..
+docker build -f deploy/pi/Dockerfile-texlive \
+  --build-arg OVERLEAF_BASE_TAG=iitmandi-latex-base:upstream -t iitmandi-latex-base:local deploy/pi
+docker tag iitmandi-latex-base:local iitmandi/texlive-pi:2026.1      # the compile image
+
+# 2. The app image from your working tree (repeat after every change: 5 to 15 minutes)
+cd server-ce && ALLOW_DIRTY=true OVERLEAF_BASE_TAG=iitmandi-latex-base:local \
+  OVERLEAF_TAG=iitmandi-latex:local make build-community && cd ..
+
+# 3. Start it, and make yourself an admin (the first time)
+cd deploy/pi
+[ -s secrets.env ] || printf 'OVERLEAF_INVITE_TOKEN_SECRET=%s\nOVERLEAF_SESSION_SECRET=%s\n' \
+  "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" > secrets.env
+export LATEX_IMAGE=iitmandi-latex:local LATEX_DATA=$HOME/iitmandi-latex-data
+docker compose up -d
+bash create-admin.sh you@iitmandi-latex.test
+python3 smoke-test.py http://localhost:8095 you@iitmandi-latex.test '<password>'   # what CI checks
+```
+
+Then open http://localhost:8095. `secrets.env` and the data folder stay between runs; `docker compose down` stops everything. `ALLOW_DIRTY=true` is for your own machine only: images for the Pi are built by CI from committed code.
+
 ## Moving to an external disk
 
 When a disk is connected, put the data on it without changing any setting:
