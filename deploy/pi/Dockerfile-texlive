@@ -34,9 +34,17 @@ RUN if ! biber --version > /dev/null 2>&1; then \
       version=$(tlmgr info --data cat-version biber) \
   &&  apt-get update \
   &&  apt-get install -y --no-install-recommends cpanminus libssl-dev libxml2-dev libxslt1-dev \
+  &&  mkdir /tmp/biber \
+  &&  curl -fsSL "https://github.com/plk/biber/archive/refs/tags/v$version.tar.gz" \
+      | tar -xz -C /tmp/biber --strip-components=1 \
+  &&  cd /tmp/biber \
+  &&  cpanm --notest --quiet --installdeps . \
+  &&  perl Build.PL \
+  &&  ./Build \
   &&  rm -f /usr/local/bin/biber \
-  &&  cpanm --notest --quiet "https://github.com/plk/biber/archive/refs/tags/v$version.tar.gz" \
-  &&  rm -rf /root/.cpanm /var/lib/apt/lists/*; \
+  &&  ./Build install \
+  &&  cd / \
+  &&  rm -rf /tmp/biber /root/.cpanm /var/lib/apt/lists/*; \
     fi \
 &&  biber --version
 

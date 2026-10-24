@@ -25,6 +25,10 @@ permissions:
 
 env:
   PUBLISH: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/staging' }}
+  # The base image (no code of ours, only what the two Dockerfiles install)
+  # may also be stored from pull requests made in this repository; a fork's
+  # token cannot write packages
+  STORE_BASE: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
 
 jobs:
   build:
@@ -46,8 +50,9 @@ jobs:
           echo "IMAGE=ghcr.io/$owner/iitmandi-latex" >> "$GITHUB_ENV"
           echo "BASE_IMAGE=ghcr.io/$owner/iitmandi-latex-base" >> "$GITHUB_ENV"
 
+      # Every run reads the registry (the base image, and the last image's
+      # layers to build on); only staging publishes the app image
       - name: Log in to the container registry
-        if: env.PUBLISH == 'true'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -55,7 +60,10 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       # Ubuntu, Node and TeX Live change rarely, so the base image is named
-      # after the two files it is built from, and built only when they change
+      # after the two files it is built from and pulled while they stay the
+      # same. When one changes, only its changed steps run again: the steps
+      # before are reused from the last base stored (:upstream, :latest), so
+      # editing a later step does not reinstall the 2,900 TeX Live packages.
       - name: Base image
         run: |
           tag=$(cat server-ce/Dockerfile-base deploy/pi/Dockerfile-texlive | sha256sum | cut -c1-16)
@@ -65,11 +73,19 @@ jobs:
             echo "reusing $base"
             exit 0
           fi
+          docker pull -q "$BASE_IMAGE:upstream" || true
+          docker pull -q "$BASE_IMAGE:latest" || true
           cp server-ce/.dockerignore .dockerignore
-          docker build --progress=plain --file server-ce/Dockerfile-base --tag iitmandi-latex-base:upstream .
+          docker build --progress=plain --file server-ce/Dockerfile-base \
+            --build-arg BUILDKIT_INLINE_CACHE=1 --cache-from "$BASE_IMAGE:upstream" \
+            --tag "$BASE_IMAGE:upstream" .
           docker build --progress=plain --file deploy/pi/Dockerfile-texlive \
-            --build-arg OVERLEAF_BASE_TAG=iitmandi-latex-base:upstream --tag "$base" deploy/pi
-          if [ "$PUBLISH" = true ]; then docker push -q "$base"; fi
+            --build-arg BUILDKIT_INLINE_CACHE=1 --cache-from "$BASE_IMAGE:latest" \
+            --build-arg OVERLEAF_BASE_TAG="$BASE_IMAGE:upstream" \
+            --tag "$base" --tag "$BASE_IMAGE:latest" deploy/pi
+          if [ "$STORE_BASE" = true ]; then
+            for t in upstream latest "$tag"; do docker push -q "$BASE_IMAGE:$t"; done
+          fi
 
       # AGPL-3.0: the image carries the source of this commit, served at /source
       - name: Source archive
