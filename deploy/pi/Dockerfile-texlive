@@ -27,15 +27,15 @@ RUN tlmgr install --repository ${TEXLIVE_MIRROR} \
 &&  rm -rf /usr/local/texlive/*/tlpkg/backups/*
 
 # biblatex needs biber, and TeX Live has no working biber for arm64. Build the
-# version TeX Live lists from CPAN, so that it matches the biblatex above
-# (a different version refuses biblatex's files). Skipped where TeX Live's
-# own biber runs.
+# version TeX Live lists, so that it matches the biblatex above (a different
+# version refuses biblatex's files), from its release on GitHub: CPAN lags
+# behind TeX Live. Skipped where TeX Live's own biber runs.
 RUN if ! biber --version > /dev/null 2>&1; then \
       version=$(tlmgr info --data cat-version biber) \
   &&  apt-get update \
   &&  apt-get install -y --no-install-recommends cpanminus libssl-dev libxml2-dev libxslt1-dev \
   &&  rm -f /usr/local/bin/biber \
-  &&  cpanm --notest --quiet "Biber@$version" \
+  &&  cpanm --notest --quiet "https://github.com/plk/biber/archive/refs/tags/v$version.tar.gz" \
   &&  rm -rf /root/.cpanm /var/lib/apt/lists/*; \
     fi \
 &&  biber --version
