@@ -1,0 +1,4 @@
+# Made on the Pi (and by CI), never committed
+.env
+secrets.env
+site-url.env

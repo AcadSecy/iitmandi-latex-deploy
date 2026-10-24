@@ -34,7 +34,9 @@ Target capacity: about 3,500 registered and 50 simultaneous users, with a 60-sec
 
 ## Branches and upstream
 
-- `main` is the production branch. Changes land through pull requests, and CI must pass.
+- Development happens in the public repository [TayalAditya/iitmandi-latex-deploy](https://github.com/TayalAditya/iitmandi-latex-deploy). Anyone can fork it and open a pull request; collaborators can also create branches in it.
+- `staging` is the test branch. Every commit on it is built for the Raspberry Pi test server and deployed there within the hour ([`deploy/pi`](deploy/pi/README.md)). It takes changes only through pull requests with an approval and a passing **Build and check**.
+- `main` is what has been tried on the Pi and goes to production. Changes come from `staging` through pull requests.
 - The `upstream` remote points at the open-source project this platform is built on (see [License](#license)). Merge it regularly to pick up security fixes:
 
   ```sh
@@ -65,7 +67,7 @@ The git image is built from `services/git-bridge` (Java 21; its tests run in CI)
 docker build -t iitmandi/latex-x-iit-mandi:<tag> services/git-bridge
 ```
 
-The root `docker-compose.yml` is the upstream sample and still pulls the upstream image. The production setup for the DCS server (configuration, databases, secrets, backups) is in [`deploy/iitmandi`](deploy/iitmandi/README.md).
+The root `docker-compose.yml` is the upstream sample and still pulls the upstream image. The production setup for the DCS server (configuration, databases, secrets, backups) is in [`deploy/iitmandi`](deploy/iitmandi/README.md), and the test deployment on the Raspberry Pi in [`deploy/pi`](deploy/pi/README.md).
 
 ## Configuration
 

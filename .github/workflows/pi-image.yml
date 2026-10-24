@@ -1,0 +1,148 @@
+name: Pi image
+
+# Builds the image the Raspberry Pi test server runs, for every commit on
+# staging, checks it, and publishes it to the GitHub container registry as
+# ghcr.io/tayaladitya/iitmandi-latex:<commit>. pi-deploy on the Pi sees the new
+# image within a minute and deploys it (deploy/pi/README.md). Pull requests
+# into staging get the same build and checks, without publishing, so a merge
+# cannot break the Pi.
+#
+# Runs only in the public repository, where Actions minutes are free; the
+# private one has no staging branch.
+on:
+  push:
+    branches: [staging]
+  pull_request:
+    branches: [staging]
+  workflow_dispatch:
+
+concurrency:
+  group: pi-image-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+env:
+  IMAGE: ghcr.io/tayaladitya/iitmandi-latex
+  BASE_IMAGE: ghcr.io/tayaladitya/iitmandi-latex-base
+  PUBLISH: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/staging' }}
+
+jobs:
+  build:
+    name: Build and check
+    if: github.repository == 'TayalAditya/iitmandi-latex-deploy'
+    # The Pi is arm64; GitHub's arm64 runners are free for public repositories
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 180
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Log in to the container registry
+        if: env.PUBLISH == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Ubuntu, Node and TeX Live change rarely, so the base image is named
+      # after the two files it is built from, and built only when they change
+      - name: Base image
+        run: |
+          tag=$(cat server-ce/Dockerfile-base deploy/pi/Dockerfile-texlive | sha256sum | cut -c1-16)
+          base="$BASE_IMAGE:$tag"
+          echo "BASE=$base" >> "$GITHUB_ENV"
+          if docker pull -q "$base"; then
+            echo "reusing $base"
+            exit 0
+          fi
+          cp server-ce/.dockerignore .dockerignore
+          docker build --progress=plain --file server-ce/Dockerfile-base --tag iitmandi-latex-base:upstream .
+          docker build --progress=plain --file deploy/pi/Dockerfile-texlive \
+            --build-arg OVERLEAF_BASE_TAG=iitmandi-latex-base:upstream --tag "$base" deploy/pi
+          if [ "$PUBLISH" = true ]; then docker push -q "$base"; fi
+
+      # AGPL-3.0: the image carries the source of this commit, served at /source
+      - name: Source archive
+        run: make -C server-ce source-archive
+
+      # Layers whose inputs did not change (the 1.5 GB of packages, unless a
+      # package.json changed) are reused from the last image, so the Pi only
+      # downloads what is new
+      - name: Build the image
+        run: |
+          cp server-ce/.dockerignore .dockerignore
+          docker pull -q "$IMAGE:staging" || true
+          docker build --progress=plain --file server-ce/Dockerfile \
+            --build-arg OVERLEAF_BASE_TAG="$BASE" \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --cache-from "$IMAGE:staging" \
+            --label "com.overleaf.ce.revision=$GITHUB_SHA" \
+            --label "org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY" \
+            --tag "$IMAGE:$GITHUB_SHA" .
+          docker image ls "$IMAGE"
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Every template compiles with the image's TeX Live
+        run: |
+          dir="$RUNNER_TEMP/compiles"
+          node services/web/modules/iitmandi-templates/scripts/assemble.mjs "$dir" > "$RUNNER_TEMP/templates.txt"
+          node services/web/modules/page-setup/scripts/page-setup-variants.mjs \
+            "$dir" < "$RUNNER_TEMP/templates.txt" >> "$RUNNER_TEMP/templates.txt"
+          cp "$RUNNER_TEMP/templates.txt" "$dir/list.txt"
+          docker run --rm --entrypoint bash -v "$dir:/var/lib/overleaf/data/compiles" \
+            -v "$PWD/deploy/pi/check-tex.sh:/check-tex.sh:ro" "$IMAGE:$GITHUB_SHA" \
+            -c 'chown -R www-data:www-data /var/lib/overleaf/data/compiles && bash /check-tex.sh /var/lib/overleaf/data/compiles/list.txt'
+
+      - name: The image starts with the Pi's settings, and a user can compile
+        working-directory: deploy/pi
+        env:
+          LATEX_DATA: ${{ runner.temp }}/data
+          LATEX_PORT: "8095"
+        run: |
+          export LATEX_IMAGE="$IMAGE:$GITHUB_SHA"
+          printf 'OVERLEAF_INVITE_TOKEN_SECRET=%s\nOVERLEAF_SESSION_SECRET=%s\n' \
+            "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" > secrets.env
+          docker compose up -d
+          for i in $(seq 1 120); do
+            curl -fsS -o /dev/null http://127.0.0.1:8095/status && break
+            sleep 5
+          done
+          curl -fsS http://127.0.0.1:8095/status
+          curl -fsS http://127.0.0.1:8095/login | grep -q 'IIT Mandi LaTeX (test)'
+          code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8095/register)
+          echo "sign-up page: HTTP $code"
+          [ "$code" != 200 ]
+          PASSWORD=$(openssl rand -hex 12)
+          PASSWORD="$PASSWORD" bash create-admin.sh admin@iitmandi-latex.test
+          python3 smoke-test.py http://127.0.0.1:8095 admin@iitmandi-latex.test "$PASSWORD"
+
+      - name: Container logs
+        if: failure()
+        working-directory: deploy/pi
+        env:
+          LATEX_IMAGE: ${{ env.IMAGE }}:${{ github.sha }}
+          LATEX_DATA: ${{ runner.temp }}/data
+        run: |
+          docker compose ps -a
+          docker compose logs --tail=200
+          docker exec iitmandi-latex sh -c 'tail -n 50 /var/log/overleaf/*.log' || true
+
+      - name: Publish
+        if: env.PUBLISH == 'true'
+        run: |
+          docker push -q "$IMAGE:$GITHUB_SHA"
+          docker tag "$IMAGE:$GITHUB_SHA" "$IMAGE:staging"
+          docker push -q "$IMAGE:staging"
+          {
+            echo "### Published"
+            echo "\`$IMAGE:$GITHUB_SHA\`. The Pi deploys it within a minute."
+          } >> "$GITHUB_STEP_SUMMARY"

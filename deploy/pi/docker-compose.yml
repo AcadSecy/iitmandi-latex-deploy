@@ -1,0 +1,92 @@
+# IIT Mandi LaTeX on the Raspberry Pi: the test deployment (see README.md).
+#
+# pi-deploy copies this folder, as it is in the deployed commit, to
+# /srv/iitmandi-latex/compose and runs `docker compose up -d` there. Next to it
+# on the Pi, never in git:
+#   .env          LATEX_IMAGE=ghcr.io/...:<commit>, written by pi-deploy
+#   secrets.env   the two secrets, made once by setup.sh
+#   site-url.env  the public address, written by pi-deploy when the tunnel starts
+#
+# The Pi's 29 GB card also holds other apps, so everything here is capped:
+# memory, CPU, logs, and compile files, which live in RAM.
+name: iitmandi-latex
+
+x-logging: &logging
+  driver: local
+  options:
+    max-size: 10m
+    max-file: "3"
+
+services:
+  sharelatex:
+    image: ${LATEX_IMAGE:?LATEX_IMAGE is set in .env by pi-deploy}
+    container_name: iitmandi-latex
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    ports:
+      - ${LATEX_PORT:-8095}:80
+    stop_grace_period: 60s
+    env_file:
+      - path: pi.env
+      - path: secrets.env
+      # Written by pi-deploy once the tunnel has an address; until then the
+      # campus address in pi.env is used.
+      - path: site-url.env
+        required: false
+    environment:
+      OVERLEAF_MONGO_URL: mongodb://mongo/sharelatex
+      OVERLEAF_REDIS_HOST: redis
+      REDIS_HOST: redis
+    volumes:
+      # All data in one folder. To move to an external disk, mount it at
+      # /srv/iitmandi-latex (README.md, "Moving to an external disk").
+      - ${LATEX_DATA:-/srv/iitmandi-latex/data}/app:/var/lib/overleaf
+    # Compile files are rebuilt by the next compile, so they live in RAM:
+    # they can never fill the card, and the card is spared the writes. A
+    # restart only means the next compile starts from scratch.
+    tmpfs:
+      - /var/lib/overleaf/data/compiles:size=1536m,uid=33,gid=33,mode=0755
+      - /var/lib/overleaf/data/output:size=768m,uid=33,gid=33,mode=0755
+      - /var/lib/overleaf/data/cache:size=256m,uid=33,gid=33,mode=0755
+    # Leaves one of the four cores and most of the memory to the other apps
+    mem_limit: 5g
+    cpus: 3
+    logging: *logging
+
+  mongo:
+    image: mongo:8.0
+    container_name: iitmandi-latex-mongo
+    restart: unless-stopped
+    # The app needs a replica set; the script below starts it on first boot
+    command: --replSet overleaf --wiredTigerCacheSizeGB 0.5
+    environment:
+      MONGO_INITDB_DATABASE: sharelatex
+    extra_hosts:
+      - mongo:127.0.0.1
+    volumes:
+      - ${LATEX_DATA:-/srv/iitmandi-latex/data}/mongo:/data/db
+      - ./mongodb-init-replica-set.js:/docker-entrypoint-initdb.d/mongodb-init-replica-set.js:ro
+    healthcheck:
+      test: echo 'db.stats().ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    mem_limit: 1g
+    logging: *logging
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: iitmandi-latex-redis
+    restart: unless-stopped
+    # Edits not yet saved to MongoDB live here: an append-only file synced
+    # every second, and no eviction (an evicted key is a lost edit)
+    command: redis-server --appendonly yes --appendfsync everysec
+    volumes:
+      - ${LATEX_DATA:-/srv/iitmandi-latex/data}/redis:/data
+    mem_limit: 512m
+    logging: *logging

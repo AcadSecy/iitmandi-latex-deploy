@@ -1,0 +1,34 @@
+# --------------------------------------------------
+# Base image for the Raspberry Pi test server
+# --------------------------------------------------
+# The Pi runs compiles inside the app container (no per-compile TeX Live
+# containers: those images are 5 GB and the Pi has a 29 GB card shared with
+# other apps). The upstream base image has only TeX Live's basic scheme, so this
+# adds what the IIT Mandi templates and most theses and reports use, without
+# the 1.5 GB of extra fonts or the documentation.
+#
+# Built by .github/workflows/pi-image.yml on top of server-ce/Dockerfile-base.
+
+ARG OVERLEAF_BASE_TAG=sharelatex/sharelatex-base:latest
+FROM $OVERLEAF_BASE_TAG
+
+ARG TEXLIVE_MIRROR=https://mirror.ox.ac.uk/sites/ctan.org/systems/texlive/tlnet
+
+RUN tlmgr install --repository ${TEXLIVE_MIRROR} \
+      collection-latexrecommended \
+      collection-latexextra \
+      collection-fontsrecommended \
+      collection-pictures \
+      collection-mathscience \
+      collection-bibtexextra \
+      collection-luatex \
+      collection-xetex \
+      newtx fontaxes kastrup txfonts \
+&&  rm -rf /usr/local/texlive/*/tlpkg/backups/*
+
+# Without the per-compile sandbox, TeX runs as the app's own user. "p"
+# (paranoid) stops \input and friends from opening absolute paths or parent
+# directories, except under TEXMFOUTPUT, which is the folder that holds every
+# project's compile directory. Writing is already restricted the same way.
+ENV openin_any=p
+ENV TEXMFOUTPUT=/var/lib/overleaf/data/compiles
