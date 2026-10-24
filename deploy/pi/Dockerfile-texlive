@@ -60,13 +60,19 @@ RUN if ! biber --version > /dev/null 2>&1; then \
 # Documents from Word ask for Calibri, Cambria, Times New Roman, Arial or
 # Courier New, Microsoft's fonts, which no TeX distribution may include. Free
 # fonts with the same metrics, and texmf/fontspec.cfg, which makes fontspec
-# load them for those names.
+# load them for those names. fontconfig for fc-cache, which indexes them.
 RUN apt-get update \
 &&  apt-get install -y --no-install-recommends \
-      fonts-crosextra-carlito fonts-crosextra-caladea fonts-liberation2 \
+      fontconfig fonts-crosextra-carlito fonts-crosextra-caladea fonts-liberation \
 &&  rm -rf /var/lib/apt/lists/* \
 &&  fc-cache -f > /dev/null
 COPY texmf/ /usr/local/texlive/texmf-local/tex/latex/iitmandi/
 RUN mktexlsr /usr/local/texlive/texmf-local > /dev/null 2>&1 \
 &&  kpsewhich fontspec.cfg
+
+# The compile service's latexmk settings, which the app image has as well
+# (server-ce/config/latexmkrc, given to the build as "config"). Compiles run
+# here, and without them latexmk does not run again after a failed compile
+# when no file changed, so the editor gets neither a log nor a PDF.
+COPY --from=config latexmkrc /usr/local/share/latexmk/LatexMk
 
