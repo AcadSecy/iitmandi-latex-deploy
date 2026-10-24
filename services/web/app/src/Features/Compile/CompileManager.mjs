@@ -168,6 +168,7 @@ async function _compileInSlot(projectId, userId, options) {
     clsiCacheShard,
     baseHistoryVersion,
     instanceType,
+    engineSwitch,
   } = await ClsiManager.promises.sendRequest(
     project,
     projectId,
@@ -188,6 +189,7 @@ async function _compileInSlot(projectId, userId, options) {
     clsiCacheShard,
     baseHistoryVersion,
     instanceType,
+    engineSwitch,
   }
 }
 

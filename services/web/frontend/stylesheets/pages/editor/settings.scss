@@ -20,7 +20,9 @@
 
 .ide-settings-tab-content {
   max-height: 75%;
-  height: 500px;
+  // never taller than the window leaves room for, or the dialog's top (its
+  // title and close button) is pushed off a short or zoomed screen
+  height: min(500px, calc(100vh - 200px));
   width: 100%;
   padding: 0 var(--spacing-04);
   overflow: auto;
@@ -103,7 +105,10 @@
 }
 
 .ide-dropdown-setting {
-  width: 120px;
+  // wide enough for its longest option (the app's name as the PDF viewer)
+  width: auto;
+  min-width: 120px;
+  max-width: 220px;
 }
 
 .ide-dropdown-setting-wide {
