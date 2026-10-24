@@ -52,7 +52,8 @@ People log in with their roll number or LDAP username, as they will with the Ins
 
 ```sh
 cd /srv/iitmandi-latex/compose
-bash ldap-users.sh b25255 b24116 ...        # the full list: everyone named gets a new password
+bash ldap-users.sh b25255 b24116 ...        # the full list: everyone named gets a new random password
+bash ldap-users.sh b25255=b25255 ...        # or the password after "=" (for now: the roll number)
 DOCKER_HOST=unix:///run/docker-latex.sock docker compose up -d ldap sharelatex
 ```
 

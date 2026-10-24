@@ -5,9 +5,11 @@
 # small directory instead (glauth, the "ldap" service in docker-compose.yml).
 #
 #   bash ldap-users.sh b25255 b24116 ...      (on the Pi, in /srv/iitmandi-latex/compose)
+#   bash ldap-users.sh b25255=b25255 ...      the same, with the password given
 #
-# Gives every user named a new random password (printed, and kept in
-# ~/.config/iitmandi-latex/ldap-users.txt, readable only by you), and makes:
+# Gives every user named a new random password, or the one after "=" (printed,
+# and kept in ~/.config/iitmandi-latex/ldap-users.txt, readable only by you),
+# and makes:
 #   ldap.cfg   the directory (password hashes only)
 #   ldap.env   the allowlist (OVERLEAF_LDAP_SEARCH_FILTER: only the users named
 #              can log in) and the search account's password
@@ -77,13 +79,15 @@ umask 077
 list=$(mktemp)
 uid=5001
 filter=""
-for user in "$@" ${EXTRA_USERS:-}; do
+names=()
+for arg in "$@" ${EXTRA_USERS:-}; do
+  user=${arg%%=*}
   if ! [[ "$user" =~ ^[a-z0-9][a-z0-9._-]*$ ]]; then
     echo "not a username: $user" >&2
     rm -f "$cfg" "$list"
     exit 1
   fi
-  pw=$(rand)
+  if [[ "$arg" == *=* ]]; then pw=${arg#*=}; else pw=$(rand); fi
   cat >> "$cfg" <<EOF
 
 [[users]]
@@ -98,7 +102,7 @@ EOF
   printf '%s %s\n' "$user" "$pw" >> "$list"
   uid=$((uid + 1))
 done
-for user in "$@"; do filter="$filter(uid=$user)"; done
+for arg in "$@"; do names+=("${arg%%=*}"); filter="$filter(uid=${arg%%=*})"; done
 
 chmod 644 "$cfg"   # read by the directory's container
 mv "$cfg" "$DIR/ldap.cfg"
@@ -109,6 +113,6 @@ mv "$cfg" "$DIR/ldap.cfg"
 } > "$DIR/ldap.env"
 mv "$list" "$PASSWORDS"
 
-echo "Allowed: $*"
+echo "Allowed: ${names[*]}"
 echo "Passwords (also in $PASSWORDS):"
 cat "$PASSWORDS"
