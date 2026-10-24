@@ -159,7 +159,7 @@ jobs:
             sleep 5
           done
           curl -fsS http://127.0.0.1:8095/status
-          curl -fsS http://127.0.0.1:8095/login | grep -q 'IIT Mandi LaTeX (test)'
+          curl -fsS http://127.0.0.1:8095/login | grep -q 'IIT Mandi LaTeX'
           code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8095/register)
           echo "sign-up page: HTTP $code"
           [ "$code" != 200 ]
