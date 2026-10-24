@@ -72,6 +72,7 @@ def compile_project(project):
                       timeout=600)
     result = json.loads(body) if code == 200 else {}
     step("compile", result.get("status") == "success", f"HTTP {code} {body[:300]!r}")
+    compile_project.last = result
     return {f.get("path"): f for f in result.get("outputFiles", [])}
 
 
@@ -97,6 +98,9 @@ step("compile made a PDF", "output.pdf" in outputs, ", ".join(outputs))
 code, data = call("GET", outputs["output.pdf"]["url"])
 step(f"download the PDF ({int(time.time() - started)} s)", code == 200 and data.startswith(b"%PDF"), f"HTTP {code}")
 print(f"example project {project}, {len(data) // 1024} KB PDF")
+archive_url = (compile_project.last.get("outputFilesArchive") or {}).get("url")
+code, data = call("GET", archive_url) if archive_url else (0, b"")
+step("download the PDF and logs as a zip", code == 200 and data[:2] == b"PK", f"HTTP {code}, url {archive_url}")
 
 archive = io.BytesIO()
 with zipfile.ZipFile(archive, "w") as z:

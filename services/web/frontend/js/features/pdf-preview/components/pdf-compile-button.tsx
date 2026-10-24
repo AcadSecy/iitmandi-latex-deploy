@@ -19,6 +19,7 @@ import OLButtonGroup from '@/shared/components/ol/ol-button-group'
 import { useLayoutContext } from '@/shared/context/layout-context'
 import { useCommandProvider } from '@/features/ide-react/hooks/use-command-provider'
 import { useCompileQueueStatus } from '../hooks/use-compile-queue-status'
+import { useCompileTimer } from '../hooks/use-compile-timer'
 
 const modifierKey = /Mac/i.test(navigator.platform) ? 'Cmd' : 'Ctrl'
 
@@ -62,6 +63,7 @@ function PdfCompileButton() {
   const waitingAutoCompile =
     queueStatus?.state === 'waiting' && queueStatus.isAutoCompile
   const compileButtonBusy = compiling && !waitingAutoCompile
+  const { elapsed, lastSeconds } = useCompileTimer(compiling)
 
   // The two compile modes (Normal / Fast [draft]) are mutually exclusive.
   const setCompileMode = useCallback(
@@ -88,6 +90,14 @@ function PdfCompileButton() {
     <>
       {t('recompile_pdf')}{' '}
       <span className="keyboard-shortcut">({modifierKey} + Enter)</span>
+      {lastSeconds !== null && (
+        <>
+          <br />
+          {t('last_compile_duration', {
+            seconds: lastSeconds.toFixed(1),
+          })}
+        </>
+      )}
     </>
   )
 
@@ -159,15 +169,13 @@ function PdfCompileButton() {
           isLoading={compileButtonBusy}
           onClick={() => startCompile()}
           className={buttonClassName}
-          loadingLabel={
+          loadingLabel={`${
             queueStatus?.state === 'waiting'
-              ? `${
-                  queueStatus.paused
-                    ? t('compile_paused', { position: queueStatus.position })
-                    : t('compile_queued', { position: queueStatus.position })
-                }…`
-              : `${t('compiling')}…`
-          }
+              ? queueStatus.paused
+                ? t('compile_paused', { position: queueStatus.position })
+                : t('compile_queued', { position: queueStatus.position })
+              : t('compiling')
+          }… ${t('elapsed_seconds', { seconds: elapsed })}`}
         >
           {waitingAutoCompile
             ? t('compile_now_queued', { position: queueStatus?.position })

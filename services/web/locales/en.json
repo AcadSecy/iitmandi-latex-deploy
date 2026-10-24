@@ -839,6 +839,7 @@
   "edits_become_suggestions": "Edits become suggestions",
   "educational_discount_tooltip": "Available to groups at degree-granting institutions.",
   "educational_percent_discount_applied": "__percent__% educational discount applied!",
+  "elapsed_seconds": "__seconds__ s",
   "email": "Email",
   "email_address": "Email address",
   "email_address_is_invalid": "Email address is invalid",

@@ -63,6 +63,19 @@ server {
 		expires 1y;
 	}
 
+  # The zip of all output files ("Download PDF and logs") is made by the web
+  # app, not a file on disk: it must not go to the output file locations
+  # below, which match it too and answer 404. Regex locations are tried in
+  # order, so this one comes first.
+  location ~ ^/project/([0-9a-f]+)/(user/([0-9a-f]+)/)?build/([0-9a-f-]+)/output/output\.zip$ {
+		proxy_pass http://127.0.0.1:4000;
+		proxy_http_version 1.1;
+		proxy_set_header Host $host;
+		proxy_set_header X-Forwarded-Host $host;
+		proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+		proxy_read_timeout 10m;
+		proxy_send_timeout 10m;
+  }
   # handle output files for specific users
   location ~ ^/project/([0-9a-f]+)/user/([0-9a-f]+)/build/([0-9a-f-]+)/output/output\.([a-z.]+)$ {
 		proxy_pass http://127.0.0.1:8080; # clsi-nginx.conf
