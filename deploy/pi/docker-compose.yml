@@ -6,6 +6,7 @@
 #   .env          LATEX_IMAGE=ghcr.io/...:<commit>, written by pi-deploy
 #   secrets.env   the two secrets, made once by setup.sh
 #   site-url.env  the public address, written by pi-deploy when the tunnel starts
+#   ldap.cfg, ldap.env   who may log in, made by ldap-users.sh
 #
 # The Pi's 29 GB card also holds other apps, so everything here is capped:
 # memory, CPU, logs, and compile files, which live in RAM.
@@ -43,6 +44,7 @@ services:
     extra_hosts:
       - mongo:10.213.5.10
       - redis:10.213.5.11
+      - ldap:10.213.5.12
     stop_grace_period: 60s
     env_file:
       - path: pi.env
@@ -50,6 +52,9 @@ services:
       # Written by pi-deploy once the tunnel has an address; until then the
       # campus address in pi.env is used.
       - path: site-url.env
+        required: false
+      # The login allowlist and the directory's search password (ldap-users.sh)
+      - path: ldap.env
         required: false
     environment:
       OVERLEAF_MONGO_URL: mongodb://mongo/sharelatex
@@ -107,6 +112,20 @@ services:
       retries: 10
       start_period: 30s
     mem_limit: 1g
+    logging: *logging
+
+  # Who may log in, until the Institute's LDAP takes over: a small directory
+  # made by ldap-users.sh. People log in with their roll number or username.
+  ldap:
+    image: glauth/glauth:v2.5.4
+    container_name: iitmandi-latex-ldap
+    restart: unless-stopped
+    networks:
+      default:
+        ipv4_address: 10.213.5.12
+    volumes:
+      - ./ldap.cfg:/app/config/config.cfg:ro
+    mem_limit: 64m
     logging: *logging
 
   redis:

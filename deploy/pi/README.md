@@ -7,7 +7,7 @@ Before the DCS server is ready, the platform runs in **test mode** on our Raspbe
 | From anywhere | **https://tayaladitya.github.io/tp-live/latex/**, which forwards to the Pi's Cloudflare tunnel |
 | On the campus network | `http://<pi-address>:8095/` (the address is in https://tayaladitya.github.io/tp-live/address.txt) |
 | Deploys | every commit on `staging` of [AcadSecy/iitmandi-latex-deploy](https://github.com/AcadSecy/iitmandi-latex-deploy) |
-| Accounts | made by the admin in Admin > Manage Users; nobody can sign up |
+| Logging in | with a roll number or LDAP username and its password, for the people on the allowlist only ("Who can log in" below); nobody can sign up |
 
 ## How a change gets to the Pi
 
@@ -44,7 +44,26 @@ Compiles are sandboxed as in production: each one runs in a container of its own
 
 A sandbox is needed: TeX Live 2026 no longer restricts what TeX may read (`openin_any` now applies to writing only), so without it any document could read the app's secrets and other people's files. CI checks the sandbox on every image with a probe document that looks for the app's settings and code.
 
-**The price:** to start compile containers, the app container has a Docker socket. It is the platform's own Docker, which runs nothing but the platform's containers, but like any Docker it can mount the Pi's files, so it still amounts to root on the Pi and its eight other apps. A security hole in the platform would therefore reach the whole Pi. Production avoids this by running on a server that hosts nothing else. Accounts are made by the admin only, so give them to people you know.
+**The price:** to start compile containers, the app container has a Docker socket. It is the platform's own Docker, which runs nothing but the platform's containers, but like any Docker it can mount the Pi's files, so it still amounts to root on the Pi and its eight other apps. A security hole in the platform would therefore reach the whole Pi. Production avoids this by running on a server that hosts nothing else. Only the people on the allowlist can log in, so keep it to people you know.
+
+### Who can log in
+
+People log in with their roll number or LDAP username, as they will with the Institute's LDAP. Until DCS gives us that server, the platform asks a small directory of its own: [glauth](https://github.com/glauth/glauth), the `ldap` service in [`docker-compose.yml`](docker-compose.yml), set up by [`ldap-users.sh`](ldap-users.sh). Only the users given to that script can log in; anyone else, including people in the directory but not on the list, gets "invalid username or password". Logins with an email address go to local accounts instead, such as the backup admin.
+
+```sh
+cd /srv/iitmandi-latex/compose
+bash ldap-users.sh b25255 b24116 ...        # the full list: everyone named gets a new password
+DOCKER_HOST=unix:///run/docker-latex.sock docker compose up -d ldap sharelatex
+```
+
+The passwords are printed and kept in `~/.config/iitmandi-latex/ldap-users.txt`. The allowlist and the directory (`ldap.env`, `ldap.cfg`) stay on the Pi, out of this public repository. An account is made at its first login; to make someone an admin after that, use Admin > Manage Users, or:
+
+```sh
+DOCKER_HOST=unix:///run/docker-latex.sock docker exec iitmandi-latex-mongo mongosh --quiet sharelatex \
+  --eval 'db.users.updateOne({email: "acadsecy@students.iitmandi.ac.in"}, {$set: {isAdmin: true}})'
+```
+
+**Moving to the Institute's LDAP:** set `OVERLEAF_LDAP_URL`, `OVERLEAF_LDAP_SEARCH_BASE` and `OVERLEAF_LDAP_BIND_DN` in [`pi.env`](pi.env) to what DCS gives us, put its search account's password in `ldap.env` as `OVERLEAF_LDAP_BIND_CREDENTIALS`, and keep the allowlist filter there (it uses `uid`, as most directories do). Accounts carry over, since they are matched by email.
 
 ### Staying within its disk
 
@@ -74,7 +93,7 @@ sudo bash setup.sh                              # folders, secrets, compile RAM 
 sudo FORMAT=yes bash disk-setup.sh /dev/sda     # the platform's own disk and Docker: ERASES that disk
 ```
 
-Then add the app to pi-deploy's `apps.json` (kind `image`, with `"docker_host": "unix:///run/docker-latex.sock"` and `"disk": "/srv/iitmandi-latex"`) and push pi-deploy. After the first deploy, make the admin account on the Pi:
+Make the directory of who may log in (above): `bash ldap-users.sh <users>` in `/srv/iitmandi-latex/compose`. Then add the app to pi-deploy's `apps.json` (kind `image`, with `"docker_host": "unix:///run/docker-latex.sock"` and `"disk": "/srv/iitmandi-latex"`) and push pi-deploy. After the first deploy, make the admin account on the Pi:
 
 ```sh
 bash /srv/iitmandi-latex/compose/create-admin.sh admin@iitmandi-latex.test
