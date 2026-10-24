@@ -1,0 +1,32 @@
+# A Docker of its own for IIT Mandi LaTeX on the Raspberry Pi (deploy/pi/README.md).
+# Its images and containers live on the platform's disk at /srv/iitmandi-latex,
+# and it starts only when that disk is mounted, so nothing ever lands on the
+# card. It leaves the Pi's own Docker and its apps alone: its own socket, its
+# own containerd namespace, no default bridge, and no firewall rules except
+# the one below. Installed by disk-setup.sh.
+[Unit]
+Description=Docker for IIT Mandi LaTeX (on /srv/iitmandi-latex)
+After=network-online.target containerd.service docker.service
+Wants=network-online.target
+Requires=containerd.service
+RequiresMountsFor=/srv/iitmandi-latex
+
+[Service]
+Type=notify
+ExecStart=/usr/bin/dockerd --config-file /etc/docker/latex-daemon.json
+# The Pi's Docker drops forwarded traffic it does not know; let the platform's
+# own network (br-latex, docker-compose.yml) through, between its containers only
+ExecStartPost=/bin/sh -c 'iptables -C DOCKER-USER -i br-latex -o br-latex -j ACCEPT 2>/dev/null || iptables -I DOCKER-USER -i br-latex -o br-latex -j ACCEPT || true'
+ExecReload=/bin/kill -s HUP $MAINPID
+TimeoutStartSec=0
+Restart=always
+RestartSec=5
+LimitNOFILE=infinity
+LimitNPROC=infinity
+TasksMax=infinity
+Delegate=yes
+KillMode=process
+OOMScoreAdjust=-500
+
+[Install]
+WantedBy=multi-user.target

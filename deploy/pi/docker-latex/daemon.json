@@ -1,0 +1,18 @@
+{
+  "data-root": "/srv/iitmandi-latex/docker",
+  "exec-root": "/run/docker-latex",
+  "pidfile": "/run/docker-latex.pid",
+  "hosts": ["unix:///run/docker-latex.sock"],
+  "group": "docker",
+  "containerd": "/run/containerd/containerd.sock",
+  "containerd-namespace": "iitmandi-latex",
+  "containerd-plugins-namespace": "iitmandi-latex-plugins",
+  "features": { "containerd-snapshotter": false },
+  "storage-driver": "overlay2",
+  "bridge": "none",
+  "iptables": false,
+  "ip6tables": false,
+  "default-address-pools": [{ "base": "10.213.0.0/16", "size": 24 }],
+  "log-driver": "local",
+  "log-opts": { "max-size": "10m", "max-file": "3" }
+}

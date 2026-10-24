@@ -29,10 +29,12 @@ Nothing on GitHub can reach the Pi. The Pi only looks outwards, at the branch an
 
 | | |
 | --- | --- |
-| `/srv/iitmandi-latex/compose` | This folder as in the deployed commit, plus `.env` (the image), `secrets.env` and `site-url.env` |
+| `/srv/iitmandi-latex` | The platform's own disk, a 16 GB USB stick ([`disk-setup.sh`](disk-setup.sh)), holding everything below |
+| `/srv/iitmandi-latex/docker` | The platform's own Docker ([`docker-latex/`](docker-latex/), socket `/run/docker-latex.sock`): its images and containers |
+| `/srv/iitmandi-latex/compose` | This folder as in the deployed commit, plus `.env` (the image and the socket), `secrets.env` and `site-url.env` |
 | `/srv/iitmandi-latex/data/app` | Files, project history, templates |
 | `/srv/iitmandi-latex/data/mongo`, `data/redis` | The databases |
-| Containers | `iitmandi-latex`, `iitmandi-latex-mongo`, `iitmandi-latex-redis` (compose project `iitmandi-latex`) |
+| Containers | `iitmandi-latex`, `iitmandi-latex-mongo`, `iitmandi-latex-redis` (compose project `iitmandi-latex`), on the network `br-latex` with fixed addresses |
 
 The image is the platform's usual image on a different base: TeX Live with the collections in [`Dockerfile-texlive`](Dockerfile-texlive) (the templates, most theses and reports; not the 1.5 GB of extra fonts) and biber, which TeX Live has no working arm64 build of.
 
@@ -42,18 +44,20 @@ Compiles are sandboxed as in production: each one runs in a container of its own
 
 A sandbox is needed: TeX Live 2026 no longer restricts what TeX may read (`openin_any` now applies to writing only), so without it any document could read the app's secrets and other people's files. CI checks the sandbox on every image with a probe document that looks for the app's settings and code.
 
-**The price:** to start compile containers, the app container has the Docker socket of the Pi, which amounts to root on the Pi and its eight other apps. A security hole in the platform would therefore reach the whole Pi. Production avoids this by running on a server that hosts nothing else. Accounts are made by the admin only, so give them to people you know.
+**The price:** to start compile containers, the app container has a Docker socket. It is the platform's own Docker, which runs nothing but the platform's containers, but like any Docker it can mount the Pi's files, so it still amounts to root on the Pi and its eight other apps. A security hole in the platform would therefore reach the whole Pi. Production avoids this by running on a server that hosts nothing else. Accounts are made by the admin only, so give them to people you know.
 
-### Staying within the card
+### Staying within its disk
 
-The Pi has a 29 GB card that also holds eight other apps, so the platform is boxed in:
+The platform has a disk of its own: a 16 GB USB stick mounted at `/srv/iitmandi-latex`, with a Docker of its own on it. Its images, containers and data never touch the card, which the Pi's eight other apps use. Without the stick, its Docker does not start, so nothing is written to the card instead. The first deploy showed why this is needed: in the Pi's own Docker, which keeps a compressed and an unpacked copy of every image, the platform's image took 6.2 GB of the card. The platform's Docker keeps one copy.
 
-- Compile files live in RAM: `data/app/data/compiles` (1.5 GB) and `data/app/data/output` (768 MB) are RAM disks of the Pi, set up by `setup.sh` in `/etc/fstab`. They never fill the card and are rebuilt by the next compile after a restart.
-- Everyone gets 50 MB, and up to 200 MB while more than 10% of the card is free. Uploads are limited to 20 MB.
+The stick is USB 2, so images pull and the app starts more slowly than from the card; editing and compiling are not affected much, since compile files live in RAM.
+
+- Compile files live in RAM: `data/app/data/compiles` (1.5 GB) and `data/app/data/output` (768 MB) are RAM disks of the Pi, set up by `setup.sh` in `/etc/fstab`. They never fill the disk and are rebuilt by the next compile after a restart.
+- Everyone gets 50 MB, and up to 200 MB while more than 10% of the disk is free. Uploads are limited to 20 MB.
 - Trash, deleted projects and accounts go after 7 days; container logs are capped at 3 × 10 MB each.
 - The app gets at most 3 of the 4 cores and 3.5 GB of memory, MongoDB 1 GB, Redis 512 MB, each compile 1.5 GiB. Two compiles run at once and two more may be paused; the rest queue.
-- pi-deploy refuses to pull a new image unless 4 GB are free, after clearing Docker's build cache. Only the image that is live and the one before it are kept; older ones are pulled again from the registry if anyone rolls back to them.
-- pi-deploy watches the free space every five minutes. Below 1.5 GB it clears Docker's caches, and if that is not enough it **stops the platform**, so that the other apps keep working. It starts it again once 3 GB are free. The dashboard shows when this happens.
+- pi-deploy refuses to pull a new image unless 6 GB are free on the stick, after clearing its Docker's build cache. Only the image that is live and the one before it are kept; older ones are pulled again from the registry if anyone rolls back to them.
+- pi-deploy watches the stick's free space every five minutes. Below 1.5 GB it clears its Docker's caches, and if that is not enough it **stops the platform** before the stick fills up. It starts it again once 3 GB are free. The dashboard shows when this happens.
 
 ### The public link
 
@@ -66,10 +70,11 @@ A named Cloudflare tunnel, on a domain of ours, would give a fixed address and r
 Once, on the Pi:
 
 ```sh
-sudo bash setup.sh            # folders and secrets; safe to run again
+sudo bash setup.sh                              # folders, secrets, compile RAM disks; safe to run again
+sudo FORMAT=yes bash disk-setup.sh /dev/sda     # the platform's own disk and Docker: ERASES that disk
 ```
 
-Then add the app to pi-deploy's `apps.json` (kind `image`) and push pi-deploy. After the first deploy, make the admin account on the Pi:
+Then add the app to pi-deploy's `apps.json` (kind `image`, with `"docker_host": "unix:///run/docker-latex.sock"` and `"disk": "/srv/iitmandi-latex"`) and push pi-deploy. After the first deploy, make the admin account on the Pi:
 
 ```sh
 bash /srv/iitmandi-latex/compose/create-admin.sh admin@iitmandi-latex.test
@@ -106,31 +111,22 @@ python3 smoke-test.py http://localhost:8095 you@iitmandi-latex.test '<password>'
 
 Then open http://localhost:8095. `secrets.env` and the data folder stay between runs; `docker compose down` stops everything. `ALLOW_DIRTY=true` is for your own machine only: images for the Pi are built by CI from committed code.
 
-## Moving to an external disk
+## Moving to a bigger disk
 
-When a disk is connected, put the data on it without changing any setting:
+Plug the new disk in (USB 3, the blue ports) and run `disk-setup.sh` with it, from this folder on the Pi:
 
 ```sh
-cd /srv/iitmandi-latex/compose && docker compose stop
-sudo umount /srv/iitmandi-latex/data/app/data/compiles /srv/iitmandi-latex/data/app/data/output
-sudo mount /dev/sda1 /mnt/latex-disk                  # the new disk, ext4
-sudo rsync -aHAX /srv/iitmandi-latex/ /mnt/latex-disk/
-sudo umount /mnt/latex-disk
-sudo mv /srv/iitmandi-latex /srv/iitmandi-latex.card
-sudo mkdir /srv/iitmandi-latex
-echo 'UUID=<blkid of the disk> /srv/iitmandi-latex ext4 defaults,noatime,nofail 0 2' | sudo tee -a /etc/fstab
-sudo systemctl daemon-reload && sudo mount /srv/iitmandi-latex && sudo mount -a
-cd /srv/iitmandi-latex/compose && docker compose up -d
+lsblk -o NAME,SIZE,MODEL,TRAN                   # find the new disk, for example /dev/sdb
+sudo FORMAT=yes bash disk-setup.sh /dev/sdb     # ERASES /dev/sdb
 ```
 
-The compile RAM disks stay in `/etc/fstab` as they are; systemd mounts them after the disk, because they lie inside it.
-
-Remove `/srv/iitmandi-latex.card` once the site works. With the space, raise the limits in `pi.env` (storage, compiles) through a pull request like any other change. The images themselves stay on the card; to move them as well, change Docker's `data-root`.
+It stops the platform's Docker, copies everything from the stick (data, secrets and images) onto the new disk, mounts that at `/srv/iitmandi-latex` instead and starts the Docker again; the stick is left as it was, so take it out afterwards. With the space, raise the limits in `pi.env` (storage, compiles) through a pull request, and `min_free_gb` in pi-deploy's `apps.json`.
 
 ## Useful commands on the Pi
 
 ```sh
 cd /srv/iitmandi-latex/compose
+export DOCKER_HOST=unix:///run/docker-latex.sock      # the platform's own Docker
 docker compose ps
 docker compose logs -f --tail=100 sharelatex
 docker exec iitmandi-latex tail -f /var/log/overleaf/web.log
