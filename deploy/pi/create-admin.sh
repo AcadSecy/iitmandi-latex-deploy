@@ -14,12 +14,18 @@ PASSWORD=${PASSWORD:-$(openssl rand -base64 24 | tr -d '/+=' | cut -c1-16)}
 
 docker exec -i -e EMAIL="$EMAIL" -e PASSWORD="$PASSWORD" -w /overleaf/services/web iitmandi-latex \
   node --input-type=module <<'EOF'
+import crypto from 'node:crypto'
 import UserRegistrationHandler from './app/src/Features/User/UserRegistrationHandler.mjs'
 import { db } from './app/src/infrastructure/mongodb.mjs'
 
 const { EMAIL, PASSWORD } = process.env
 const handler = UserRegistrationHandler.promises || UserRegistrationHandler
-const user = await handler.registerNewUser({ email: EMAIL, password: PASSWORD })
+// as registerNewUserAndSendActivationEmail does
+const user = await handler.registerNewUser({
+  email: EMAIL,
+  password: PASSWORD,
+  analyticsId: crypto.randomUUID(),
+})
 await db.users.updateOne({ _id: user._id }, { $set: { isAdmin: true } })
 console.log(`${EMAIL} is an admin`)
 process.exit(0)
