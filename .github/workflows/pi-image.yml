@@ -43,16 +43,19 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      # The base image holds all of TeX Live (about 4.5 GB) and the app image
-      # sits on top of it: make room on the runner's small disk by removing
-      # toolchains this job does not use
-      - name: Free disk space
+      # The base image holds all of TeX Live (about 4.5 GB). With Docker's
+      # default image store (overlay2), exporting the app image on top of it
+      # took dockerd past 14 GB of the runner's 16 GB of memory and the runner
+      # was killed. With the containerd image store, which keeps the
+      # compressed layers it pulls, dockerd stayed near 100 MB (measured on
+      # both). The runner's Docker settings are kept.
+      - name: Use the containerd image store
         run: |
-          df -h /
-          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup \
-            /usr/local/share/boost /usr/share/swift /opt/hostedtoolcache/CodeQL || true
-          docker system prune -af > /dev/null
-          df -h /
+          { sudo cat /etc/docker/daemon.json 2> /dev/null || echo '{}'; } \
+            | jq '.features = ((.features // {}) + {"containerd-snapshotter": true})' > "$RUNNER_TEMP/daemon.json"
+          sudo cp "$RUNNER_TEMP/daemon.json" /etc/docker/daemon.json
+          sudo systemctl restart docker
+          docker info -f 'storage: {{.Driver}} {{json .DriverStatus}}'
 
       # The registry path follows the repository's owner, in lower case
       - name: Image names
