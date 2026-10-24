@@ -6,14 +6,14 @@ Before the DCS server is ready, the platform runs in **test mode** on our Raspbe
 | --- | --- |
 | From anywhere | **https://tayaladitya.github.io/tp-live/latex/**, which forwards to the Pi's Cloudflare tunnel |
 | On the campus network | `http://<pi-address>:8095/` (the address is in https://tayaladitya.github.io/tp-live/address.txt) |
-| Deploys | every commit on `staging` of [TayalAditya/iitmandi-latex-deploy](https://github.com/TayalAditya/iitmandi-latex-deploy) |
+| Deploys | every commit on `staging` of [AcadSecy/iitmandi-latex-deploy](https://github.com/AcadSecy/iitmandi-latex-deploy) |
 | Accounts | made by the admin in Admin > Manage Users; nobody can sign up |
 
 ## How a change gets to the Pi
 
 1. Work on a branch and open a pull request into `staging`. The **Pi image** workflow builds the image for the Pi (arm64) and checks it: every template compiles, TeX cannot read files outside the compile folders, and the app starts with the Pi's settings and compiles a project for a logged-in user.
 2. Once the checks pass and the pull request is approved, merge it.
-3. The workflow runs again on `staging` and publishes `ghcr.io/tayaladitya/iitmandi-latex:<commit>`. This takes about 30 to 60 minutes, mostly the web build.
+3. The workflow runs again on `staging` and publishes `ghcr.io/acadsecy/iitmandi-latex:<commit>`. This takes about 30 to 60 minutes, mostly the web build.
 4. pi-deploy on the Pi checks `staging` every minute. When the commit's image is published, it pulls it, starts it, waits until the site answers and runs that commit, and otherwise puts the previous version back. Its dashboard (campus network, port 8099) shows each deploy with its log, and https://tayaladitya.github.io/tp-live/deploy/ shows the state from anywhere.
 
 Nothing on GitHub can reach the Pi. The Pi only looks outwards, at the branch and at the registry, so a pull request from a fork can never run anything on it.

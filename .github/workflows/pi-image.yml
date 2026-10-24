@@ -2,7 +2,7 @@ name: Pi image
 
 # Builds the image the Raspberry Pi test server runs, for every commit on
 # staging, checks it, and publishes it to the GitHub container registry as
-# ghcr.io/tayaladitya/iitmandi-latex:<commit>. pi-deploy on the Pi sees the new
+# ghcr.io/<owner>/iitmandi-latex:<commit> (owner: acadsecy). pi-deploy on the Pi sees the new
 # image within a minute and deploys it (deploy/pi/README.md). Pull requests
 # into staging get the same build and checks, without publishing, so a merge
 # cannot break the Pi.
@@ -24,14 +24,12 @@ permissions:
   contents: read
 
 env:
-  IMAGE: ghcr.io/tayaladitya/iitmandi-latex
-  BASE_IMAGE: ghcr.io/tayaladitya/iitmandi-latex-base
   PUBLISH: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/staging' }}
 
 jobs:
   build:
     name: Build and check
-    if: github.repository == 'TayalAditya/iitmandi-latex-deploy'
+    if: ${{ !github.event.repository.private }}
     # The Pi is arm64; GitHub's arm64 runners are free for public repositories
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 180
@@ -40,6 +38,13 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v5
+
+      # The registry path follows the repository's owner, in lower case
+      - name: Image names
+        run: |
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          echo "IMAGE=ghcr.io/$owner/iitmandi-latex" >> "$GITHUB_ENV"
+          echo "BASE_IMAGE=ghcr.io/$owner/iitmandi-latex-base" >> "$GITHUB_ENV"
 
       - name: Log in to the container registry
         if: env.PUBLISH == 'true'
