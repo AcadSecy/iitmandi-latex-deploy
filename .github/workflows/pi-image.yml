@@ -107,6 +107,7 @@ jobs:
             --cache-from "$IMAGE:staging" \
             --label "com.overleaf.ce.revision=$GITHUB_SHA" \
             --label "org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY" \
+            --label "org.iitmandi.compile-image=$BASE" \
             --tag "$IMAGE:$GITHUB_SHA" .
           docker image ls "$IMAGE"
 
@@ -115,7 +116,8 @@ jobs:
           node-version: 24
           package-manager-cache: false
 
-      - name: Every template compiles with the image's TeX Live
+      # In the compile image, the base: every compile on the Pi runs in it
+      - name: Every template compiles in the compile image
         run: |
           dir="$RUNNER_TEMP/compiles"
           node services/web/modules/iitmandi-templates/scripts/assemble.mjs "$dir" > "$RUNNER_TEMP/templates.txt"
@@ -123,10 +125,10 @@ jobs:
             "$dir" < "$RUNNER_TEMP/templates.txt" >> "$RUNNER_TEMP/templates.txt"
           cp "$RUNNER_TEMP/templates.txt" "$dir/list.txt"
           docker run --rm --entrypoint bash -v "$dir:/var/lib/overleaf/data/compiles" \
-            -v "$PWD/deploy/pi/check-tex.sh:/check-tex.sh:ro" "$IMAGE:$GITHUB_SHA" \
+            -v "$PWD/deploy/pi/check-tex.sh:/check-tex.sh:ro" "$BASE" \
             -c 'chown -R www-data:www-data /var/lib/overleaf/data/compiles && bash /check-tex.sh /var/lib/overleaf/data/compiles/list.txt'
 
-      - name: The image starts with the Pi's settings, and a user can compile
+      - name: The image starts with the Pi's settings, and a user can compile in the sandbox
         id: boot
         working-directory: deploy/pi
         env:
@@ -134,6 +136,8 @@ jobs:
           LATEX_PORT: "8095"
         run: |
           export LATEX_IMAGE="$IMAGE:$GITHUB_SHA"
+          # What pi-deploy does on the Pi: the compile image under its name in pi.env
+          docker tag "$BASE" "$(sed -n 's/^TEX_LIVE_DOCKER_IMAGE=//p' pi.env)"
           printf 'OVERLEAF_INVITE_TOKEN_SECRET=%s\nOVERLEAF_SESSION_SECRET=%s\n' \
             "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" > secrets.env
           docker compose up -d
