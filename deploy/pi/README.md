@@ -36,7 +36,7 @@ Nothing on GitHub can reach the Pi. The Pi only looks outwards, at the branch an
 | `/srv/iitmandi-latex/data/mongo`, `data/redis` | The databases |
 | Containers | `iitmandi-latex`, `iitmandi-latex-mongo`, `iitmandi-latex-redis` (compose project `iitmandi-latex`), on the network `br-latex` with fixed addresses |
 
-The image is the platform's usual image on a different base: TeX Live with the collections in [`Dockerfile-texlive`](Dockerfile-texlive) (the templates, most theses and reports; not the 1.5 GB of extra fonts) and biber, which TeX Live has no working arm64 build of.
+The image is the platform's usual image on a different base ([`Dockerfile-texlive`](Dockerfile-texlive)): all of TeX Live 2026 (every package, the journal and publisher classes, all fonts and languages; about 4.5 GB without the documentation), and biber, which TeX Live has no working arm64 build of. Every project starts on pdfLaTeX; documents that load `fontspec`, `polyglossia` or `unicode-math` need Menu › Compiler › XeLaTeX or LuaLaTeX.
 
 ### Compiles
 
@@ -49,6 +49,8 @@ A sandbox is needed: TeX Live 2026 no longer restricts what TeX may read (`openi
 ### Who can log in
 
 People log in with their roll number or LDAP username, as they will with the Institute's LDAP. Until DCS gives us that server, the platform asks a small directory of its own: [glauth](https://github.com/glauth/glauth), the `ldap` service in [`docker-compose.yml`](docker-compose.yml), set up by [`ldap-users.sh`](ldap-users.sh). Only the users given to that script can log in; anyone else, including people in the directory but not on the list, gets "invalid username or password". Logins with an email address go to local accounts instead, such as the backup admin.
+
+Sharing works with usernames too: in the Share dialog, typing `b23243` suggests that person (the directory's users are the dialog's contacts, `OVERLEAF_LDAP_CONTACTS_FILTER`), and Enter adds them.
 
 ```sh
 cd /srv/iitmandi-latex/compose
@@ -76,7 +78,8 @@ The stick is USB 2, so images pull and the app starts more slowly than from the 
 - Everyone gets 50 MB, and up to 200 MB while more than 10% of the disk is free. Uploads are limited to 20 MB.
 - Trash, deleted projects and accounts go after 7 days; container logs are capped at 3 × 10 MB each.
 - The app gets at most 3 of the 4 cores and 3.5 GB of memory, MongoDB 1 GB, Redis 512 MB, each compile 1.5 GiB. Two compiles run at once and two more may be paused; the rest queue.
-- pi-deploy refuses to pull a new image unless 6 GB are free on the stick, after clearing its Docker's build cache. Only the image that is live and the one before it are kept; older ones are pulled again from the registry if anyone rolls back to them.
+- pi-deploy refuses to pull a new image unless 3.5 GB are free on the stick, after clearing its Docker's build cache. Only the image that is live and the one before it are kept; older ones are pulled again from the registry if anyone rolls back to them.
+- The images take about 9 GB of the stick (the base with TeX Live about 5.7 GB, the app on top of it, MongoDB and Redis). A change to the platform's code downloads a few GB and fits. A change to the base (`server-ce/Dockerfile-base` or `Dockerfile-texlive`) replaces all of it, about 7 GB, which does not fit beside the old version: stop the platform, remove its old images and let pi-deploy pull the new ones (`docker compose stop && docker rmi <old images>` with `DOCKER_HOST=unix:///run/docker-latex.sock`), or move to a bigger disk first.
 - pi-deploy watches the stick's free space every five minutes. Below 1.5 GB it clears its Docker's caches, and if that is not enough it **stops the platform** before the stick fills up. It starts it again once 3 GB are free. The dashboard shows when this happens.
 
 ### The public link

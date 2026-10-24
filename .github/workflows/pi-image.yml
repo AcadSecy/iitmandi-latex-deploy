@@ -43,6 +43,17 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      # The base image holds all of TeX Live (about 4.5 GB) and the app image
+      # sits on top of it: make room on the runner's small disk by removing
+      # toolchains this job does not use
+      - name: Free disk space
+        run: |
+          df -h /
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup \
+            /usr/local/share/boost /usr/share/swift /opt/hostedtoolcache/CodeQL || true
+          docker system prune -af > /dev/null
+          df -h /
+
       # The registry path follows the repository's owner, in lower case
       - name: Image names
         run: |
