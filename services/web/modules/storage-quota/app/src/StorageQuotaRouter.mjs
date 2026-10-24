@@ -14,6 +14,13 @@ function skipIfLoggedOut(req, res, next) {
   next(SessionManager.isUserLoggedIn(req.session) ? undefined : 'route')
 }
 
+// Express matches paths case-insensitively, so /Project/:Project_id/upload
+// also catches /project/new/upload (a new project from a zip), which has a
+// check of its own below: "new" is not a project to check.
+function skipNewProject(req, res, next) {
+  next(req.params.Project_id === 'new' ? 'route' : undefined)
+}
+
 export default {
   apply(webRouter) {
     // router.mjs applies module routers more than once. Register on the first
@@ -33,6 +40,7 @@ export default {
 
     webRouter.post(
       '/Project/:Project_id/upload',
+      skipNewProject,
       ...canWrite,
       StorageQuotaController.checkFileUpload
     )
