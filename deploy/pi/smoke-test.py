@@ -4,9 +4,10 @@ download the PDF. Then check the sandbox: upload a project whose document looks 
 app container has, compile it, and read the log. CI runs this against every image before publishing it;
 on the Pi it checks a deploy.
 
-    python3 smoke-test.py http://127.0.0.1:8095 EMAIL PASSWORD
+    python3 smoke-test.py http://127.0.0.1:8095 EMAIL PASSWORD [LDAP-USER LDAP-PASSWORD [REFUSED-USER PASSWORD]]
 
-Standard library only. Leaves two projects behind in the account ("Smoke test", "Sandbox probe").
+With an LDAP user, it also logs in as them by username, checks that a wrong password is refused, and that
+a user who is in the directory but not on the allowlist is refused too. Standard library only. Leaves two projects behind in the account ("Smoke test", "Sandbox probe").
 """
 import http.cookiejar
 import io
@@ -109,4 +110,33 @@ found = re.findall(rb"SANDBOX-(OK|LEAK) ([a-z ]+)", log)
 step("the compile ran in the sandbox: it cannot see the app's settings or code",
      code == 200 and len(found) == 2 and all(r == b"OK" for r, _ in found),
      ", ".join(f"{r.decode()} {w.decode()}" for r, w in found) or f"HTTP {code}, no probe lines in the log")
+
+
+def fresh_login(user, pw):
+    """Log in with a new session, as someone else would: (logged in, HTTP code)."""
+    op = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
+    page = op.open(base + "/login", timeout=60).read()
+    token = re.search(rb'name="ol-csrfToken" content="([^"]+)"', page).group(1).decode()
+    req = urllib.request.Request(base + "/login", method="POST",
+                                 data=json.dumps({"email": user, "password": pw, "_csrf": token}).encode(),
+                                 headers={"Content-Type": "application/json", "Accept": "application/json",
+                                          "X-Csrf-Token": token})
+    try:
+        with op.open(req, timeout=60) as r:
+            return r.status == 200 and b"redir" in r.read(), r.status
+    except urllib.error.HTTPError as e:
+        return False, e.code
+
+
+# LDAP: an allowed user logs in with their username; one who is in the directory but not on the
+# allowlist, and a wrong password, are refused
+if len(sys.argv) >= 6:
+    ldap_user, ldap_pw = sys.argv[4], sys.argv[5]
+    ok, code = fresh_login(ldap_user, ldap_pw)
+    step(f"LDAP login as {ldap_user}", ok, f"HTTP {code}")
+    ok, code = fresh_login(ldap_user, ldap_pw + "x")
+    step("LDAP login with a wrong password is refused", not ok, f"HTTP {code}")
+    if len(sys.argv) >= 8:
+        ok, code = fresh_login(sys.argv[6], sys.argv[7])
+        step(f"LDAP login as {sys.argv[6]}, who is not on the allowlist, is refused", not ok, f"HTTP {code}")
 print("all good")

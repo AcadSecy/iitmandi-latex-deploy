@@ -6,12 +6,18 @@
 #   .env          LATEX_IMAGE=ghcr.io/...:<commit>, written by pi-deploy
 #   secrets.env   the two secrets, made once by setup.sh
 #   site-url.env  the public address, written by pi-deploy when the tunnel starts
+#   ldap.cfg, ldap.env   who may log in, made by ldap-users.sh
 #
 # The Pi's 29 GB card also holds other apps, so everything here is capped:
 # memory, CPU, logs, and compile files, which live in RAM.
 #
 # The compile image (pi.env) must exist locally under its name before the app
 # starts: pi-deploy tags it from the image's org.iitmandi.compile-image label.
+#
+# On the Pi all of this runs in a Docker of its own, on the platform's disk
+# (docker-latex/, disk-setup.sh), apart from the Pi's other apps. That Docker
+# has no name lookup between containers, so each container has a fixed address
+# and finds the others through extra_hosts.
 name: iitmandi-latex
 
 x-logging: &logging
@@ -32,6 +38,13 @@ services:
         condition: service_started
     ports:
       - ${LATEX_PORT:-8095}:80
+    networks:
+      default:
+        ipv4_address: 10.213.5.2
+    extra_hosts:
+      - mongo:10.213.5.10
+      - redis:10.213.5.11
+      - ldap:10.213.5.12
     stop_grace_period: 60s
     env_file:
       - path: pi.env
@@ -39,6 +52,9 @@ services:
       # Written by pi-deploy once the tunnel has an address; until then the
       # campus address in pi.env is used.
       - path: site-url.env
+        required: false
+      # The login allowlist and the directory's search password (ldap-users.sh)
+      - path: ldap.env
         required: false
     environment:
       OVERLEAF_MONGO_URL: mongodb://mongo/sharelatex
@@ -62,8 +78,9 @@ services:
       - ${LATEX_DATA:-/srv/iitmandi-latex/data}/app:/var/lib/overleaf
       # Starting compile containers needs the Docker socket. This gives the
       # app container root-level control of the Pi: the price of the sandbox,
-      # accepted for the test server (README.md, "Compiles").
-      - /var/run/docker.sock:/var/run/docker.sock
+      # accepted for the test server (README.md, "Compiles"). On the Pi it is
+      # the socket of the platform's own Docker (LATEX_DOCKER_SOCKET in .env).
+      - ${LATEX_DOCKER_SOCKET:-/var/run/docker.sock}:/var/run/docker.sock
     tmpfs:
       - /var/lib/overleaf/data/cache:size=256m,uid=33,gid=33,mode=0755
     # Leaves one of the four cores and most of the memory to the other apps;
@@ -80,6 +97,9 @@ services:
     command: --replSet overleaf --wiredTigerCacheSizeGB 0.5
     environment:
       MONGO_INITDB_DATABASE: sharelatex
+    networks:
+      default:
+        ipv4_address: 10.213.5.10
     extra_hosts:
       - mongo:127.0.0.1
     volumes:
@@ -94,6 +114,20 @@ services:
     mem_limit: 1g
     logging: *logging
 
+  # Who may log in, until the Institute's LDAP takes over: a small directory
+  # made by ldap-users.sh. People log in with their roll number or username.
+  ldap:
+    image: glauth/glauth:v2.5.4
+    container_name: iitmandi-latex-ldap
+    restart: unless-stopped
+    networks:
+      default:
+        ipv4_address: 10.213.5.12
+    volumes:
+      - ./ldap.cfg:/app/config/config.cfg:ro
+    mem_limit: 64m
+    logging: *logging
+
   redis:
     image: redis:7.4-alpine
     container_name: iitmandi-latex-redis
@@ -101,7 +135,20 @@ services:
     # Edits not yet saved to MongoDB live here: an append-only file synced
     # every second, and no eviction (an evicted key is a lost edit)
     command: redis-server --appendonly yes --appendfsync everysec
+    networks:
+      default:
+        ipv4_address: 10.213.5.11
     volumes:
       - ${LATEX_DATA:-/srv/iitmandi-latex/data}/redis:/data
     mem_limit: 512m
     logging: *logging
+
+networks:
+  default:
+    driver_opts:
+      # docker-latex.service lets traffic between containers on this bridge
+      # through the Pi's firewall
+      com.docker.network.bridge.name: br-latex
+    ipam:
+      config:
+        - subnet: 10.213.5.0/24

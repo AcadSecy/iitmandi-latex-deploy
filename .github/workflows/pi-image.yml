@@ -140,6 +140,8 @@ jobs:
           docker tag "$BASE" "$(sed -n 's/^TEX_LIVE_DOCKER_IMAGE=//p' pi.env)"
           printf 'OVERLEAF_INVITE_TOKEN_SECRET=%s\nOVERLEAF_SESSION_SECRET=%s\n' \
             "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" > secrets.env
+          # A test directory: b00001 may log in; b00002 is in it but not on the allowlist
+          PASSWORDS_FILE="$RUNNER_TEMP/ldap-users.txt" EXTRA_USERS=b00002 bash ldap-users.sh b00001
           docker compose up -d
           for i in $(seq 1 120); do
             curl -fsS -o /dev/null http://127.0.0.1:8095/status && break
@@ -152,7 +154,8 @@ jobs:
           [ "$code" != 200 ]
           PASSWORD=$(openssl rand -hex 12)
           PASSWORD="$PASSWORD" bash create-admin.sh admin@iitmandi-latex.test
-          python3 smoke-test.py http://127.0.0.1:8095 admin@iitmandi-latex.test "$PASSWORD"
+          python3 smoke-test.py http://127.0.0.1:8095 admin@iitmandi-latex.test "$PASSWORD" \
+            $(sed -n 1p "$RUNNER_TEMP/ldap-users.txt") $(sed -n 2p "$RUNNER_TEMP/ldap-users.txt")
 
       - name: Container logs
         if: failure() && steps.boot.outcome == 'failure'

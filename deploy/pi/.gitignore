@@ -2,3 +2,6 @@
 .env
 secrets.env
 site-url.env
+ldap.cfg
+ldap.env
+__pycache__/
