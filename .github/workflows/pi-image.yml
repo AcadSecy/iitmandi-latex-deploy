@@ -96,19 +96,33 @@ jobs:
 
       # Layers whose inputs did not change (the 1.5 GB of packages, unless a
       # package.json changed) are reused from the last image, so the Pi only
-      # downloads what is new
+      # downloads what is new.
+      #
+      # Yarn packs the two packages that come from git (codemirror-vim and
+      # codemirror-indentation-markers) at the same time, each with a Yarn
+      # Classic install of its own into the same cache. On a new runner that
+      # cache is empty, and the two sometimes write the same files at once
+      # ("Packing the package failed"). A second try finds the cache filled.
       - name: Build the image
         run: |
           cp server-ce/.dockerignore .dockerignore
           docker pull -q "$IMAGE:staging" || true
-          docker build --progress=plain --file server-ce/Dockerfile \
-            --build-arg OVERLEAF_BASE_TAG="$BASE" \
-            --build-arg BUILDKIT_INLINE_CACHE=1 \
-            --cache-from "$IMAGE:staging" \
-            --label "com.overleaf.ce.revision=$GITHUB_SHA" \
-            --label "org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY" \
-            --label "org.iitmandi.compile-image=$BASE" \
-            --tag "$IMAGE:$GITHUB_SHA" .
+          build() {
+            docker build --progress=plain --file server-ce/Dockerfile \
+              --build-arg OVERLEAF_BASE_TAG="$BASE" \
+              --build-arg BUILDKIT_INLINE_CACHE=1 \
+              --cache-from "$IMAGE:staging" \
+              --label "com.overleaf.ce.revision=$GITHUB_SHA" \
+              --label "org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY" \
+              --label "org.iitmandi.compile-image=$BASE" \
+              --tag "$IMAGE:$GITHUB_SHA" . 2>&1 | tee "$RUNNER_TEMP/build.log"
+            return "${PIPESTATUS[0]}"
+          }
+          if ! build; then
+            grep -q "Packing the package failed" "$RUNNER_TEMP/build.log" || exit 1
+            echo "::warning::Two Yarn Classic installs collided while packing a git dependency; building again"
+            build
+          fi
           docker image ls "$IMAGE"
 
       - uses: actions/setup-node@v5
