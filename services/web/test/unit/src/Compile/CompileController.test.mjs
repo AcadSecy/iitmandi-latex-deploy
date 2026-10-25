@@ -174,6 +174,12 @@ describe('CompileController', function () {
       })
     )
 
+    vi.doMock('../../../../app/src/Features/Editor/EditorController.mjs', () => ({
+      default: (ctx.EditorController = {
+        promises: { setCompiler: sinon.stub().resolves() },
+      }),
+    }))
+
     vi.doMock(
       '../../../../modules/chapter-compile/app/src/ChapterCompile.mjs',
       () => ({
