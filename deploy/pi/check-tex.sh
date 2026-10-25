@@ -57,9 +57,10 @@ for engine in xelatex lualatex; do
   compile "$dir" "$engine" main.tex
   fonts=$(pdffonts "$dir/output.pdf" 2> /dev/null)
   missing=""
-  for font in Carlito-Regular Carlito-Bold Carlito-Italic Carlito-BoldItalic LiberationSerif \
+  # XeLaTeX takes TeX Live's own copy of Carlito, named without "-Regular"
+  for font in "Carlito(-Regular)?" Carlito-Bold Carlito-Italic Carlito-BoldItalic LiberationSerif \
     LiberationSerif-Bold LiberationSerif-Italic Caladea-Regular LiberationSans LiberationMono; do
-    echo "$fonts" | grep -q "+$font " || missing="$missing $font"
+    echo "$fonts" | grep -qE "\+$font " || missing="$missing $font"
   done
   if [ -s "$dir/output.pdf" ] && ! grep -q "^! " "$dir/output.log" && [ -z "$missing" ] &&
     pdftotext "$dir/output.pdf" - | grep -q "1–2"; then
