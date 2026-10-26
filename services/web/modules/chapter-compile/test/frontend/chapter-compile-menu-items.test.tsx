@@ -7,6 +7,7 @@ import {
   USER_ID,
 } from '../../../../test/frontend/helpers/editor-providers'
 import PdfCompileButton from '@/features/pdf-preview/components/pdf-compile-button'
+import ChapterCompileBanner from '../../frontend/js/components/chapter-compile-banner'
 
 const KEY = `chapter_compile:${USER_ID}:${PROJECT_ID}`
 
@@ -67,4 +68,17 @@ describe('<ChapterCompileMenuItems/>', function () {
     await screen.findByText('Compile one chapter')
     await waitFor(() => expect(window.localStorage.getItem(KEY)).to.equal(null))
   })
+
+  it('forgets a chapter that is gone when the project opens, before the menu is used', async function () {
+    window.localStorage.setItem(KEY, JSON.stringify('chapters/old'))
+    fetchMock.get('express:/project/:projectId/chapters', {
+      chapters: ['chapters/intro'],
+    })
+    renderWithEditorContext(<ChapterCompileBanner />, {
+      projectId: PROJECT_ID,
+    })
+
+    await waitFor(() => expect(window.localStorage.getItem(KEY)).to.equal(null))
+  })
+
 })

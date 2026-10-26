@@ -1,8 +1,10 @@
-import { useCallback } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import localStorage from '@/infrastructure/local-storage'
 import usePersistedState from '@/shared/hooks/use-persisted-state'
 import { useProjectContext } from '@/shared/context/project-context'
 import { useUserContext } from '@/shared/context/user-context'
+import { getJSON } from '@/infrastructure/fetch-json'
+import { debugConsole } from '@/utils/debugging'
 
 // The chapter a user compiles alone, per user and project, in the browser
 // rather than in the project. local-compile-context.tsx builds the same key.
@@ -32,3 +34,24 @@ export function useChapterChoice(): [string, (chapter: string) => void] {
   return [chapter, setChapter]
 }
 
+// Keeps the stored choice valid while the project is open.
+export function useChapterChoiceCheck() {
+  const { projectId, project } = useProjectContext()
+  const rootDocId = project?.rootDocId
+  const [chapter, setChapter] = useChapterChoice()
+
+  // On opening the project, and when the main document changes, forget a
+  // chapter the main document no longer loads; the menu then shows "Whole
+  // document". The server compiles everything for it either way.
+  const chapterRef = useRef(chapter)
+  chapterRef.current = chapter
+  useEffect(() => {
+    if (!chapterRef.current) return
+    getJSON(`/project/${projectId}/chapters`)
+      .then(data => {
+        if (!data.chapters.includes(chapterRef.current)) setChapter('')
+      })
+      .catch(debugConsole.error)
+  }, [projectId, rootDocId, setChapter])
+
+}
