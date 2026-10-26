@@ -167,7 +167,7 @@ export const LocalCompileProvider: FC<React.PropsWithChildren> = ({
 
   const { pdfPreviewOpen } = useLayoutContext()
 
-  const { features, alphaProgram } = useUserContext()
+  const { features, alphaProgram, id: userId } = useUserContext()
 
   const { fileTreeData } = useFileTreeData()
   const { findEntityByPath } = useFileTreePathContext()
@@ -291,10 +291,12 @@ export const LocalCompileProvider: FC<React.PropsWithChildren> = ({
   })
 
   // the chapter to compile alone, '' for the whole document; chosen in the
-  // compile menu by modules/chapter-compile
-  const [includeOnly] = usePersistedState(`chapter_compile:${projectId}`, '', {
-    listen: true,
-  })
+  // compile menu by modules/chapter-compile, per user and project
+  const [includeOnly] = usePersistedState(
+    `chapter_compile:${userId}:${projectId}`,
+    '',
+    { listen: true }
+  )
 
   // ol-canUsePng2Pdf is the single source of truth from the backend: it already
   // accounts for both the split-test rollout and the premium entitlement.

@@ -2,10 +2,13 @@ import { expect } from 'chai'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import fetchMock from 'fetch-mock'
 import { renderWithEditorContext } from '../../../../test/frontend/helpers/render-with-context'
-import { PROJECT_ID } from '../../../../test/frontend/helpers/editor-providers'
+import {
+  PROJECT_ID,
+  USER_ID,
+} from '../../../../test/frontend/helpers/editor-providers'
 import PdfCompileButton from '@/features/pdf-preview/components/pdf-compile-button'
 
-const KEY = `chapter_compile:${PROJECT_ID}`
+const KEY = `chapter_compile:${USER_ID}:${PROJECT_ID}`
 
 function openMenu() {
   fireEvent.click(

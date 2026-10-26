@@ -2,14 +2,17 @@ import { useCallback } from 'react'
 import localStorage from '@/infrastructure/local-storage'
 import usePersistedState from '@/shared/hooks/use-persisted-state'
 import { useProjectContext } from '@/shared/context/project-context'
+import { useUserContext } from '@/shared/context/user-context'
 
-// The chapter a user compiles alone, per project, in the browser rather than
-// in the project. local-compile-context.tsx reads the same key.
-const chapterKey = (projectId: string) => `chapter_compile:${projectId}`
+// The chapter a user compiles alone, per user and project, in the browser
+// rather than in the project. local-compile-context.tsx builds the same key.
+const chapterKey = (userId: string | null, projectId: string) =>
+  `chapter_compile:${userId}:${projectId}`
 
 export function useChapterChoice(): [string, (chapter: string) => void] {
   const { projectId } = useProjectContext()
-  const key = chapterKey(projectId)
+  const { id: userId } = useUserContext()
+  const key = chapterKey(userId, projectId)
   const [chapter] = usePersistedState<string>(key, '', { listen: true })
 
   const setChapter = useCallback(
@@ -28,3 +31,4 @@ export function useChapterChoice(): [string, (chapter: string) => void] {
 
   return [chapter, setChapter]
 }
+
