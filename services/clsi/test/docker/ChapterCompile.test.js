@@ -27,6 +27,18 @@ const PROJECT = {
 \include{three}
 \end{document}
 `,
+  'biblatex.tex': String.raw`\documentclass{report}
+\usepackage[backend=biber]{biblatex}
+\addbibresource{refs.bib}
+\begin{document}
+\include{chapters/cites}
+\include{three}
+\printbibliography
+\end{document}
+`,
+  'refs.bib': '@book{knuth, author={Donald Knuth}, title={The TeXbook}, year={1984}}\n',
+  'chapters/cites.tex': String.raw`\chapter{cites}See \cite{knuth}.
+`,
   'chapters/one.tex': chapter('one'),
   'chapters/my two.tex': chapter('two'),
   'three.tex': chapter('three'),
@@ -139,5 +151,19 @@ describe.skipIf(!enabled)('chapter compiles in Docker', () => {
     })
     expect(chapters).toEqual(['three'])
     expect(log).not.toMatch(/^! /m)
+  }, 120_000)
+
+  it('keeps the citations of skipped chapters in a biblatex bibliography', async () => {
+    await compile({ mainFile: 'biblatex.tex', forceRebuild: true })
+    const { chapters, log } = await compile({
+      mainFile: 'biblatex.tex',
+      includeOnly: 'three',
+      forceRebuild: true,
+    })
+    expect(chapters).toEqual(['three'])
+    expect(log).not.toContain('Empty bibliography')
+    expect(log).not.toContain('Please (re)run Biber')
+    const bbl = await fs.readFile(Path.join(dir.directory, 'output.bbl'), 'utf8')
+    expect(bbl).toContain('{knuth}')
   }, 120_000)
 })

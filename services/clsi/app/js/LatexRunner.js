@@ -224,10 +224,16 @@ function _buildLatexCommand(mainFile, opts = {}) {
   // without rewriting any file, then turns off any \includeonly in the
   // preamble so the chosen chapter wins. latexmk does not notice a changed
   // pretex, so CompileManager asks for -g when the chapter changes.
+  // With biblatex, the skipped chapters' citations would drop out of the
+  // bibliography: \nocite the keys of the last compile, which biblatex reads
+  // back from the .aux file (BibTeX keeps them by itself).
+  // shortcut: refsection 0 only, so a thesis with a refsection per chapter
+  // still loses them; loop over all refsections if one turns up.
   if (opts.includeOnly) {
     command.push(
       '-usepretex',
-      `-pretex=\\includeonly{${opts.includeOnly}}\\renewcommand\\includeonly[1]{}`
+      '-pretex=\\AddToHook{begindocument/end}{\\ifcsname blx@prelim@lastcites@0\\endcsname\\forlistcsloop\\nocite{blx@prelim@lastcites@0}\\fi}' +
+        `\\includeonly{${opts.includeOnly}}\\renewcommand\\includeonly[1]{}`
     )
   }
   if (opts.forceRebuild) {
