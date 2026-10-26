@@ -22,7 +22,7 @@ async function main() {
 
   if (compileTimeout < 1 || compileTimeout > 600) {
     console.error(
-      `The compile timeout must be positive number of seconds, below 10 minutes (600).`
+      `The compile timeout must be a positive number of seconds, below 10 minutes (600).`
     )
     process.exit(101)
   }
