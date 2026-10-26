@@ -153,6 +153,22 @@ describe.skipIf(!enabled)('chapter compiles in Docker', () => {
     expect(log).not.toMatch(/^! /m)
   }, 120_000)
 
+  // CompileManager moves its marker only after a compile without errors, so
+  // both compiles after the failed one rebuild (forceRebuild)
+  it('recovers after a failed chapter compile', async () => {
+    const three = Path.join(dir.directory, 'three.tex')
+    const good = await fs.readFile(three, 'utf8')
+    await fs.writeFile(three, good + '\\undefinedcommand\n')
+    const failed = await compile({ includeOnly: 'three', forceRebuild: true })
+    expect(failed.log).toMatch(/^! Undefined control sequence/m)
+    await fs.writeFile(three, good)
+    const fixed = await compile({ includeOnly: 'three', forceRebuild: true })
+    expect(fixed.chapters).toEqual(['three'])
+    expect(fixed.log).not.toMatch(/^! /m)
+    const whole = await compile({ forceRebuild: true })
+    expect(whole.chapters).toEqual(['one', 'my two', 'three'])
+  }, 180_000)
+
   it('keeps the citations of skipped chapters in a biblatex bibliography', async () => {
     await compile({ mainFile: 'biblatex.tex', forceRebuild: true })
     const { chapters, log } = await compile({
