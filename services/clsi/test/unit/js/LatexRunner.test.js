@@ -281,7 +281,7 @@ describe('LatexRunner', () => {
         const pretex = command.indexOf('-usepretex')
         expect(pretex).to.be.greaterThan(-1)
         expect(command[pretex + 1]).to.equal(
-          '-pretex=\\AddToHook{begindocument/end}{\\ifcsname blx@prelim@lastcites@0\\endcsname\\forlistcsloop\\nocite{blx@prelim@lastcites@0}\\fi}\\includeonly{chapters/two}\\renewcommand\\includeonly[1]{}'
+          '-pretex=\\AddToHook{begindocument/end}{\\ifcsname blx@prelim@lastcites@0\\endcsname\\forlistcsloop\\nocite{blx@prelim@lastcites@0}\\fi}\\AddToHook{begindocument/before}{\\includeonly{chapters/two}}'
         )
         expect(command).to.not.include('-g')
         expect(command.at(-1)).to.equal('$COMPILE_DIR/main-file.tex')

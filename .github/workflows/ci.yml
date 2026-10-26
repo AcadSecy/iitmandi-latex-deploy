@@ -162,7 +162,7 @@ jobs:
           docker run --rm -v "$RUNNER_TEMP:/work" -w /work/templates/thesis "$TEXLIVE_IMAGE" bash -c '
             status=0
             latexmk -pdf -interaction=nonstopmode -halt-on-error -g -usepretex \
-              "-pretex=\AddToHook{begindocument/end}{\ifcsname blx@prelim@lastcites@0\endcsname\forlistcsloop\nocite{blx@prelim@lastcites@0}\fi}\includeonly{chapters/conclusion}\renewcommand\includeonly[1]{}" \
+              "-pretex=\AddToHook{begindocument/end}{\ifcsname blx@prelim@lastcites@0\endcsname\forlistcsloop\nocite{blx@prelim@lastcites@0}\fi}\AddToHook{begindocument/before}{\includeonly{chapters/conclusion}}" \
               main.tex > chapter.log 2>&1 || { echo "FAIL the chapter compile stopped"; status=1; }
             ! grep -q "Empty bibliography" main.log || { echo "FAIL the bibliography lost the other chapters'"'"' citations"; status=1; }
             grep -q "(./chapters/conclusion.tex" main.log || { echo "FAIL the chosen chapter was not typeset"; status=1; }

@@ -220,10 +220,11 @@ function _buildLatexCommand(mainFile, opts = {}) {
     command.push('-f')
   }
 
-  // Compile one chapter: -pretex puts \includeonly in front of the main file
-  // without rewriting any file, then turns off any \includeonly in the
-  // preamble so the chosen chapter wins. latexmk does not notice a changed
-  // pretex, so CompileManager asks for -g when the chapter changes.
+  // Compile one chapter: -pretex adds a hook without rewriting any file. The
+  // hook runs \includeonly at \begin{document}, after the preamble and before
+  // any content, so it replaces an \includeonly the preamble has. latexmk
+  // does not notice a changed pretex, so CompileManager asks for -g when the
+  // chapter changes.
   // With biblatex, the skipped chapters' citations would drop out of the
   // bibliography: \nocite the keys of the last compile, which biblatex reads
   // back from the .aux file (BibTeX keeps them by itself).
@@ -233,7 +234,7 @@ function _buildLatexCommand(mainFile, opts = {}) {
     command.push(
       '-usepretex',
       '-pretex=\\AddToHook{begindocument/end}{\\ifcsname blx@prelim@lastcites@0\\endcsname\\forlistcsloop\\nocite{blx@prelim@lastcites@0}\\fi}' +
-        `\\includeonly{${opts.includeOnly}}\\renewcommand\\includeonly[1]{}`
+        `\\AddToHook{begindocument/before}{\\includeonly{${opts.includeOnly}}}`
     )
   }
   if (opts.forceRebuild) {
