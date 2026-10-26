@@ -404,7 +404,7 @@
   "changes_to_these_settings_will_be_applied_to_all_new_projects": "Changes to these settings will be applied to all new projects. Existing projects will not be affected.",
   "changing_the_position_of_your_figure": "Changing the position of your figure",
   "changing_the_position_of_your_table": "Changing the position of your table",
-  "chapter_compile_only": "This PDF has only __chapter__. References to other chapters may show ??.",
+  "chapter_compile_only": "This PDF has only __chapter__, plus what the main file loads with \\input (such as the front matter). Page numbers and references to other chapters come from your last full compile, so they can be missing (??) or out of date.",
   "characters": "Characters",
   "chat": "Chat",
   "chat_error": "Could not load chat messages, please try again.",
