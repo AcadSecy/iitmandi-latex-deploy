@@ -1,3 +1,4 @@
+import { FC, PropsWithChildren, useCallback, useState } from 'react'
 import { expect } from 'chai'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import fetchMock from 'fetch-mock'
@@ -7,6 +8,7 @@ import {
   USER_ID,
 } from '../../../../test/frontend/helpers/editor-providers'
 import PdfCompileButton from '@/features/pdf-preview/components/pdf-compile-button'
+import { DetachCompileContext } from '@/shared/context/detach-compile-context'
 import ChapterCompileBanner from '../../frontend/js/components/chapter-compile-banner'
 
 const KEY = `chapter_compile:${USER_ID}:${PROJECT_ID}`
@@ -81,4 +83,43 @@ describe('<ChapterCompileMenuItems/>', function () {
     await waitFor(() => expect(window.localStorage.getItem(KEY)).to.equal(null))
   })
 
+  it('compiles the chosen chapter again when the switch came too soon after the last compile', async function () {
+    window.localStorage.setItem(KEY, JSON.stringify('chapters/methods'))
+    fetchMock.get('express:/project/:projectId/chapters', {
+      chapters: ['chapters/intro', 'chapters/methods'],
+    })
+    // the server refuses the first compile as too soon, as upstream does
+    // within a second of the last one, and accepts the next
+    const calls: any[] = []
+    const ThrottledCompileProvider: FC<PropsWithChildren> = ({ children }) => {
+      const [compiling, setCompiling] = useState(false)
+      const [error, setError] = useState<string>()
+      const startCompile = useCallback(async (options: any) => {
+        calls.push(options)
+        setCompiling(true)
+        await Promise.resolve()
+        setError(calls.length === 1 ? 'too-recently-compiled' : undefined)
+        setCompiling(false)
+      }, [])
+      const value = { compiling, error, startCompile, lastCompileOptions: {} }
+      return (
+        <DetachCompileContext.Provider value={value as any}>
+          <button onClick={() => startCompile({ includeOnly: 'chapters/methods' })}>
+            switch
+          </button>
+          {children}
+        </DetachCompileContext.Provider>
+      )
+    }
+    renderWithEditorContext(<ChapterCompileBanner />, {
+      projectId: PROJECT_ID,
+      providers: { DetachCompileProvider: ThrottledCompileProvider },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'switch' }))
+
+    await waitFor(() => expect(calls).to.have.length(2), { timeout: 3000 })
+    expect(calls[1]).to.deep.equal({ includeOnly: 'chapters/methods' })
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    expect(calls).to.have.length(2) // once only
+  })
 })

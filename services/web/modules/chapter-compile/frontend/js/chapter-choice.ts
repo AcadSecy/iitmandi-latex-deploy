@@ -3,6 +3,7 @@ import localStorage from '@/infrastructure/local-storage'
 import usePersistedState from '@/shared/hooks/use-persisted-state'
 import { useProjectContext } from '@/shared/context/project-context'
 import { useUserContext } from '@/shared/context/user-context'
+import { useDetachCompileContext as useCompileContext } from '@/shared/context/detach-compile-context'
 import { getJSON } from '@/infrastructure/fetch-json'
 import { debugConsole } from '@/utils/debugging'
 
@@ -38,6 +39,7 @@ export function useChapterChoice(): [string, (chapter: string) => void] {
 export function useChapterChoiceCheck() {
   const { projectId, project } = useProjectContext()
   const rootDocId = project?.rootDocId
+  const { compiling, error, startCompile } = useCompileContext()
   const [chapter, setChapter] = useChapterChoice()
 
   // On opening the project, and when the main document changes, forget a
@@ -54,4 +56,22 @@ export function useChapterChoiceCheck() {
       .catch(debugConsole.error)
   }, [projectId, rootDocId, setChapter])
 
+  // Upstream refuses a compile that starts within a second of the last one
+  // ("too-recently-compiled", no PDF), which a quick chapter switch can hit.
+  // Try once more a little later, with the choice as it is then.
+  const retried = useRef(false)
+  useEffect(() => {
+    if (compiling) return
+    if (error !== 'too-recently-compiled') {
+      retried.current = false
+      return
+    }
+    if (retried.current) return
+    retried.current = true
+    const timer = window.setTimeout(
+      () => startCompile({ includeOnly: chapterRef.current }),
+      1100
+    )
+    return () => window.clearTimeout(timer)
+  }, [compiling, error, startCompile])
 }
