@@ -169,6 +169,20 @@ describe.skipIf(!enabled)('chapter compiles in Docker', () => {
     expect(whole.chapters).toEqual(['one', 'my two', 'three'])
   }, 180_000)
 
+  for (const compiler of ['xelatex', 'lualatex']) {
+    it(`compiles one chapter with ${compiler}`, async () => {
+      await compile({ compiler, forceRebuild: true })
+      const { chapters, log } = await compile({
+        compiler,
+        mainFile: 'own-includeonly.tex',
+        includeOnly: 'three',
+        forceRebuild: true,
+      })
+      expect(chapters).toEqual(['three'])
+      expect(log).not.toMatch(/^! /m)
+    }, 120_000)
+  }
+
   it('keeps the citations of skipped chapters in a biblatex bibliography', async () => {
     await compile({ mainFile: 'biblatex.tex', forceRebuild: true })
     const { chapters, log } = await compile({
