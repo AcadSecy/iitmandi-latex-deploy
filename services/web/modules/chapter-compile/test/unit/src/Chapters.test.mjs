@@ -40,6 +40,11 @@ describe('listChapters', function () {
   it('leaves out unsafe names', function () {
     expect(listChapters('\\include{../secret}\n\\include{a\\b}')).toEqual([])
   })
+
+  it('does not read a macro or a list as file names', function () {
+    const text = ['\\include{\\chapdir/one}', '\\include{a,b}'].join('\n')
+    expect(listChapters(text)).toEqual([])
+  })
 })
 
 describe('isSafeChapter', function () {
@@ -71,6 +76,11 @@ describe('isSafeChapter', function () {
       'a\nb',
       'a%b',
       'a#b',
+      'a^b',
+      'a,b',
+      'a~b',
+      'a&b',
+      'a{b',
       'é',
       'a'.repeat(201),
       null,
