@@ -1,0 +1,111 @@
+@include media-breakpoint-down(md) {
+  .ide-redesign-main[data-mobile-pane] {
+    .mobile-pane-switcher {
+      display: flex;
+      flex-shrink: 0;
+      background: var(--ide-rail-background);
+      border-bottom: 1px solid var(--ide-rail-border-colour);
+
+      button {
+        flex: 1;
+        min-width: 44px;
+        min-height: 44px;
+        border: 0;
+        background: transparent;
+        color: var(--ide-rail-color);
+
+        &[aria-pressed='true'] {
+          background: var(--ide-rail-link-active-background);
+          color: var(--ide-rail-link-active-color);
+          font-weight: bold;
+          box-shadow: inset 0 -3px currentcolor;
+        }
+      }
+    }
+
+    .ide-rail,
+    .ide-redesign-inner > [data-panel-resize-handle-id],
+    .mobile-editor-and-pdf-panel
+      > [data-panel-group-id]
+      > [data-panel-resize-handle-id],
+    .ide-redesign-inner > [data-panel-id],
+    .mobile-code-panel,
+    .ide-redesign-pdf-container {
+      display: none !important;
+    }
+
+    // Override the panel library's inline flex sizes without resizing panels
+    // or writing mobile sizes into its saved desktop layouts.
+    &[data-mobile-pane='files'] .mobile-files-panel,
+    &[data-mobile-pane='code'] .mobile-editor-and-pdf-panel,
+    &[data-mobile-pane='pdf'] .mobile-editor-and-pdf-panel,
+    &[data-mobile-pane='code'] .mobile-code-panel,
+    &[data-mobile-pane='pdf'] .ide-redesign-pdf-container {
+      display: block !important;
+      flex: 1 1 0% !important;
+      min-width: 0;
+    }
+  }
+}
+
+@include media-breakpoint-down(md) {
+  // IDE alerts are outside .ide-redesign-main.
+  #ide-root .global-alerts [role='alert'] {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .ide-redesign-main {
+    // Give 44px targets room vertically without widening crowded toolbar rows.
+    // PDF banners and logs also use this variable for their top offsets.
+    --toolbar-small-height: 52px;
+
+    .ide-file-tree-close {
+      display: none;
+    }
+
+    .ol-cm-toolbar .ol-cm-toolbar-button,
+    .ol-cm-toolbar-overflow .ol-cm-toolbar-button,
+    .pdf .compile-button,
+    .pdf .compile-dropdown-toggle,
+    .pdf .pdf-toolbar-btn {
+      min-height: 44px;
+    }
+
+    .pdf .toolbar-pdf-left .compile-button-group {
+      height: 44px;
+    }
+
+    .file-tree-toolbar {
+      height: 44px;
+    }
+
+    .file-tree-panel,
+    .file-outline-panel {
+      min-height: 52px;
+    }
+
+    .file-tree-panel-collapsed {
+      max-height: 52px;
+    }
+
+    .file-tree-toolbar-action-button,
+    .entity-menu-toggle,
+    .outline-item-expand-collapse-btn {
+      min-width: 44px;
+      min-height: 44px;
+    }
+
+    .file-tree-entity-button,
+    .file-tree-expand-collapse-button,
+    .outline-header-expand-collapse-btn,
+    .outline-item-link {
+      min-height: 44px;
+    }
+
+    .file-tree-entity-button .item-name {
+      padding-right: 48px;
+    }
+  }
+}

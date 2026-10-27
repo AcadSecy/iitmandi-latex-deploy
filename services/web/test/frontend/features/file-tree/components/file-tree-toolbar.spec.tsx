@@ -4,6 +4,25 @@ import { makeEditorManagerProviderWithStaleDocs } from '../../ide-react/helpers/
 import { FileTreeProvider } from '../helpers/file-tree-provider'
 
 describe('<FileTreeToolbar/>', function () {
+  it('hides Close only below 768px', function () {
+    cy.mount(
+      <EditorProviders rootDocId="">
+        <FileTreeProvider>
+          <div className="ide-redesign-main">
+            <FileTreeToolbar />
+          </div>
+        </FileTreeProvider>
+      </EditorProviders>
+    )
+    cy.viewport(390, 844)
+    cy.findByRole('button', { name: 'Close' }).should('not.exist')
+    cy.findByRole('button', { name: 'New file' }).should('be.visible')
+    cy.viewport(767, 844)
+    cy.get('.ide-file-tree-close').should('not.be.visible')
+    cy.viewport(768, 844)
+    cy.findByRole('button', { name: 'Close' }).should('be.visible')
+  })
+
   it('without selected files', function () {
     cy.mount(
       <EditorProviders rootDocId="">

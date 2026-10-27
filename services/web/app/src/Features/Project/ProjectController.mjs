@@ -1185,7 +1185,7 @@ const _ProjectController = {
         hasUnlimitedAi:
           fullFeatureSet?.aiUsageQuota === Settings.aiFeatures?.unlimitedQuota,
         detachRole,
-        metadata: { viewport: false },
+        metadata: { viewport: true },
         showUpgradePrompt,
         fixedSizeDocument: true,
         hasTrackChangesFeature: Features.hasFeature('track-changes'),

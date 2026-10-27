@@ -15,6 +15,8 @@ import { useRailContext } from '../../context/rail-context'
 import HistoryContainer from '@/features/ide-react/components/history-container'
 import { DefaultSynctexControl } from '@/features/pdf-preview/components/detach-synctex-control'
 import importOverleafModules from '../../../../../macros/import-overleaf-module.macro'
+import MobilePaneSwitcher from './mobile-pane-switcher'
+import { useMobileEditorLayout } from '../../hooks/use-mobile-editor-layout'
 
 const mainEditorLayoutPanels: Array<{
   import: { default: ElementType }
@@ -38,6 +40,8 @@ export default function MainLayout() {
     pdfPanelRef,
   } = usePdfPane()
   const { view, pdfLayout } = useLayoutContext()
+  const { pane, setPane, isMobile } = useMobileEditorLayout()
+  const mobileLayout = isMobile && view !== 'history'
 
   const editorIsOpen =
     view === 'editor' || view === 'file' || pdfLayout === 'sideBySide'
@@ -45,9 +49,13 @@ export default function MainLayout() {
   const { t } = useTranslation()
 
   return (
-    <div className="ide-redesign-main">
+    <div
+      className="ide-redesign-main"
+      data-mobile-pane={mobileLayout ? pane : undefined}
+    >
       <Toolbar />
       <EditingPausedBanner />
+      {mobileLayout && <MobilePaneSwitcher pane={pane} onSelect={setPane} />}
       <div className="ide-redesign-body">
         <PanelGroup
           autoSaveId="ide-redesign-outer-layout"
@@ -56,8 +64,12 @@ export default function MainLayout() {
             'ide-panel-group-resizing': resizing || railResizing,
           })}
         >
-          <RailLayout />
-          <Panel id="ide-redesign-editor-and-pdf-panel" order={2}>
+          <RailLayout mobileLayout={mobileLayout} />
+          <Panel
+            id="ide-redesign-editor-and-pdf-panel"
+            className="mobile-editor-and-pdf-panel"
+            order={2}
+          >
             <HistoryContainer />
             <PanelGroup
               autoSaveId="ide-redesign-editor-and-pdf-panel-group"
@@ -69,7 +81,7 @@ export default function MainLayout() {
               <Panel
                 id="ide-redesign-editor-panel"
                 order={1}
-                className={classNames({
+                className={classNames('mobile-code-panel', {
                   hidden: !editorIsOpen || view === 'history',
                 })}
                 minSize={5}
