@@ -189,6 +189,11 @@ export const ModalsContextProvider: FC<React.PropsWithChildren> = ({
   )
 }
 
+// For providers that can also render outside ModalsContextProvider
+export function useOptionalModalsContext(): ModalsContextValue | undefined {
+  return useContext(ModalsContext)
+}
+
 export function useModalsContext(): ModalsContextValue {
   const context = useContext(ModalsContext)
 

@@ -6,6 +6,7 @@ import ClsiManager from './ClsiManager.mjs'
 import logger from '@overleaf/logger'
 import Settings from '@overleaf/settings'
 import Errors from '../Errors/Errors.js'
+import EditorController from '../Editor/EditorController.mjs'
 import SessionManager from '../Authentication/SessionManager.mjs'
 import { RateLimiter } from '../../infrastructure/RateLimiter.mjs'
 import Validation from '../../infrastructure/Validation.mjs'
@@ -488,6 +489,7 @@ const _CompileController = {
       buildId,
       clsiCacheShard,
       instanceType,
+      engineSwitch,
     } = await CompileManager.promises
       .compile(projectId, userId, options, {
         signal: abortController.signal,
@@ -583,6 +585,20 @@ const _CompileController = {
       ? getOutputFilesArchiveSpecification(projectId, userId, buildId)
       : null
 
+    // The compile service used XeLaTeX or LuaLaTeX because the document needs
+    // it: make that the project's compiler (everyone's Compiler menu follows),
+    // and tell the editor, which says so in a popup
+    if (engineSwitch?.to) {
+      try {
+        await EditorController.promises.setCompiler(projectId, engineSwitch.to)
+      } catch (err) {
+        logger.warn(
+          { err, projectId, engineSwitch },
+          'could not keep the compiler the document needs'
+        )
+      }
+    }
+
     res.json({
       status,
       outputFiles,
@@ -596,6 +612,7 @@ const _CompileController = {
       outputUrlPrefix,
       pdfDownloadDomain,
       pdfCachingMinChunkSize,
+      engineSwitch,
     })
   },
 
