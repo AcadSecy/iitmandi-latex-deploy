@@ -115,7 +115,8 @@ Test your change before you push it, on Linux or WSL2 with Docker (about 15 GB o
 #    server-ce/Dockerfile-base or deploy/pi/Dockerfile-texlive change)
 cd server-ce && make build-base OVERLEAF_BASE_TAG=iitmandi-latex-base:upstream && cd ..
 docker build -f deploy/pi/Dockerfile-texlive \
-  --build-arg OVERLEAF_BASE_TAG=iitmandi-latex-base:upstream -t iitmandi-latex-base:local deploy/pi
+  --build-arg OVERLEAF_BASE_TAG=iitmandi-latex-base:upstream --build-context config=server-ce/config \
+  -t iitmandi-latex-base:local deploy/pi
 docker tag iitmandi-latex-base:local iitmandi/texlive-pi:2026.1      # the compile image
 
 # 2. The app image from your working tree (repeat after every change: 5 to 15 minutes)
