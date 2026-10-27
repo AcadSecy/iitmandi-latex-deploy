@@ -260,4 +260,18 @@
   \pdfstringdefDisableCommands{\def\\{, }}%
   \hypersetup{pdftitle={\@title}, pdfauthor={\@author}}}
 
+%% Memoize (loaded in main.tex) puts a newly drawn figure on an extra page at
+%% the end of the PDF and saves it as a file on the next run. After a run that
+%% drew a new figure, change a counter in the .aux file: latexmk then runs once
+%% more, so the extra page never stays in the PDF.
+\AddToHook{begindocument/before}{%
+  \@ifpackageloaded{memoize}{%
+    \providecommand\iitm@figureruns{0}%
+    \mmzset{enddocument/afterlastpage/.append code={%
+      \ifnum\mmzExternPages>0
+        \xdef\iitm@figureruns{\the\numexpr\iitm@figureruns+1\relax}%
+      \fi
+      \immediate\write\@auxout{\gdef\string\iitm@figureruns{\iitm@figureruns}}}}%
+  }{}}
+
 \endinput

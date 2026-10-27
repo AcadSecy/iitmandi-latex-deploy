@@ -92,4 +92,15 @@ RUN mktexlsr /usr/local/texlive/texmf-local > /dev/null 2>&1 \
 # here, and without them latexmk does not run again after a failed compile
 # when no file changed, so the editor gets neither a log nor a PDF.
 COPY --from=config latexmkrc /usr/local/share/latexmk/LatexMk
+# The thesis and report templates load memoize to cache their figures. It needs
+# two packages that tlmgr does not install with it (advice, collargs), its
+# extraction script on the PATH, and Perl's PDF::API2 to read the figures out
+# of the PDF. The package option [extract=tex] stops with "Illegal parameter
+# number" on TeX Live 2026, so the templates use the default extraction.
+ARG TEXLIVE_MIRROR=https://mirror.ox.ac.uk/sites/ctan.org/systems/texlive/tlnet
+RUN tlmgr install --repository ${TEXLIVE_MIRROR} advice collargs \
+&&  tlmgr path add \
+&&  apt-get update \
+&&  apt-get install -y --no-install-recommends libpdf-api2-perl \
+&&  rm -rf /var/lib/apt/lists/* /usr/local/texlive/*/tlpkg/backups/*
 

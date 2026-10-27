@@ -360,6 +360,7 @@ async function _sendBuiltRequest(projectId, userId, req, options) {
     clsiCacheShard: compile.clsiCacheShard,
     baseHistoryVersion: compile.baseHistoryVersion,
     instanceType: compile.instanceType,
+    engineSwitch: compile.engineSwitch,
   }
 }
 
