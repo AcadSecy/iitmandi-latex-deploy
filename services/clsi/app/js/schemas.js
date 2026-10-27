@@ -76,6 +76,8 @@ const compileOptionsSchema = z.strictObject({
   // schema itself.
   imageName: z.string().optional(),
   draft: z.boolean().optional(),
+  // a chapter to compile alone; RequestParser checks its characters
+  includeOnly: z.string().optional(),
   png2pdf: z.boolean().optional(),
   stopOnFirstError: z.boolean().optional(),
   check: z.string().optional(),

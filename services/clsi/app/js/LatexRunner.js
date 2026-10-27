@@ -33,6 +33,8 @@ function runLatex(projectId, options, callback) {
     flags,
     compileGroup,
     stopOnFirstError,
+    includeOnly,
+    forceRebuild,
     stats,
     timings,
   } = options
@@ -59,6 +61,8 @@ function runLatex(projectId, options, callback) {
       compiler,
       stopOnFirstError,
       flags,
+      includeOnly,
+      forceRebuild,
     })
   } catch (err) {
     return callback(err)
@@ -214,6 +218,27 @@ function _buildLatexCommand(mainFile, opts = {}) {
   } else {
     // Run all passes despite errors
     command.push('-f')
+  }
+
+  // Compile one chapter: -pretex adds a hook without rewriting any file. The
+  // hook runs \includeonly at \begin{document}, after the preamble and before
+  // any content, so it replaces an \includeonly the preamble has. latexmk
+  // does not notice a changed pretex, so CompileManager asks for -g when the
+  // chapter changes.
+  // With biblatex, the skipped chapters' citations would drop out of the
+  // bibliography: \nocite the keys of the last compile, which biblatex reads
+  // back from the .aux file (BibTeX keeps them by itself).
+  // shortcut: refsection 0 only, so a thesis with a refsection per chapter
+  // still loses them; loop over all refsections if one turns up.
+  if (opts.includeOnly) {
+    command.push(
+      '-usepretex',
+      '-pretex=\\AddToHook{begindocument/end}{\\ifcsname blx@prelim@lastcites@0\\endcsname\\forlistcsloop\\nocite{blx@prelim@lastcites@0}\\fi}' +
+        `\\AddToHook{begindocument/before}{\\includeonly{${opts.includeOnly}}}`
+    )
+  }
+  if (opts.forceRebuild) {
+    command.push('-g')
   }
 
   // Extra flags

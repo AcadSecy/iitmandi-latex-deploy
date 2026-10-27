@@ -73,6 +73,8 @@ describe('LatexRunner', () => {
           compileGroup: this.compileGroup,
           flags: this.flags,
           stopOnFirstError: this.stopOnFirstError,
+          includeOnly: this.includeOnly,
+          forceRebuild: this.forceRebuild,
           timings: this.timings,
           stats: this.stats,
         },
@@ -260,6 +262,64 @@ describe('LatexRunner', () => {
           '-pdf',
           '$COMPILE_DIR/main-file.tex',
         ])
+      })
+    })
+
+    describe('with the includeOnly option', () => {
+      beforeEach(async ctx => {
+        await new Promise((resolve, reject) => {
+          ctx.includeOnly = 'chapters/two'
+          ctx.call(err => {
+            if (err) reject(err)
+            resolve()
+          })
+        })
+      })
+
+      it('should inject \\includeonly with -pretex and no -g', ctx => {
+        const command = ctx.CommandRunner.run.firstCall.args[1]
+        const pretex = command.indexOf('-usepretex')
+        expect(pretex).to.be.greaterThan(-1)
+        expect(command[pretex + 1]).to.equal(
+          '-pretex=\\AddToHook{begindocument/end}{\\ifcsname blx@prelim@lastcites@0\\endcsname\\forlistcsloop\\nocite{blx@prelim@lastcites@0}\\fi}\\AddToHook{begindocument/before}{\\includeonly{chapters/two}}'
+        )
+        expect(command).to.not.include('-g')
+        expect(command.at(-1)).to.equal('$COMPILE_DIR/main-file.tex')
+      })
+    })
+
+    describe('with the forceRebuild option only', () => {
+      beforeEach(async ctx => {
+        await new Promise((resolve, reject) => {
+          ctx.forceRebuild = true
+          ctx.call(err => {
+            if (err) reject(err)
+            resolve()
+          })
+        })
+      })
+
+      it('should add -g without any pretex', ctx => {
+        const command = ctx.CommandRunner.run.firstCall.args[1]
+        expect(command).to.include('-g')
+        expect(command).to.not.include('-usepretex')
+      })
+    })
+
+    describe('without includeOnly or forceRebuild', () => {
+      beforeEach(async ctx => {
+        await new Promise((resolve, reject) => {
+          ctx.call(err => {
+            if (err) reject(err)
+            resolve()
+          })
+        })
+      })
+
+      it('should not add -g or a pretex', ctx => {
+        const command = ctx.CommandRunner.run.firstCall.args[1]
+        expect(command).to.not.include('-g')
+        expect(command).to.not.include('-usepretex')
       })
     })
 

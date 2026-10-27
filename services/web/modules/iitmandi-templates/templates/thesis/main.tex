@@ -37,11 +37,13 @@
 \input{frontmatter/abbreviations}
 
 \mainmatter
-\input{chapters/introduction}
-\input{chapters/conclusion}
+% Chapters use \include, so "Compile one chapter" in the recompile menu can
+% build just the chapter you are working on. Add new chapters the same way.
+\include{chapters/introduction}
+\include{chapters/conclusion}
 
 \appendix
-\input{chapters/appendix}
+\include{chapters/appendix}
 
 \backmatter
 \printbibliography[heading=bibintoc,title={References}]

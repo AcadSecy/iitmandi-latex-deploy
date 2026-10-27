@@ -22,6 +22,7 @@ import Features from '../../infrastructure/Features.mjs'
 import ClsiCacheController from './ClsiCacheController.mjs'
 import { prepareZipAttachment } from '../../infrastructure/Response.mjs'
 import ClsiCacheHandler from './ClsiCacheHandler.mjs'
+import ChapterCompile from '../../../../modules/chapter-compile/app/src/ChapterCompile.mjs'
 import {
   getFilePath,
   getOutputFileURL,
@@ -170,6 +171,7 @@ const compileSchema = z.object({
     rootDoc_id: zz.objectId().nullish(),
     compiler: z.string().optional(),
     draft: z.boolean().optional(),
+    includeOnly: z.string().max(200).optional(),
     png2pdf: z.boolean().optional(),
     // silently ignored (not rejected) when not one of these three, to
     // match the existing .includes() check below
@@ -446,6 +448,18 @@ const _CompileController = {
     if (body.draft) {
       options.draft = body.draft
     }
+    // a chapter that is gone (renamed, or no longer \include'd) gets a
+    // whole-document compile; the response says which one ran
+    if (
+      body.includeOnly &&
+      (await ChapterCompile.hasChapter(
+        projectId,
+        body.includeOnly,
+        body.rootDoc_id
+      ))
+    ) {
+      options.includeOnly = body.includeOnly
+    }
     if (['validate', 'error', 'silent'].includes(body.check)) {
       options.check = body.check
     }
@@ -613,6 +627,7 @@ const _CompileController = {
       pdfDownloadDomain,
       pdfCachingMinChunkSize,
       engineSwitch,
+      includeOnly: options.includeOnly,
     })
   },
 

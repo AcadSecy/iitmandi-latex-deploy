@@ -101,6 +101,16 @@ function parse(body, callback) {
         type: 'boolean',
       }
     )
+    // a chapter to compile alone; it ends up in TeX code, so only a plain
+    // relative path is accepted
+    response.includeOnly = _parseAttribute(
+      'includeOnly',
+      compile.options.includeOnly,
+      {
+        type: 'string',
+        regex: /^(?!.*\.\.)[A-Za-z0-9_][A-Za-z0-9_\-. /]{0,199}$/,
+      }
+    )
     response.check = _parseAttribute('check', compile.options.check, {
       type: 'string',
     })

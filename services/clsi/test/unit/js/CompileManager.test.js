@@ -145,6 +145,10 @@ describe('CompileManager', () => {
         .rejects(Object.assign(new Error('not found'), { code: 'ENOENT' })),
     }
     ctx.fsPromises.lstat.withArgs(ctx.compileDir).resolves(ctx.dirStats)
+    // no chapter compile came before
+    ctx.fsPromises.readFile
+      .withArgs(Path.join(ctx.compileDir, 'output.chapter'), 'utf8')
+      .rejects(Object.assign(new Error('not found'), { code: 'ENOENT' }))
     ctx.fsPromises.stat
       .withArgs(Path.join(ctx.compileDir, 'output.synctex.gz'))
       .resolves(ctx.fileStats)
@@ -344,6 +348,8 @@ describe('CompileManager', () => {
             environment: ctx.env,
             compileGroup: ctx.compileGroup,
             stopOnFirstError: ctx.request.stopOnFirstError,
+            includeOnly: ctx.request.includeOnly,
+            forceRebuild: false,
             stats: sinon.match.object,
             timings: sinon.match.object,
           }
@@ -389,6 +395,93 @@ describe('CompileManager', () => {
         expect(ctx.LatexMetrics.enableLatexMkMetrics).to.have.been.calledWith(
           sinon.match.object
         )
+      })
+    })
+
+    describe('chapter compiles', () => {
+      beforeEach(ctx => {
+        ctx.marker = Path.join(ctx.compileDir, 'output.chapter')
+        ctx.fsPromises.writeFile = sinon.stub().resolves()
+      })
+
+      const forceRebuild = ctx =>
+        ctx.LatexRunner.promises.runLatex.firstCall.args[1].forceRebuild
+
+      // what LatexRunner records when latexmk reports errors
+      const failLatex = ctx =>
+        ctx.LatexRunner.promises.runLatex.callsFake(async (name, opts) => {
+          opts.stats['latexmk-errors'] = 1
+          return {}
+        })
+
+      it('should not rebuild a whole-document compile after another', async ctx => {
+        await ctx.CompileManager.promises.doCompileWithLock(ctx.request, {}, {})
+        expect(forceRebuild(ctx)).to.equal(false)
+        expect(ctx.fsPromises.writeFile).not.to.have.been.called
+        expect(ctx.fsPromises.unlink).not.to.have.been.calledWith(ctx.marker)
+      })
+
+      it('should rebuild and write the marker after a whole-document compile', async ctx => {
+        ctx.request.includeOnly = 'chapters/two'
+        await ctx.CompileManager.promises.doCompileWithLock(ctx.request, {}, {})
+        expect(forceRebuild(ctx)).to.equal(true)
+        expect(ctx.fsPromises.writeFile).to.have.been.calledWith(
+          ctx.marker,
+          'chapters/two'
+        )
+      })
+
+      it('should not rebuild when the chapter is the same as last time', async ctx => {
+        ctx.request.includeOnly = 'chapters/two'
+        ctx.fsPromises.readFile
+          .withArgs(ctx.marker, 'utf8')
+          .resolves('chapters/two')
+        await ctx.CompileManager.promises.doCompileWithLock(ctx.request, {}, {})
+        expect(forceRebuild(ctx)).to.equal(false)
+        expect(ctx.fsPromises.writeFile).not.to.have.been.called
+      })
+
+      it('should rebuild when the chapter changes', async ctx => {
+        ctx.request.includeOnly = 'chapters/three'
+        ctx.fsPromises.readFile
+          .withArgs(ctx.marker, 'utf8')
+          .resolves('chapters/two')
+        await ctx.CompileManager.promises.doCompileWithLock(ctx.request, {}, {})
+        expect(forceRebuild(ctx)).to.equal(true)
+        expect(ctx.fsPromises.writeFile).to.have.been.calledWith(
+          ctx.marker,
+          'chapters/three'
+        )
+      })
+
+      it('should rebuild and remove the marker when going back to the whole document', async ctx => {
+        ctx.fsPromises.readFile
+          .withArgs(ctx.marker, 'utf8')
+          .resolves('chapters/two')
+        await ctx.CompileManager.promises.doCompileWithLock(ctx.request, {}, {})
+        expect(forceRebuild(ctx)).to.equal(true)
+        expect(ctx.fsPromises.unlink).to.have.been.calledWith(ctx.marker)
+      })
+
+      it('should keep the marker when the whole-document compile fails, so the next one rebuilds', async ctx => {
+        ctx.fsPromises.readFile
+          .withArgs(ctx.marker, 'utf8')
+          .resolves('chapters/two')
+        failLatex(ctx)
+        await ctx.CompileManager.promises.doCompileWithLock(ctx.request, {}, {})
+        expect(forceRebuild(ctx)).to.equal(true)
+        expect(ctx.fsPromises.unlink).not.to.have.been.calledWith(ctx.marker)
+      })
+
+      it('should keep the old marker when a chapter compile fails, so the next one rebuilds', async ctx => {
+        ctx.request.includeOnly = 'chapters/three'
+        ctx.fsPromises.readFile
+          .withArgs(ctx.marker, 'utf8')
+          .resolves('chapters/two')
+        failLatex(ctx)
+        await ctx.CompileManager.promises.doCompileWithLock(ctx.request, {}, {})
+        expect(forceRebuild(ctx)).to.equal(true)
+        expect(ctx.fsPromises.writeFile).not.to.have.been.called
       })
     })
 
@@ -500,6 +593,8 @@ describe('CompileManager', () => {
             },
             compileGroup: ctx.compileGroup,
             stopOnFirstError: ctx.request.stopOnFirstError,
+            includeOnly: ctx.request.includeOnly,
+            forceRebuild: false,
             stats: sinon.match.object,
             timings: sinon.match.object,
           }
@@ -527,6 +622,8 @@ describe('CompileManager', () => {
             environment: ctx.env,
             compileGroup: ctx.compileGroup,
             stopOnFirstError: ctx.request.stopOnFirstError,
+            includeOnly: ctx.request.includeOnly,
+            forceRebuild: false,
             stats: sinon.match.object,
             timings: sinon.match.object,
           }

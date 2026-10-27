@@ -233,6 +233,8 @@ async function doCompile(request, stats, timings) {
   enableLatexMkMetrics(stats)
 
   try {
+    const forceRebuild =
+      (await _readChapterMarker(compileDir)) !== (request.includeOnly || '')
     await LatexRunner.promises.runLatex(compileName, {
       directory: compileDir,
       mainFile: request.rootResourcePath,
@@ -243,9 +245,14 @@ async function doCompile(request, stats, timings) {
       environment: env,
       compileGroup: request.compileGroup,
       stopOnFirstError: request.stopOnFirstError,
+      includeOnly: request.includeOnly,
+      forceRebuild,
       stats,
       timings,
     })
+    if (forceRebuild && !stats['latexmk-errors']) {
+      await _writeChapterMarker(compileDir, request.includeOnly)
+    }
 
     // We use errors to return the validation state. It would be nice to use a
     // more appropriate mechanism.
@@ -390,6 +397,35 @@ async function doCompile(request, stats, timings) {
     )
   }
   return { outputFiles, buildId, baseHistoryVersion }
+}
+
+// Remembers which chapter the last compile without errors built; no marker
+// means the whole document. latexmk does not track -pretex, so a compile that
+// changes the chapter or goes back to the whole document would report "nothing
+// to do" and keep the old PDF; such compiles rebuild (-g). The marker moves
+// only after a compile without errors, so the compile after a failed switch
+// rebuilds again and never keeps a stale one-chapter PDF. Repeat compiles of
+// the same chapter stay incremental. It matches the ^output\. keep rule of
+// ResourceWriter.
+async function _readChapterMarker(compileDir) {
+  try {
+    return await fsPromises.readFile(
+      Path.join(compileDir, 'output.chapter'),
+      'utf8'
+    )
+  } catch (err) {
+    if (err.code === 'ENOENT') return ''
+    throw err
+  }
+}
+
+async function _writeChapterMarker(compileDir, includeOnly) {
+  const marker = Path.join(compileDir, 'output.chapter')
+  if (includeOnly) {
+    await fsPromises.writeFile(marker, includeOnly)
+  } else {
+    await fsPromises.unlink(marker)
+  }
 }
 
 // A PDF ends with "%%EOF" once TeX has written its cross-reference table.
