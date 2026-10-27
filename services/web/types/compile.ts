@@ -76,6 +76,8 @@ export type CompileResponseData = {
   // instead of pdfLaTeX; `reason` is the package that needs it, or
   // 'magic-comment' for a "% !TEX program" line
   engineSwitch?: { from: string; to: string; reason?: string }
+  // the chapter compiled alone (modules/chapter-compile), if any
+  includeOnly?: string
 
   // assigned on response body by DocumentCompiler in frontend
   rootDocId?: string | null
@@ -84,6 +86,7 @@ export type CompileResponseData = {
 
 export type CompileOptions = {
   draft?: boolean
+  includeOnly?: string
   png2pdf?: boolean
   stopOnFirstError?: boolean
   isAutoCompileOnLoad?: boolean

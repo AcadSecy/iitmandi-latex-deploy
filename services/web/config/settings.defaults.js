@@ -1130,7 +1130,18 @@ module.exports = {
     ],
     pdfLogEntryComponents: [],
     pdfLogEntriesComponents: [],
-    pdfPreviewPromotions: [],
+    pdfPreviewPromotions: [
+      Path.resolve(
+        __dirname,
+        '../modules/chapter-compile/frontend/js/components/chapter-compile-banner.tsx'
+      ),
+    ],
+    pdfCompileMenuItems: [
+      Path.resolve(
+        __dirname,
+        '../modules/chapter-compile/frontend/js/components/chapter-compile-menu-items.tsx'
+      ),
+    ],
     diagnosticActions: [],
     sourceEditorCompletionSources: [],
     sourceEditorSymbolPalette: [
@@ -1349,6 +1360,7 @@ module.exports = {
     'source-code',
     'iitmandi-logo',
     'retention',
+    'chapter-compile',
   ],
   viewIncludes: {},
 

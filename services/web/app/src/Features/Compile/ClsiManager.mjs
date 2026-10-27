@@ -1225,6 +1225,7 @@ function _finaliseRequest(projectId, options, project, docs, files) {
         timeout: options.timeout,
         imageName: project.imageName,
         draft: Boolean(options.draft),
+        includeOnly: options.includeOnly,
         // enable for premium compiles only
         png2pdf: Boolean(options.png2pdf) && hasPremiumCompiles,
         // enable for premium compiles on an image that has a checkpointing build

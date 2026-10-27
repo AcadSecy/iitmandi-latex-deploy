@@ -15,14 +15,14 @@ async function main() {
     Number.isNaN(compileTimeout)
   ) {
     console.error(
-      `Usage: node ${import.meta.filename} --user-id=5a9414f259776c7900b300e6 --timeout=90`
+      `Usage: node ${import.meta.filename} --user-id=5a9414f259776c7900b300e6 --compile-timeout=90`
     )
     process.exit(101)
   }
 
   if (compileTimeout < 1 || compileTimeout > 600) {
     console.error(
-      `The compile timeout must be positive number of seconds, below 10 minutes (600).`
+      `The compile timeout must be a positive number of seconds, below 10 minutes (600).`
     )
     process.exit(101)
   }

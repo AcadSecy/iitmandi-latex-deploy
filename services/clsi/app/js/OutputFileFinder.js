@@ -31,6 +31,7 @@ async function findOutputFiles(resources, directory) {
   for (const path of files) {
     if (incomingResources.has(path)) continue
     if (path === '.project-sync-state') continue
+    if (path === 'output.chapter') continue // see CompileManager
     outputFiles.push({
       path,
       type: Path.extname(path).replace(/^\./, '') || undefined,

@@ -153,6 +153,23 @@ jobs:
               fi
             done < /work/templates.txt
             exit $status'
+      # "Compile one chapter" in the recompile menu runs latexmk with -pretex,
+      # as here. Numbers and references to the other chapters come from the
+      # full compile above, so none may be undefined, and the bibliography
+      # keeps the introduction's citations.
+      - name: Compile one chapter of the thesis as the platform does
+        run: |
+          docker run --rm -v "$RUNNER_TEMP:/work" -w /work/templates/thesis "$TEXLIVE_IMAGE" bash -c '
+            status=0
+            latexmk -pdf -interaction=nonstopmode -halt-on-error -g -usepretex \
+              "-pretex=\AddToHook{begindocument/end}{\ifcsname blx@prelim@lastcites@0\endcsname\forlistcsloop\nocite{blx@prelim@lastcites@0}\fi}\AddToHook{begindocument/before}{\includeonly{chapters/conclusion}}" \
+              main.tex > chapter.log 2>&1 || { echo "FAIL the chapter compile stopped"; status=1; }
+            ! grep -q "Empty bibliography" main.log || { echo "FAIL the bibliography lost the other chapters'"'"' citations"; status=1; }
+            grep -q "(./chapters/conclusion.tex" main.log || { echo "FAIL the chosen chapter was not typeset"; status=1; }
+            ! grep -q "(./chapters/introduction.tex" main.log || { echo "FAIL another chapter was typeset"; status=1; }
+            ! grep -qE "There were undefined references|(Citation|Reference) .* undefined" main.log || { echo "FAIL undefined references"; status=1; }
+            if [ $status = 0 ]; then echo "ok   thesis, chapters/conclusion alone"; else tail -n 40 chapter.log; fi
+            exit $status'
 
   web:
     name: Web
@@ -250,7 +267,7 @@ jobs:
           test/unit/src/Compile/CompileController.test.mjs
           --testNamePattern '^CompileController (compile|stopCompile) '
 
-      - name: Unit tests (editor waiting room against Redis, storage, source code, retention, logo)
+      - name: Unit tests (editor waiting room against Redis, storage, source code, retention, logo, chapter compile)
         working-directory: services/web
         env:
           TEST_REDIS_HOST: localhost
@@ -261,8 +278,16 @@ jobs:
           modules/source-code
           modules/retention
           modules/iitmandi-logo
+          modules/chapter-compile
 
-      - name: Frontend tests (project list, welcome message, Ask AI, page setup, logo)
+      - name: Unit tests (chapter option in the compile controller)
+        working-directory: services/web
+        run: >
+          yarn vitest run --project=Parallel
+          test/unit/src/Compile/CompileController.test.mjs
+          -t "chapter"
+
+      - name: Frontend tests (project list, welcome message, Ask AI, page setup, logo, chapter compile)
         working-directory: services/web
         env:
           NODE_ENV: test
@@ -276,6 +301,7 @@ jobs:
           modules/ask-ai/test/frontend/open-assistant.test.ts
           modules/page-setup/test/frontend/preamble.test.ts
           modules/iitmandi-logo/test/frontend/logo-insertion.test.ts
+          modules/chapter-compile/test/frontend/chapter-compile-menu-items.test.tsx
 
   clsi:
     name: Compile service
@@ -307,6 +333,9 @@ jobs:
           test/unit/js/DockerRunner.test.js
           test/unit/js/LatexRunner.test.js
           test/unit/js/CompileManager.test.js
+          test/unit/js/RequestParser.test.js
+          test/unit/js/Schemas.test.js
+          test/unit/js/OutputFileFinder.test.js
 
       # The TeX Live image the platform compiles in: the first one pinned in
       # deploy/iitmandi/texlive/images.txt, under the same name as on the server
@@ -320,8 +349,9 @@ jobs:
 
       # Real compiles in Docker with the production seccomp profile: a stopped
       # or timed-out compile keeps a valid PDF of the pages already typeset,
-      # and a paused compile's time does not count.
-      - name: Stop and pause real compiles
+      # a paused compile's time does not count, and a chapter compile
+      # typesets only the chosen chapter.
+      - name: Stop, pause and chapter-compile real compiles
         working-directory: services/clsi
         run: |
           mkdir -p compiles
