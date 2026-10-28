@@ -33,7 +33,11 @@ function PdfStateHarness({ withPreview = false }: { withPreview?: boolean }) {
       <button onClick={() => layout.restoreView()}>
         Existing editor control
       </button>
-      {withPreview && <PdfPreview />}
+      {withPreview && (
+        <div style={{ position: 'relative', height: 450 }}>
+          <PdfPreview />
+        </div>
+      )}
       <output data-testid="pane">{pane}</output>
       <output data-testid="view">{layout.view}</output>
       <output data-testid="pdf-open">{String(layout.pdfPreviewOpen)}</output>
@@ -75,7 +79,7 @@ describe('Mobile PDF state with the application LayoutProvider', function () {
     mount()
     cy.findByRole('button', { name: 'Editor only', exact: true }).click()
     cy.window().then(win =>
-      expect(win.localStorage.getItem('pdf.layout')).to.equal('flat')
+      expect(JSON.parse(win.localStorage.getItem('pdf.layout')!)).to.equal('flat')
     )
     cy.viewport(390, 844)
     cy.findByRole('button', { name: 'PDF', exact: true }).click()
@@ -84,7 +88,7 @@ describe('Mobile PDF state with the application LayoutProvider', function () {
     cy.findByTestId('view').should('have.text', 'editor')
     cy.findByTestId('layout').should('have.text', 'flat')
     cy.window().then(win =>
-      expect(win.localStorage.getItem('pdf.layout')).to.equal('flat')
+      expect(JSON.parse(win.localStorage.getItem('pdf.layout')!)).to.equal('flat')
     )
     cy.viewport(390, 844)
     cy.findByTestId('pane').should('have.text', 'pdf')
