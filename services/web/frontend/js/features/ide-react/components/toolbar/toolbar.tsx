@@ -8,7 +8,8 @@ import ShowHistoryButton from './show-history-button'
 import RequestAccessButton from './request-access-button'
 import { useLayoutContext } from '@/shared/context/layout-context'
 import BackToEditorButton from '@/features/editor-navigation-toolbar/components/back-to-editor-button'
-import { useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import MobileToolbarActions from './mobile-toolbar-actions'
 import * as eventTracking from '../../../../infrastructure/event-tracking'
 import { ToolbarLogos } from './logos'
 import { useEditorContext } from '@/shared/context/editor-context'
@@ -25,7 +26,7 @@ import OfflineIndicator from './offline-indicator'
 const [publishModalModules] = importOverleafModules('publishModalToolbarButton')
 const SubmitProjectButton = publishModalModules?.import.default
 
-export const Toolbar = () => {
+export const Toolbar = ({ mobile = false }: { mobile?: boolean }) => {
   const { view, restoreView, focusMode, setFocusMode, pdfLayout, setView } =
     useLayoutContext()
   const { cobranding, isRestrictedTokenMember } = useEditorContext()
@@ -56,6 +57,43 @@ export const Toolbar = () => {
     setView(newView)
     eventTracking.sendMB('focus-mode-switch-view', { view: newView })
   }, [view, setView])
+
+  const [narrowPhone, setNarrowPhone] = useState(
+    () => window.matchMedia('(max-width: 379.98px)').matches
+  )
+  useEffect(() => {
+    const query = window.matchMedia('(max-width: 379.98px)')
+    const update = () => setNarrowPhone(query.matches)
+    update()
+    query.addEventListener('change', update)
+    return () => query.removeEventListener('change', update)
+  }, [])
+  const projectActionsInMenu = mobile && narrowPhone
+
+  const historyControl = !isRestrictedTokenMember && (
+    <ShowHistoryButton showLabel={projectActionsInMenu} />
+  )
+  const layoutControl = (
+    <ChangeLayoutButton
+      showLabel={projectActionsInMenu}
+      inline={projectActionsInMenu}
+    />
+  )
+  const onlineUsersControl = !isOfflineDueToNetworkStall && <OnlineUsers />
+  const requestAccessControl = <RequestAccessButton />
+  const submitControl = shouldDisplaySubmitButton && cobranding && (
+    <SubmitProjectButton cobranding={cobranding} />
+  )
+  const upgradeControl = showUpgradePrompt && <UpgradeButton />
+  const secondaryActions = (
+    <>
+      {onlineUsersControl}
+      {requestAccessControl}
+      {historyControl}
+      {layoutControl}
+      {submitControl}
+    </>
+  )
 
   if (focusMode) {
     const showViewSwitcher = pdfLayout === 'flat'
@@ -123,12 +161,63 @@ export const Toolbar = () => {
     )
   }
 
+  if (mobile) {
+    return (
+      <nav
+        className="ide-redesign-toolbar mobile-compact-project-toolbar"
+        aria-label={t('project_actions')}
+      >
+        <ToolbarLogos cobranding={cobranding} />
+        <ToolbarMenuBar
+          mobile
+          mobileActions={
+            <>
+              <ToolbarProjectTitle />
+              {!narrowPhone && (
+                <>
+                  {onlineUsersControl}
+                  {requestAccessControl}
+                  {upgradeControl}
+                  {submitControl}
+                </>
+              )}
+            </>
+          }
+        />
+        {narrowPhone ? (
+          <MobileToolbarActions mobile projectActions>
+            {historyControl}
+            {layoutControl}
+            <ShareProjectButton showLabel />
+            {onlineUsersControl}
+            {requestAccessControl}
+            {upgradeControl}
+            {submitControl}
+          </MobileToolbarActions>
+        ) : (
+          <div className="mobile-toolbar-direct-actions">
+            {historyControl}
+            {layoutControl}
+            <div className="mobile-toolbar-share">
+              <ShareProjectButton />
+            </div>
+          </div>
+        )}
+        {improvedFlakyConnections && isOfflineDueToNetworkStall && (
+          <div className="mobile-toolbar-network-state">
+            <OfflineIndicator isOffline={isOfflineDueToNetworkStall} />
+          </div>
+        )}
+      </nav>
+    )
+  }
+
   return (
     <nav className="ide-redesign-toolbar" aria-label={t('project_actions')}>
       <div className="ide-redesign-toolbar-menu">
         <ToolbarLogos cobranding={cobranding} />
         <ToolbarMenuBar />
-        {showUpgradePrompt && <UpgradeButton />}
+        {upgradeControl}
       </div>
       <ToolbarProjectTitle />
       <div className="ide-redesign-toolbar-actions-wrapper">
@@ -136,13 +225,7 @@ export const Toolbar = () => {
           <OfflineIndicator isOffline={isOfflineDueToNetworkStall} />
         )}
         <div className="ide-redesign-toolbar-actions">
-          {!isOfflineDueToNetworkStall && <OnlineUsers />}
-          <RequestAccessButton />
-          {!isRestrictedTokenMember && <ShowHistoryButton />}
-          <ChangeLayoutButton />
-          {shouldDisplaySubmitButton && cobranding && (
-            <SubmitProjectButton cobranding={cobranding} />
-          )}
+          {secondaryActions}
           <ShareProjectButton />
         </div>
       </div>

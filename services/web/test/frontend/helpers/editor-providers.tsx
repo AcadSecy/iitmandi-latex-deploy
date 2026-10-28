@@ -502,6 +502,8 @@ const makeLayoutProvider = (
     ...layoutContextOverrides,
   }
   const LayoutProvider: FC<PropsWithChildren> = ({ children }) => {
+    const [mobilePane, setMobilePane] =
+      useState<LayoutContextValue['mobilePane']>(null)
     const [view, setView] = useState<IdeView | null>(layout.view)
     const [openFile, setOpenFile] = useState(layout.openFile)
     const [chatIsOpen, setChatIsOpen] = useState(layout.chatIsOpen)
@@ -576,6 +578,8 @@ const makeLayoutProvider = (
 
     const value = useMemo(
       () => ({
+        mobilePane,
+        setMobilePane,
         reattach,
         detach,
         detachIsLinked,
@@ -607,6 +611,7 @@ const makeLayoutProvider = (
         setFocusMode: layout.setFocusMode ?? (() => {}),
       }),
       [
+        mobilePane,
         reattach,
         detach,
         detachIsLinked,

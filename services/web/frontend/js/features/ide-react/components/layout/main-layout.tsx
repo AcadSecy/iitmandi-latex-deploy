@@ -53,7 +53,7 @@ export default function MainLayout() {
       className="ide-redesign-main"
       data-mobile-pane={mobileLayout ? pane : undefined}
     >
-      <Toolbar />
+      <Toolbar mobile={isMobile} />
       <EditingPausedBanner />
       {mobileLayout && <MobilePaneSwitcher pane={pane} onSelect={setPane} />}
       <div className="ide-redesign-body">

@@ -1,4 +1,5 @@
 import ShareProjectModal from '@/features/share-project-modal/components/share-project-modal'
+import { OLDropdownItem } from '@/shared/components/ol/ol-dropdown-menu'
 import OLButton from '@/shared/components/ol/ol-button'
 import OLBadge from '@/shared/components/ol/ol-badge'
 import MaterialIcon from '@/shared/components/material-icon'
@@ -9,7 +10,11 @@ import { useEditorContext } from '@/shared/context/editor-context'
 import { useProjectContext } from '@/shared/context/project-context'
 import useIsNetworkStalled from '@/features/ide-react/hooks/use-is-network-stalled'
 
-export default function ShareProjectButton() {
+export default function ShareProjectButton({
+  showLabel = false,
+}: {
+  showLabel?: boolean
+}) {
   const { t } = useTranslation()
   const { sendEventOnce } = useEditorAnalytics()
   const { isProjectOwner } = useEditorContext()
@@ -47,23 +52,41 @@ export default function ShareProjectButton() {
     window.history.replaceState(null, '', newUrl)
   }, [])
 
+  const contents = (
+    <>
+      {t('share')}
+      {accessRequestCount > 0 && (
+        <OLBadge pill bg="warning" className="lh-1">
+          {accessRequestCount}
+        </OLBadge>
+      )}
+    </>
+  )
+
   return (
     <>
       <div className="ide-redesign-toolbar-button-container">
-        <OLButton
-          size="sm"
-          variant="primary"
-          leadingIcon={<MaterialIcon type="person_add" />}
-          onClick={handleOpenShareModal}
-          disabled={isDisabledDueToNetworkStall}
-        >
-          {t('share')}
-          {accessRequestCount > 0 && (
-            <OLBadge pill bg="warning" className="lh-1">
-              {accessRequestCount}
-            </OLBadge>
-          )}
-        </OLButton>
+        {showLabel ? (
+          <OLDropdownItem
+            as="button"
+            className="mobile-toolbar-action-row"
+            leadingIcon="person_add"
+            onClick={handleOpenShareModal}
+            disabled={isDisabledDueToNetworkStall}
+          >
+            {contents}
+          </OLDropdownItem>
+        ) : (
+          <OLButton
+            size="sm"
+            variant="primary"
+            leadingIcon={<MaterialIcon type="person_add" />}
+            onClick={handleOpenShareModal}
+            disabled={isDisabledDueToNetworkStall}
+          >
+            {contents}
+          </OLButton>
+        )}
       </div>
       <ShareProjectModal
         show={showShareModal}

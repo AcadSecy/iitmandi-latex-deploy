@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { MobilePane, useLayoutContext } from '@/shared/context/layout-context'
 
-export type MobilePane = 'files' | 'code' | 'pdf'
+export type { MobilePane } from '@/shared/context/layout-context'
 
 export function useMobileEditorLayout() {
-  const [pane, setPane] = useState<MobilePane>('code')
+  const { mobilePane, setMobilePane } = useLayoutContext()
+  const lastPane = useRef<MobilePane>('code')
   const [isMobile, setIsMobile] = useState(
     () => window.matchMedia('(max-width: 767.98px)').matches
   )
@@ -16,5 +18,19 @@ export function useMobileEditorLayout() {
     return () => query.removeEventListener('change', onChange)
   }, [])
 
-  return { pane, setPane, isMobile }
+  useEffect(() => {
+    if (isMobile && mobilePane === null) {
+      setMobilePane(lastPane.current)
+    } else if (isMobile && mobilePane !== null) {
+      lastPane.current = mobilePane
+    } else if (!isMobile && mobilePane !== null) {
+      setMobilePane(null)
+    }
+  }, [isMobile, mobilePane, setMobilePane])
+
+  return {
+    pane: mobilePane ?? lastPane.current,
+    setPane: setMobilePane,
+    isMobile,
+  }
 }

@@ -21,7 +21,12 @@ function SwitchToPDFButton() {
   }
 
   return (
-    <OLButton variant="secondary" size="sm" onClick={handleClick}>
+    <OLButton
+      className="switch-to-pdf-button"
+      variant="secondary"
+      size="sm"
+      onClick={handleClick}
+    >
       <MaterialIcon type="picture_as_pdf" />
       {t('switch_to_pdf')}
     </OLButton>

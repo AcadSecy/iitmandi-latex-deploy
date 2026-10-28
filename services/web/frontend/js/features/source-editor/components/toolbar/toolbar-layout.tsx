@@ -110,6 +110,8 @@ function Right({
         </div>
       )}
       <div
+        data-overflow={canSearchInFile ? 'search' : undefined}
+        data-overflow-mobile=""
         style={{
           display: 'flex',
           visibility: canSearchInFile ? 'visible' : 'hidden',

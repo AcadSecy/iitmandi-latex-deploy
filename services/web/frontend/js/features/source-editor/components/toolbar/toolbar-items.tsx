@@ -74,6 +74,8 @@ export const ToolbarItems: FC<{
           {showGroup('group-format') && (
             <div
               className="ol-cm-toolbar-button-group"
+              data-overflow="group-format"
+              data-overflow-mobile=""
               aria-label={t('toolbar_text_style')}
             >
               <ToolbarButton

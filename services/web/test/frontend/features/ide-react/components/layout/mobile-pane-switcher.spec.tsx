@@ -1,3 +1,5 @@
+import { EditorProviders } from '../../../../helpers/editor-providers'
+import { LayoutProvider } from '@/shared/context/layout-context'
 import MobilePaneSwitcher from '@/features/ide-react/components/layout/mobile-pane-switcher'
 import { useMobileEditorLayout } from '@/features/ide-react/hooks/use-mobile-editor-layout'
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
@@ -32,7 +34,11 @@ function MobileLayoutHarness() {
 describe('Mobile pane selection', function () {
   it('defaults to Code and switches between PDF, Files and Code', function () {
     cy.viewport(390, 844)
-    cy.mount(<MobileLayoutHarness />)
+    cy.mount(
+      <EditorProviders providers={{ LayoutProvider }}>
+        <MobileLayoutHarness />
+      </EditorProviders>
+    )
 
     cy.findByRole('button', { name: 'Code' }).should(
       'have.attr',
@@ -75,7 +81,11 @@ describe('Mobile pane selection', function () {
 
   it('only shows the switcher below 768px, without resetting selection', function () {
     cy.viewport(768, 844)
-    cy.mount(<MobileLayoutHarness />)
+    cy.mount(
+      <EditorProviders providers={{ LayoutProvider }}>
+        <MobileLayoutHarness />
+      </EditorProviders>
+    )
     cy.findByRole('group', { name: 'Layout options' }).should('not.exist')
     cy.contains('Files content').should('be.visible')
     cy.contains('Code content').should('be.visible')
@@ -97,7 +107,11 @@ describe('Mobile pane selection', function () {
 
   it('supports keyboard activation', function () {
     cy.viewport(390, 844)
-    cy.mount(<MobileLayoutHarness />)
+    cy.mount(
+      <EditorProviders providers={{ LayoutProvider }}>
+        <MobileLayoutHarness />
+      </EditorProviders>
+    )
     cy.findByRole('button', { name: 'PDF' }).focus().type('{enter}')
     cy.get('output').should('have.text', 'pdf')
   })
