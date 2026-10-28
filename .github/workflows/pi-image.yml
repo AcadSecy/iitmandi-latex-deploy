@@ -35,7 +35,9 @@ jobs:
     name: Build and check
     if: ${{ !github.event.repository.private }}
     # The Pi is arm64; GitHub's arm64 runners are free for public repositories
-    runs-on: ubuntu-24.04-arm
+    # MongoDB 8.0 refuses the newer kernels on the 24.04 ARM runner
+    # (SERVER-121912). The 22.04 ARM image uses the compatible 6.8 kernel.
+    runs-on: ubuntu-22.04-arm
     timeout-minutes: 180
     permissions:
       contents: read
