@@ -35,13 +35,29 @@ jobs:
     name: Build and check
     if: ${{ !github.event.repository.private }}
     # The Pi is arm64; GitHub's arm64 runners are free for public repositories
-    runs-on: ubuntu-24.04-arm
+    # MongoDB 8.0 refuses the newer kernels on the 24.04 ARM runner
+    # (SERVER-121912). The 22.04 ARM image uses the compatible 6.8 kernel.
+    runs-on: ubuntu-22.04-arm
     timeout-minutes: 180
     permissions:
       contents: read
       packages: write
     steps:
       - uses: actions/checkout@v5
+
+      # The base image holds all of TeX Live (about 4.5 GB). With Docker's
+      # default image store (overlay2), exporting the app image on top of it
+      # took dockerd past 14 GB of the runner's 16 GB of memory and the runner
+      # was killed. With the containerd image store, which keeps the
+      # compressed layers it pulls, dockerd stayed near 100 MB (measured on
+      # both). The runner's Docker settings are kept.
+      - name: Use the containerd image store
+        run: |
+          { sudo cat /etc/docker/daemon.json 2> /dev/null || echo '{}'; } \
+            | jq '.features = ((.features // {}) + {"containerd-snapshotter": true})' > "$RUNNER_TEMP/daemon.json"
+          sudo cp "$RUNNER_TEMP/daemon.json" /etc/docker/daemon.json
+          sudo systemctl restart docker
+          docker info -f 'storage: {{.Driver}} {{json .DriverStatus}}'
 
       # The registry path follows the repository's owner, in lower case
       - name: Image names
@@ -60,14 +76,15 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       # Ubuntu, Node and TeX Live change rarely, so the base image is named
-      # after the two files it is built from and pulled while they stay the
+      # after the files it is built from and pulled while they stay the
       # same. When one changes, only its changed steps run again: each stage
       # is stored as soon as it is built (:upstream, :texlive, :latest) and
       # the next build reuses its unchanged steps, so a change after the TeX
       # Live step, or a failure in it, does not reinstall the 2,900 packages.
       - name: Base image
         run: |
-          tag=$(cat server-ce/Dockerfile-base deploy/pi/Dockerfile-texlive | sha256sum | cut -c1-16)
+          tag=$(cat server-ce/Dockerfile-base deploy/pi/Dockerfile-texlive deploy/pi/texmf/* \
+            server-ce/config/latexmkrc | sha256sum | cut -c1-16)
           base="$BASE_IMAGE:$tag"
           echo "BASE=$base" >> "$GITHUB_ENV"
           if docker pull -q "$base"; then
@@ -82,7 +99,7 @@ jobs:
             --tag "$BASE_IMAGE:upstream" .
           store "$BASE_IMAGE:upstream"
           texlive=(--file deploy/pi/Dockerfile-texlive --build-arg BUILDKIT_INLINE_CACHE=1
-            --build-arg OVERLEAF_BASE_TAG="$BASE_IMAGE:upstream"
+            --build-arg OVERLEAF_BASE_TAG="$BASE_IMAGE:upstream" --build-context config=server-ce/config
             --cache-from "$BASE_IMAGE:texlive" --cache-from "$BASE_IMAGE:latest")
           docker build --progress=plain "${texlive[@]}" --target texlive --tag "$BASE_IMAGE:texlive" deploy/pi
           store "$BASE_IMAGE:texlive"
@@ -96,19 +113,33 @@ jobs:
 
       # Layers whose inputs did not change (the 1.5 GB of packages, unless a
       # package.json changed) are reused from the last image, so the Pi only
-      # downloads what is new
+      # downloads what is new.
+      #
+      # Yarn packs the two packages that come from git (codemirror-vim and
+      # codemirror-indentation-markers) at the same time, each with a Yarn
+      # Classic install of its own into the same cache. On a new runner that
+      # cache is empty, and the two sometimes write the same files at once
+      # ("Packing the package failed"). A second try finds the cache filled.
       - name: Build the image
         run: |
           cp server-ce/.dockerignore .dockerignore
           docker pull -q "$IMAGE:staging" || true
-          docker build --progress=plain --file server-ce/Dockerfile \
-            --build-arg OVERLEAF_BASE_TAG="$BASE" \
-            --build-arg BUILDKIT_INLINE_CACHE=1 \
-            --cache-from "$IMAGE:staging" \
-            --label "com.overleaf.ce.revision=$GITHUB_SHA" \
-            --label "org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY" \
-            --label "org.iitmandi.compile-image=$BASE" \
-            --tag "$IMAGE:$GITHUB_SHA" .
+          build() {
+            docker build --progress=plain --file server-ce/Dockerfile \
+              --build-arg OVERLEAF_BASE_TAG="$BASE" \
+              --build-arg BUILDKIT_INLINE_CACHE=1 \
+              --cache-from "$IMAGE:staging" \
+              --label "com.overleaf.ce.revision=$GITHUB_SHA" \
+              --label "org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY" \
+              --label "org.iitmandi.compile-image=$BASE" \
+              --tag "$IMAGE:$GITHUB_SHA" . 2>&1 | tee "$RUNNER_TEMP/build.log"
+            return "${PIPESTATUS[0]}"
+          }
+          if ! build; then
+            grep -q "Packing the package failed" "$RUNNER_TEMP/build.log" || exit 1
+            echo "::warning::Two Yarn Classic installs collided while packing a git dependency; building again"
+            build
+          fi
           docker image ls "$IMAGE"
 
       - uses: actions/setup-node@v5
@@ -148,7 +179,7 @@ jobs:
             sleep 5
           done
           curl -fsS http://127.0.0.1:8095/status
-          curl -fsS http://127.0.0.1:8095/login | grep -q 'IIT Mandi LaTeX (test)'
+          curl -fsS http://127.0.0.1:8095/login | grep -q 'IIT Mandi LaTeX'
           code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8095/register)
           echo "sign-up page: HTTP $code"
           [ "$code" != 200 ]

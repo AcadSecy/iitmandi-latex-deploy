@@ -12,7 +12,9 @@
 # and makes:
 #   ldap.cfg   the directory (password hashes only)
 #   ldap.env   the allowlist (OVERLEAF_LDAP_SEARCH_FILTER: only the users named
-#              can log in) and the search account's password
+#              can log in; OVERLEAF_LDAP_CONTACTS_FILTER: the Share dialog
+#              suggests them, so typing a username is enough) and the search
+#              account's password
 # Neither file is in git, so the roll numbers stay out of the public repository.
 # Then restart the app: docker compose up -d ldap sharelatex
 #
@@ -109,6 +111,8 @@ mv "$cfg" "$DIR/ldap.cfg"
 {
   echo "# Made by ldap-users.sh on $(date -I). Not in git."
   echo "OVERLEAF_LDAP_SEARCH_FILTER=(&(uid={{username}})(|$filter))"
+  # The Share dialog suggests these people as you type, so a username is enough
+  echo "OVERLEAF_LDAP_CONTACTS_FILTER=(|$filter)"
   echo "OVERLEAF_LDAP_BIND_CREDENTIALS=$search_pw"
 } > "$DIR/ldap.env"
 mv "$list" "$PASSWORDS"
