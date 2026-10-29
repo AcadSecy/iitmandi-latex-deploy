@@ -3,3 +3,5 @@ secrets.env
 site-url.env
 ldap.env
 ldap.cfg
+
+__pycache__/
