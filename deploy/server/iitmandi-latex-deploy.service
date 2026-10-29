@@ -1,0 +1,12 @@
+[Unit]
+Description=Deploy checked IIT Mandi LaTeX images from staging
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=latexiitm_user
+ExecStart=/usr/bin/python3 /srv/iitmandi-latex/deploy.py
+Environment=PYTHONUNBUFFERED=1
+UMask=0077
+TimeoutStartSec=3600

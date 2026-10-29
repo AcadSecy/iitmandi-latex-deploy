@@ -1,0 +1,11 @@
+# Install as compose/docker-compose.override.yml; survives image deployments.
+services:
+  sharelatex:
+    environment:
+      EDITOR_SESSION_LIMIT: "100"
+      EDITOR_SESSION_MAX: "200"
+      STORAGE_QUOTA_MB: "500"
+      STORAGE_MAX_MB: "5000"
+      STORAGE_DISK_RESERVE_PERCENT: "15"
+      COMPILE_QUEUE_SLOTS: "8"
+      COMPILE_QUEUE_MAX_PAUSED: "2"
