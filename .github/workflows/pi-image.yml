@@ -107,6 +107,13 @@ jobs:
           store "$BASE_IMAGE:latest"
           store "$base"
 
+      # Parallel PR and release builds may publish the same cache tag. Record
+      # the exact base digest so the deployed sandbox is the one we tested.
+      - name: Pin the compile image digest
+        run: |
+          ref=$(docker image inspect --format '{{if .RepoDigests}}{{index .RepoDigests 0}}{{end}}' "$BASE")
+          if [ -n "$ref" ]; then echo "BASE=$ref" >> "$GITHUB_ENV"; fi
+
       # AGPL-3.0: the image carries the source of this commit, served at /source
       - name: Source archive
         run: make -C server-ce source-archive

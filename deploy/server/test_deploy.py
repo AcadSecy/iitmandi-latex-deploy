@@ -12,7 +12,7 @@ spec = importlib.util.spec_from_file_location('latex_deploy', SCRIPT)
 m = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(m)
 SHA = 'a' * 40
-BASE = 'ghcr.io/acadsecy/iitmandi-latex-server-base:checked'
+BASE = 'ghcr.io/acadsecy/iitmandi-latex-server-base@sha256:' + 'c' * 64
 
 class DeploymentSafety(unittest.TestCase):
     def setUp(self):

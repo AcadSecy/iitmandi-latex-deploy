@@ -86,7 +86,8 @@ def deploy(commit=None):
         if info["Architecture"] != "amd64" or labels.get("com.overleaf.ce.revision") != sha:
             raise RuntimeError("image architecture or source revision does not match")
         base = labels.get("org.iitmandi.compile-image", "")
-        if not base.startswith("ghcr.io/acadsecy/iitmandi-latex-server-base:"):
+        if not (base.startswith("ghcr.io/acadsecy/iitmandi-latex-server-base:")
+                or base.startswith("ghcr.io/acadsecy/iitmandi-latex-server-base@sha256:")):
             raise RuntimeError("unexpected compile image")
         run("docker", "pull", base)
         with tempfile.TemporaryDirectory(dir=STATE) as work:
