@@ -26,7 +26,8 @@ jobs:
   build:
     name: Build and check
     if: ${{ !github.event.repository.private }}
-    runs-on: ubuntu-24.04
+    # MongoDB 8.0 rejects kernels >=6.19; this runner retains the compatible kernel.
+    runs-on: ubuntu-22.04
     timeout-minutes: 180
     permissions:
       contents: read
@@ -131,11 +132,13 @@ jobs:
         run: |
           cp server-ce/.dockerignore .dockerignore
           docker pull -q "$IMAGE:staging" || true
+          docker pull -q "$IMAGE:build-cache" || true
           build() {
             docker build --progress=plain --file server-ce/Dockerfile \
               --build-arg OVERLEAF_BASE_TAG="$BASE" \
               --build-arg BUILDKIT_INLINE_CACHE=1 \
               --cache-from "$IMAGE:staging" \
+              --cache-from "$IMAGE:build-cache" \
               --label "com.overleaf.ce.revision=$GITHUB_SHA" \
               --label "org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY" \
               --label "org.iitmandi.compile-image=$BASE" \
@@ -148,6 +151,14 @@ jobs:
             build
           fi
           docker image ls "$IMAGE"
+
+      # This cache tag is never a deployable commit tag. Releases are still
+      # published only after every check below passes.
+      - name: Save application build cache
+        if: env.STORE_BASE == 'true'
+        run: |
+          docker tag "$IMAGE:$GITHUB_SHA" "$IMAGE:build-cache"
+          docker push -q "$IMAGE:build-cache"
 
       - uses: actions/setup-node@v5
         with:
@@ -181,6 +192,7 @@ jobs:
             "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" > secrets.env
           # A test directory: b00001 may log in; b00002 is in it but not on the allowlist
           PASSWORDS_FILE="$RUNNER_TEMP/ldap-users.txt" EXTRA_USERS=b00002 bash ../pi/ldap-users.sh b00001
+          cp ../pi/ldap.cfg ../pi/ldap.env .
           docker compose up -d
           for i in $(seq 1 120); do
             curl -fsS -o /dev/null http://127.0.0.1:8080/status && break
