@@ -1,3 +1,4 @@
+import { pressKey } from '../../../../helpers/press-key'
 import { Toolbar } from '@/features/ide-react/components/toolbar/toolbar'
 import { LayoutProvider } from '@/shared/context/layout-context'
 import { EditorProviders } from '../../../../helpers/editor-providers'
@@ -111,11 +112,13 @@ describe('Real project Toolbar on phones', function () {
       cy.get('#mobile-inline-layout-options').should('not.exist')
       cy.findByRole('menuitem', { name: 'Layout options', exact: true })
         .focus()
-        .type('{enter}')
+        .should('have.focus')
+      pressKey('Enter')
       cy.get('#mobile-inline-layout-options').should('be.visible')
       cy.findByRole('menuitem', { name: 'Editor only', exact: true })
         .focus()
-        .type('{esc}')
+        .should('have.focus')
+      pressKey('Escape')
       cy.get('#mobile-project-actions').should(
         'have.attr',
         'aria-expanded',
@@ -218,11 +221,13 @@ describe('Real project Toolbar on phones', function () {
       cy.findByRole('menuitem', { name: 'PDF only', exact: true }).click()
       cy.findByRole('button', { name: 'Layout options', exact: true })
         .focus()
-        .type('{enter}')
+        .should('have.focus')
+      pressKey('Enter')
       cy.findByRole('menuitem', { name: 'PDF only', exact: true })
         .should('have.attr', 'aria-current', 'true')
         .focus()
-        .type('{esc}')
+        .should('have.focus')
+      pressKey('Escape')
       cy.get('#layout-dropdown-btn').should(
         'have.attr',
         'aria-expanded',
@@ -259,7 +264,8 @@ describe('Real project Toolbar on phones', function () {
     cy.findByRole('menuitem', { name: 'Keyboard shortcuts', exact: true })
       .should('be.visible')
       .focus()
-      .type('{esc}')
+      .should('have.focus')
+    pressKey('Escape')
     cy.findByRole('button', { name: 'Help', exact: true }).should(
       'have.attr',
       'aria-expanded',
@@ -296,6 +302,18 @@ describe('Real project Toolbar on phones', function () {
       cy.findByRole('button', { name: 'Format', exact: true }).click()
       cy.contains('.dropdown-header', 'Paragraph styles').should('be.visible')
       cy.get('.dropdown-menu.show .dropdown-divider').should('be.visible')
+      // Moving from an open menu switches menus on hover. Clicking that
+      // already-open toggle closes it, so test the two interactions separately.
+      cy.findByRole('button', { name: 'Insert', exact: true }).trigger(
+        'mouseover'
+      )
+      cy.findByRole('menuitem', { name: 'Math', exact: true }).should(
+        'be.visible'
+      )
+      cy.findByRole('button', { name: 'Insert', exact: true }).click()
+      cy.findByRole('menuitem', { name: 'Math', exact: true }).should(
+        'not.exist'
+      )
       cy.findByRole('button', { name: 'Insert', exact: true }).click()
       cy.findByRole('menuitem', { name: 'Math', exact: true }).should(
         'be.visible'

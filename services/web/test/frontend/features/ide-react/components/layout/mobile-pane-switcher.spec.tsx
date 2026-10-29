@@ -1,3 +1,4 @@
+import { pressKey } from '../../../../helpers/press-key'
 import { EditorProviders } from '../../../../helpers/editor-providers'
 import { LayoutProvider } from '@/shared/context/layout-context'
 import MobilePaneSwitcher from '@/features/ide-react/components/layout/mobile-pane-switcher'
@@ -112,7 +113,11 @@ describe('Mobile pane selection', function () {
         <MobileLayoutHarness />
       </EditorProviders>
     )
-    cy.findByRole('button', { name: 'PDF' }).focus().type('{enter}')
+    cy.findByRole('button', { name: 'PDF' }).focus().should('have.focus')
+    pressKey('Enter')
     cy.get('output').should('have.text', 'pdf')
+    cy.findByRole('button', { name: 'Files' }).focus().should('have.focus')
+    pressKey('Space')
+    cy.get('output').should('have.text', 'files')
   })
 })
