@@ -78,23 +78,31 @@ const CommandDropdown = ({
 export const CommandSection = ({
   section: sectionStructure,
   includeDivider = true,
+  inlineGroups = false,
 }: {
   section: MenuSectionStructure<CommandId>
   includeDivider?: boolean
+  inlineGroups?: boolean
 }) => {
   const { registry, shortcuts } = useCommandRegistry()
   const section = populateSectionOrGroup(sectionStructure, registry, shortcuts)
   return (
-    <CommandSectionContent section={section} includeDivider={includeDivider} />
+    <CommandSectionContent
+      section={section}
+      includeDivider={includeDivider}
+      inlineGroups={inlineGroups}
+    />
   )
 }
 
 function CommandSectionContent({
   section,
   includeDivider = true,
+  inlineGroups = false,
 }: {
   section: MenuSectionStructure<TaggedCommand>
   includeDivider?: boolean
+  inlineGroups?: boolean
 }) {
   if (section.children.length === 0) {
     return null
@@ -102,15 +110,27 @@ function CommandSectionContent({
   return (
     <>
       {includeDivider && <OLDropdownDivider />}
-      {section.title && <OLDropdownHeader>{section.title}</OLDropdownHeader>}
+      {section.title && !inlineGroups && (
+        <OLDropdownHeader>{section.title}</OLDropdownHeader>
+      )}
       {section.children.map(child => (
-        <CommandDropdownChild item={child} key={child.id} />
+        <CommandDropdownChild
+          item={child}
+          key={child.id}
+          inlineGroups={inlineGroups}
+        />
       ))}
     </>
   )
 }
 
-const CommandDropdownChild = ({ item }: { item: Entry<TaggedCommand> }) => {
+const CommandDropdownChild = ({
+  item,
+  inlineGroups = false,
+}: {
+  item: Entry<TaggedCommand>
+  inlineGroups?: boolean
+}) => {
   const onClickHandler = useCallback(() => {
     if (isTaggedCommand(item)) {
       item.handler?.({ location: 'menu-bar' })
@@ -132,6 +152,15 @@ const CommandDropdownChild = ({ item }: { item: Entry<TaggedCommand> }) => {
           item.shortcuts && <span>{formatShortcut(item.shortcuts[0])}</span>
         }
       />
+    )
+  } else if (inlineGroups) {
+    return (
+      <>
+        <OLDropdownDivider />
+        {item.children.map(child => (
+          <CommandDropdownChild key={child.id} item={child} inlineGroups />
+        ))}
+      </>
     )
   } else {
     return (

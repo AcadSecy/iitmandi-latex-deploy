@@ -24,7 +24,12 @@ function SwitchToEditorButton() {
   }
 
   return (
-    <OLButton variant="secondary" size="sm" onClick={handleClick}>
+    <OLButton
+      className="switch-to-editor-button"
+      variant="secondary"
+      size="sm"
+      onClick={handleClick}
+    >
       <MaterialIcon type="code" />
       {t('switch_to_editor')}
     </OLButton>

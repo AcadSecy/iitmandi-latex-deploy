@@ -72,6 +72,8 @@ describe('<FullProjectSearch/>', function () {
 
 const createInitialValue = () =>
   ({
+    mobilePane: null,
+    setMobilePane: cy.stub(),
     reattach: cy.stub(),
     detach: cy.stub(),
     detachIsLinked: false,

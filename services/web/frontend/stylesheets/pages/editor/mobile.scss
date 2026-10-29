@@ -1,0 +1,426 @@
+@include media-breakpoint-down(md) {
+  // The mobile pane switcher replaces these desktop toolbar shortcuts.
+  .ide-redesign-main .switch-to-pdf-button,
+  .ide-redesign-main .switch-to-editor-button {
+    // Override OLButton's Bootstrap d-inline-grid utility.
+    display: none !important;
+  }
+
+  .ide-redesign-main[data-mobile-pane] {
+    .mobile-pane-switcher {
+      display: flex;
+      flex-shrink: 0;
+      background: var(--ide-rail-background);
+      border-bottom: 1px solid var(--ide-rail-border-colour);
+
+      button {
+        flex: 1;
+        min-width: 44px;
+        min-height: 44px;
+        border: 0;
+        background: transparent;
+        color: var(--ide-rail-color);
+
+        &[aria-pressed='true'] {
+          background: var(--ide-rail-link-active-background);
+          color: var(--ide-rail-link-active-color);
+          font-weight: bold;
+          box-shadow: inset 0 -3px currentcolor;
+        }
+      }
+    }
+
+    .ide-rail,
+    .ide-redesign-inner > [data-panel-resize-handle-id],
+    .mobile-editor-and-pdf-panel
+      > [data-panel-group-id]
+      > [data-panel-resize-handle-id],
+    .ide-redesign-inner > [data-panel-id],
+    .mobile-code-panel,
+    .ide-redesign-pdf-container {
+      display: none !important;
+    }
+
+    // Override the panel library's inline flex sizes without resizing panels
+    // or writing mobile sizes into its saved desktop layouts.
+    &[data-mobile-pane='files'] .mobile-files-panel,
+    &[data-mobile-pane='code'] .mobile-editor-and-pdf-panel,
+    &[data-mobile-pane='pdf'] .mobile-editor-and-pdf-panel,
+    &[data-mobile-pane='code'] .mobile-code-panel,
+    &[data-mobile-pane='pdf'] .ide-redesign-pdf-container {
+      display: block !important;
+      flex: 1 1 0% !important;
+      min-width: 0;
+    }
+  }
+}
+
+@include media-breakpoint-down(md) {
+  // IDE alerts are outside .ide-redesign-main.
+  #ide-root .global-alerts [role='alert'] {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .ide-redesign-main {
+    .ide-redesign-toolbar {
+      height: auto;
+      min-height: 44px;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+      gap: 4px;
+      padding: 4px;
+    }
+
+    .ide-redesign-toolbar-menu {
+      flex: 1 1 100%;
+      flex-wrap: wrap;
+      gap: 4px;
+      align-items: center;
+
+      > .mobile-toolbar-actions {
+        flex: none;
+      }
+    }
+
+    .ide-redesign-toolbar-menu-bar {
+      flex: 1 1 0%;
+      min-width: 0;
+      height: auto;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .ide-redesign-toolbar-project-dropdown {
+      flex: 1 1 0%;
+      min-width: 0;
+    }
+
+    .ide-redesign-toolbar-actions-wrapper {
+      flex: 0 1 auto;
+      min-width: 0;
+      max-width: 100%;
+      flex-wrap: wrap;
+      padding-left: 0;
+      gap: 4px;
+    }
+
+    .ide-redesign-toolbar-actions {
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .mobile-compact-project-toolbar {
+      gap: 2px;
+      align-items: center;
+
+      > .ide-redesign-toolbar-logos {
+        flex: 0 1 auto;
+        max-width: 100%;
+        flex-wrap: wrap;
+      }
+
+      .ide-redesign-toolbar-home-button {
+        width: 44px;
+        height: 44px;
+        margin: 0;
+      }
+
+      .ide-redesign-toolbar-menu-bar {
+        flex: 1 1 120px;
+        min-width: max-content;
+        flex-wrap: nowrap;
+        gap: 3px;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .menu-bar-toggle {
+        min-height: 44px;
+        height: auto;
+        padding: 8px 5px;
+        line-height: 28px;
+        background-clip: padding-box;
+        border-radius: var(--border-radius-base);
+        margin: 0;
+
+        &:hover,
+        &:focus-visible,
+        &[aria-expanded='true'] {
+          background-color: color-mix(
+            in srgb,
+            var(--redesign-subdued-button-hover-background) 50%,
+            transparent
+          );
+        }
+      }
+
+      .mobile-toolbar-actions-toggle,
+      .mobile-toolbar-direct-actions .ide-redesign-toolbar-button-icon {
+        // Keep the 44px hitbox; paint hover feedback on the smaller inner box.
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        background-color: transparent;
+        border-radius: var(--border-radius-base);
+
+        > .button-content,
+        > .material-symbols {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 28px;
+          height: 28px;
+          border-radius: var(--border-radius-base);
+        }
+
+        &:hover > .button-content,
+        &:hover > .material-symbols,
+        &:focus-visible > .button-content,
+        &:focus-visible > .material-symbols {
+          background-color: var(--redesign-subdued-button-hover-background);
+        }
+      }
+
+      .menu-bar-toggle,
+      .mobile-toolbar-actions-toggle,
+      .mobile-toolbar-direct-actions .ide-redesign-toolbar-button-icon,
+      .mobile-toolbar-share .btn {
+        box-shadow: none;
+
+        &:focus-visible {
+          outline: 2px solid var(--redesign-subdued-button-color);
+          outline-offset: -2px;
+        }
+      }
+
+      .mobile-toolbar-share .btn {
+        padding: 0;
+        background-color: transparent;
+        border-radius: var(--border-radius-base);
+
+        .button-content {
+          gap: 4px;
+          padding: 4px 6px;
+          border-radius: var(--border-radius-full);
+          background-color: var(--bs-btn-bg);
+          color: var(--bs-btn-color);
+
+          > .material-symbols {
+            font-size: 18px;
+          }
+        }
+
+        &:not(:disabled):hover .button-content,
+        &:focus-visible .button-content {
+          background-color: var(--bs-btn-hover-bg);
+          color: var(--bs-btn-hover-color);
+        }
+
+        &:disabled .button-content {
+          background-color: var(--bs-btn-disabled-bg);
+          color: var(--bs-btn-disabled-color);
+        }
+      }
+    }
+
+    .mobile-toolbar-direct-actions {
+      display: flex;
+      flex: none;
+      flex-wrap: wrap;
+      max-width: 100%;
+      align-items: center;
+      gap: 2px;
+
+      .ide-redesign-toolbar-button-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        margin: 0;
+        padding: 4px;
+      }
+
+      .mobile-toolbar-share .btn {
+        min-height: 44px;
+        padding: 0;
+      }
+    }
+
+    .mobile-toolbar-network-state {
+      flex: 1 1 100%;
+    }
+
+    .mobile-toolbar-command-sections {
+      padding: 0;
+      margin: 0;
+      list-style: none;
+      max-height: min(50dvh, 360px);
+      overflow-y: auto;
+
+      // These divide flat command groups; they do not control nested menus.
+      .dropdown-divider {
+        display: none;
+      }
+
+      .dropdown-item {
+        min-height: 44px;
+        white-space: normal;
+        overflow-wrap: anywhere;
+      }
+    }
+
+    .mobile-toolbar-actions-content
+      .ide-redesign-toolbar-project-dropdown-toggle {
+      width: 100%;
+      min-height: 44px;
+      height: auto;
+      margin: 0;
+    }
+
+    .mobile-toolbar-actions-toggle {
+      width: 44px;
+      min-height: 44px;
+      padding: 4px;
+
+      &::after {
+        display: none;
+      }
+    }
+
+    .mobile-toolbar-actions-menu {
+      min-width: 0;
+      width: min(240px, calc(100vw - 16px));
+    }
+
+    .mobile-toolbar-actions-content {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 4px;
+      padding: 4px;
+
+      .btn {
+        min-height: 44px;
+        min-width: 44px;
+        justify-content: flex-start;
+        gap: 8px;
+      }
+
+      // Both controls use the shared dropdown-item colors and focus styling.
+      .mobile-toolbar-action-row {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        min-height: 44px;
+        padding: var(--bs-dropdown-item-padding-y)
+          var(--bs-dropdown-item-padding-x);
+        gap: 0;
+        border: 0;
+        border-radius: var(--border-radius-base);
+        text-align: left;
+
+        &::after {
+          display: none;
+        }
+      }
+    }
+
+    // Give 44px targets room vertically without widening crowded toolbar rows.
+    // PDF banners and logs also use this variable for their top offsets.
+    --toolbar-small-height: 52px;
+
+    .ide-file-tree-close {
+      display: none;
+    }
+
+    .ol-cm-toolbar .ol-cm-toolbar-button,
+    .ol-cm-toolbar-overflow .ol-cm-toolbar-button,
+    .pdf .compile-button,
+    .pdf .compile-dropdown-toggle,
+    .pdf .pdf-toolbar-btn {
+      min-height: 44px;
+    }
+
+    .pdf .toolbar-pdf-left .compile-button-group {
+      height: 44px;
+    }
+
+    .file-tree-toolbar {
+      height: 44px;
+    }
+
+    .file-tree-panel,
+    .file-outline-panel {
+      min-height: 52px;
+    }
+
+    .file-tree-panel-collapsed {
+      max-height: 52px;
+    }
+
+    .file-tree-toolbar-action-button,
+    .entity-menu-toggle,
+    .outline-item-expand-collapse-btn {
+      min-width: 44px;
+      min-height: 44px;
+    }
+
+    .file-tree-entity-button,
+    .file-tree-expand-collapse-button,
+    .outline-header-expand-collapse-btn,
+    .outline-item-link {
+      min-height: 44px;
+    }
+
+    .file-tree-entity-button .item-name {
+      padding-right: 48px;
+    }
+  }
+}
+
+@media (max-width: 379.98px) {
+  .ide-redesign-main .mobile-compact-project-toolbar {
+    flex-wrap: nowrap;
+
+    > .mobile-toolbar-actions {
+      flex: none;
+    }
+
+    .mobile-project-actions {
+      .mobile-toolbar-actions-menu {
+        max-height: calc(100dvh - 72px);
+        overflow-y: auto;
+      }
+
+      .mobile-inline-layout {
+        display: block;
+        width: 100%;
+        min-width: 0;
+
+        > ul {
+          padding: 0 0 0 8px;
+          margin: 0;
+          list-style: none;
+        }
+
+        .dropdown-item {
+          min-height: 44px;
+          white-space: normal;
+          overflow-wrap: anywhere;
+        }
+      }
+    }
+  }
+
+  // Keep the Share label and primary actions; only omit its decorative icon.
+  .mobile-toolbar-share
+    > .ide-redesign-toolbar-button-container
+    .button-content
+    > .material-symbols {
+    display: none;
+  }
+}

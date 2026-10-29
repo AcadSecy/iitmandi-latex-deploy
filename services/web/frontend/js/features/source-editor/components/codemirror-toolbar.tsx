@@ -34,6 +34,7 @@ import { useLayoutContext } from '@/shared/context/layout-context'
 import ReviewPanelHeaderBuffer from '@/features/review-panel/components/review-panel-header-buffer'
 import { useAreTabsEnabled } from '@/features/ide-react/hooks/use-are-tabs-enabled'
 import { ToolbarLayout } from './toolbar/toolbar-layout'
+import { ToggleSearchButton } from './toolbar/toggle-search-button'
 
 const sourceEditorToolbarComponents = importOverleafModules(
   'sourceEditorToolbarComponents'
@@ -61,7 +62,7 @@ const Toolbar = memo(function Toolbar() {
 
   const [overflowed, setOverflowed] = useState(false)
 
-  const overflowedItemsRef = useRef<Set<string>>(new Set())
+  const [overflowedItems, setOverflowedItems] = useState<Set<string>>(new Set())
 
   const languageName = state.facet(language)?.name
   const visual = isVisual(view)
@@ -83,7 +84,7 @@ const Toolbar = memo(function Toolbar() {
       setOverflowOpen(false)
       setOverflowed(true)
 
-      overflowedItemsRef.current = new Set()
+      const nextOverflowedItems = new Set<string>()
 
       const buttonGroups = [
         ...element.querySelectorAll<HTMLDivElement>('[data-overflow]'),
@@ -96,21 +97,37 @@ const Toolbar = memo(function Toolbar() {
 
       // find all the available items
       for (const buttonGroup of buttonGroups) {
+        if (
+          buttonGroup.hasAttribute('data-overflow-mobile') &&
+          !window.matchMedia('(max-width: 767.98px)').matches
+        ) {
+          continue
+        }
         if (element.scrollWidth <= element.clientWidth) {
           break
         }
         // add this item to the overflow
-        overflowedItemsRef.current.add(buttonGroup.dataset.overflow!)
+        nextOverflowedItems.add(buttonGroup.dataset.overflow!)
         buttonGroup.classList.add('overflow-hidden')
       }
 
-      setOverflowed(overflowedItemsRef.current.size > 0)
+      setOverflowed(nextOverflowedItems.size > 0)
+      setOverflowedItems(nextOverflowedItems)
     },
     [setOverflowOpen]
   )
 
   // calculate overflow when the container resizes
   const { elementRef, resizeRef } = useResizeObserver(buildOverflow)
+
+  useEffect(() => {
+    const query = window.matchMedia('(max-width: 767.98px)')
+    const onChange = () => {
+      if (resizeRef.current) buildOverflow(resizeRef.current.element)
+    }
+    query.addEventListener('change', onChange)
+    return () => query.removeEventListener('change', onChange)
+  }, [buildOverflow, resizeRef])
 
   // calculate overflow when `languageName` or `visual` change
   useEffect(() => {
@@ -200,20 +217,25 @@ const Toolbar = memo(function Toolbar() {
             )}
           </ToolbarLayout.Left>
           <div className="ol-cm-toolbar-button-group ol-cm-toolbar-stretch">
-            {showActions && (
+            {(showActions || overflowedItems.has('search')) && (
               <ToolbarOverflow
                 overflowed={overflowed}
                 overflowOpen={overflowOpen}
                 setOverflowOpen={setOverflowOpen}
                 overflowRef={overflowRef}
               >
-                <ToolbarItems
-                  state={state}
-                  overflowed={overflowedItemsRef.current}
-                  languageName={languageName}
-                  visual={visual}
-                  listDepth={listDepth}
-                />
+                {showActions && (
+                  <ToolbarItems
+                    state={state}
+                    overflowed={overflowedItems}
+                    languageName={languageName}
+                    visual={visual}
+                    listDepth={listDepth}
+                  />
+                )}
+                {overflowedItems.has('search') && (
+                  <ToggleSearchButton state={state} showLabel />
+                )}
               </ToolbarOverflow>
             )}
           </div>
