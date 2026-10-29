@@ -46,4 +46,7 @@ export const classHighlighter = tagHighlighter([
   { tag: tags.punctuation, class: 'tok-punctuation' },
   // additional
   { tag: tags.attributeValue, class: 'tok-attributeValue' },
+  // LaTeX commands keep the typeName style; tok-command lets theme.ts give
+  // them a color in themes where that style has none (see commandStyle)
+  { tag: tags.tagName, class: 'tok-typeName tok-command' },
 ])

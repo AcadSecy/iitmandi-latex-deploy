@@ -287,6 +287,29 @@ const staticTheme = EditorView.theme({
 
 const themeCache = new Map<string, any>()
 
+type Style = { color?: string }
+
+const colorOf = (style?: Style) =>
+  style?.color?.replace(/\s/g, '').toLowerCase()
+
+/**
+ * LaTeX commands take the theme's typeName style. In some themes that has no
+ * color, or the color of plain text, so commands look like text. Those get
+ * the theme's color for tags, or else its keyword color, as \usepackage has.
+ */
+const commandStyle = (
+  theme: Record<string, Style>,
+  highlightStyle: Record<string, Style>
+) => {
+  const typeName = colorOf(highlightStyle['.tok-typeName'])
+  if (typeName && typeName !== colorOf(theme['&'])) {
+    return {}
+  }
+  const style =
+    highlightStyle['.tok-tagName'] ?? highlightStyle['.tok-keyword']
+  return style ? { '.tok-typeName.tok-command': style } : {}
+}
+
 const loadSelectedTheme = async (editorTheme: string) => {
   if (!editorTheme) {
     editorTheme = 'textmate' // use the default theme if unset
@@ -311,7 +334,10 @@ const loadSelectedTheme = async (editorTheme: string) => {
       // eslint-disable-next-line @overleaf/no-generated-editor-themes
       EditorView.theme(theme, { dark }),
       // eslint-disable-next-line @overleaf/no-generated-editor-themes
-      EditorView.theme(highlightStyle, { dark }),
+      EditorView.theme(
+        { ...highlightStyle, ...commandStyle(theme, highlightStyle) },
+        { dark }
+      ),
     ]
 
     themeCache.set(editorTheme, extension)
