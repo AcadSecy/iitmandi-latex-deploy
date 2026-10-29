@@ -63,7 +63,11 @@ const moduleRailActions = (
   }[]
 ).map(({ import: { default: action } }) => action)
 
-export const RailLayout = () => {
+export const RailLayout = ({
+  mobileLayout = false,
+}: {
+  mobileLayout?: boolean
+}) => {
   const { sendEvent } = useEditorAnalytics()
   const { t } = useTranslation()
   const { selectedTab, openTab, isOpen, setIsOpen, togglePane, selectTab } =
@@ -265,7 +269,7 @@ export const RailLayout = () => {
       mountOnEnter // Only render when necessary (so that we can lazy load tab content)
       unmountOnExit={false} // TODO: Should we unmount the tabs when they're not used?
       transition={false}
-      activeKey={selectedTab}
+      activeKey={mobileLayout ? 'file-tree' : selectedTab}
       onSelect={onTabSelect}
       id="ide-rail-tabs"
     >

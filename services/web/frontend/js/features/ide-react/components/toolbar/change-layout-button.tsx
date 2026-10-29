@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import classNames from 'classnames'
 import {
@@ -13,8 +14,15 @@ import { useFeatureFlag } from '@/shared/context/split-test-context'
 import { useEditorAnalytics } from '@/shared/hooks/use-editor-analytics'
 import { useLayoutContext } from '@/shared/context/layout-context'
 
-export default function ChangeLayoutButton() {
+export default function ChangeLayoutButton({
+  showLabel = false,
+  inline = false,
+}: {
+  showLabel?: boolean
+  inline?: boolean
+}) {
   const { t } = useTranslation()
+  const [expanded, setExpanded] = useState(false)
   const toggleButtonClassName = classNames(
     'ide-redesign-toolbar-button-subdued',
     'ide-redesign-toolbar-dropdown-toggle-subdued',
@@ -86,24 +94,86 @@ export default function ChangeLayoutButton() {
     ]
   )
 
+  if (inline) {
+    return (
+      <div className="mobile-inline-layout">
+        <button
+          type="button"
+          role="menuitem"
+          className="dropdown-item mobile-toolbar-action-row"
+          aria-label={t('layout_options')}
+          aria-expanded={expanded}
+          aria-controls="mobile-inline-layout-options"
+          onClick={() => setExpanded(open => !open)}
+        >
+          <MaterialIcon
+            type="space_dashboard"
+            unfilled
+            className="dropdown-item-leading-icon"
+          />
+          <span>{t('layout')}</span>
+          <MaterialIcon
+            type={expanded ? 'expand_more' : 'chevron_right'}
+            className="dropdown-item-trailing-icon"
+          />
+        </button>
+        {expanded && (
+          <ul
+            id="mobile-inline-layout-options"
+            role="group"
+            aria-label={t('layout_options')}
+          >
+            <ChangeLayoutOptions />
+          </ul>
+        )}
+      </div>
+    )
+  }
+
+  const toggle = (
+    <OLDropdownToggle
+      as={showLabel ? 'button' : undefined}
+      role={showLabel ? 'menuitem' : undefined}
+      aria-haspopup="menu"
+      id="layout-dropdown-btn"
+      className={
+        showLabel
+          ? 'dropdown-item mobile-toolbar-action-row'
+          : toggleButtonClassName
+      }
+      aria-label={t('layout_options')}
+    >
+      <MaterialIcon
+        type="space_dashboard"
+        unfilled
+        className={showLabel ? 'dropdown-item-leading-icon' : undefined}
+      />
+      {showLabel && (
+        <>
+          <span>{t('layout')}</span>
+          <MaterialIcon
+            type="chevron_right"
+            className="dropdown-item-trailing-icon"
+          />
+        </>
+      )}
+    </OLDropdownToggle>
+  )
+
   return (
     <div className="ide-redesign-toolbar-button-container">
       <OLDropdown className="toolbar-item layout-dropdown" align="end">
-        <OLTooltip
-          id="tooltip-open-layout-options"
-          description={t('layout_options')}
-          overlayProps={{ delay: 0, placement: 'bottom' }}
-        >
-          <span>
-            <OLDropdownToggle
-              id="layout-dropdown-btn"
-              className={toggleButtonClassName}
-              aria-label={t('layout_options')}
-            >
-              <MaterialIcon type="space_dashboard" unfilled />
-            </OLDropdownToggle>
-          </span>
-        </OLTooltip>
+        {showLabel ? (
+          toggle
+        ) : (
+          <OLTooltip
+            id="tooltip-open-layout-options"
+            description={t('layout_options')}
+            overlayProps={{ delay: 0, placement: 'bottom' }}
+          >
+            <span>{toggle}</span>
+          </OLTooltip>
+        )}
         <OLDropdownMenu>
           <ChangeLayoutOptions />
         </OLDropdownMenu>

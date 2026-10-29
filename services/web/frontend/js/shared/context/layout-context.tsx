@@ -27,6 +27,7 @@ import { useFeatureFlag } from './split-test-context'
 
 export type IdeLayout = 'sideBySide' | 'flat'
 export type IdeView = 'editor' | 'file' | 'pdf' | 'history'
+export type MobilePane = 'files' | 'code' | 'pdf'
 
 export type LayoutContextOwnStates = {
   view: IdeView | null
@@ -42,6 +43,8 @@ export type LayoutContextOwnStates = {
 }
 
 export type LayoutContextValue = LayoutContextOwnStates & {
+  mobilePane: MobilePane | null
+  setMobilePane: (pane: MobilePane | null) => void
   reattach: () => void
   detach: () => void
   detachIsLinked: boolean
@@ -87,7 +90,16 @@ const reviewPanelStorageKey = `ui.reviewPanelOpen.${getMeta('ol-project_id')}`
 
 export const LayoutProvider: FC<React.PropsWithChildren> = ({ children }) => {
   // what to show in the "flat" view (editor or pdf)
-  const [view, _setView] = useState<IdeView | null>('editor')
+  const [desktopView, _setView] = useState<IdeView | null>('editor')
+  const [mobilePane, updateMobilePane] = useState<MobilePane | null>(null)
+  const view =
+    desktopView === 'history'
+      ? desktopView
+      : mobilePane === 'pdf'
+        ? 'pdf'
+        : mobilePane !== null
+          ? 'editor'
+          : desktopView
   const [openFile, setOpenFile] = useState<BinaryFile | null>(null)
   const { isOpen: railIsOpen, setIsOpen: setRailIsOpen } = useRailContext()
   const [prevRailIsOpen, setPrevRailIsOpen] = useState(railIsOpen)
@@ -95,8 +107,30 @@ export const LayoutProvider: FC<React.PropsWithChildren> = ({ children }) => {
   const lastIdeView = useRef<IdeView>('editor')
   const { sendEvent } = useEditorAnalytics()
 
+  const {
+    reattach,
+    detach,
+    isLinking: detachIsLinking,
+    isLinked: detachIsLinked,
+    role: detachRole,
+    isRedundant: detachIsRedundant,
+  } = useDetachLayout()
+
+  const setMobilePane = useCallback(
+    (pane: MobilePane | null) => {
+      if (pane === 'pdf' && detachRole === 'detacher') {
+        reattach()
+      }
+      updateMobilePane(pane)
+    },
+    [detachRole, reattach]
+  )
+
   const setView = useCallback(
     (value: IdeView | null) => {
+      if (mobilePane !== null && value !== 'history') {
+        setMobilePane(value === 'pdf' ? 'pdf' : 'code')
+      }
       _setView(oldValue => {
         // ensure that the "history:toggle" event is broadcast when switching in or out of history view
         if (value === 'history' || oldValue === 'history') {
@@ -116,10 +150,26 @@ export const LayoutProvider: FC<React.PropsWithChildren> = ({ children }) => {
           lastIdeView.current = value
         }
 
+        // Phone navigation changes the effective view, not the desktop view.
+        if (
+          mobilePane !== null &&
+          value !== 'history' &&
+          oldValue !== 'history'
+        ) {
+          return oldValue
+        }
         return value
       })
     },
-    [_setView, setRailIsOpen, prevRailIsOpen, setPrevRailIsOpen, railIsOpen]
+    [
+      _setView,
+      setRailIsOpen,
+      prevRailIsOpen,
+      setPrevRailIsOpen,
+      railIsOpen,
+      mobilePane,
+      setMobilePane,
+    ]
   )
 
   const restoreView = useCallback(() => {
@@ -247,6 +297,10 @@ export const LayoutProvider: FC<React.PropsWithChildren> = ({ children }) => {
     (newLayout: IdeLayout, newView: IdeView = 'editor') => {
       const targetView = newLayout === 'sideBySide' ? 'editor' : newView
       setPdfLayout(newLayout)
+      if (mobilePane !== null) {
+        // Explicit Layout-menu choices still update the desktop preference.
+        _setView(targetView === 'editor' ? lastIdeView.current : targetView)
+      }
       if (targetView === 'editor') {
         restoreView()
       } else {
@@ -254,7 +308,7 @@ export const LayoutProvider: FC<React.PropsWithChildren> = ({ children }) => {
       }
       setLayoutInLocalStorage(newLayout)
     },
-    [setPdfLayout, setView, restoreView]
+    [setPdfLayout, setView, restoreView, mobilePane]
   )
 
   // Force codemirror to reposition all tooltips to prevent an issue
@@ -266,17 +320,13 @@ export const LayoutProvider: FC<React.PropsWithChildren> = ({ children }) => {
     }
   }, [view, pdfLayout])
 
-  const {
-    reattach,
-    detach,
-    isLinking: detachIsLinking,
-    isLinked: detachIsLinked,
-    role: detachRole,
-    isRedundant: detachIsRedundant,
-  } = useDetachLayout()
-
   const pdfPreviewOpen =
-    pdfLayout === 'sideBySide' || view === 'pdf' || detachRole === 'detacher'
+    mobilePane !== null
+      ? detachRole === 'detacher' ||
+        (view !== 'history' && mobilePane === 'pdf')
+      : pdfLayout === 'sideBySide' ||
+        view === 'pdf' ||
+        detachRole === 'detacher'
 
   useEffect(() => {
     if (debugPdfDetach) {
@@ -288,7 +338,7 @@ export const LayoutProvider: FC<React.PropsWithChildren> = ({ children }) => {
       })
     }
 
-    if (detachRole !== 'detacher') return // not in a PDF detacher layout
+    if (detachRole !== 'detacher' || mobilePane !== null) return // phone presentation is handled above
 
     if (detachIsRedundant) {
       changeLayout('sideBySide')
@@ -306,12 +356,16 @@ export const LayoutProvider: FC<React.PropsWithChildren> = ({ children }) => {
     detachIsLinking,
     detachIsLinked,
     changeLayout,
+    mobilePane,
   ])
 
   const handleDetach = useCallback(() => {
+    if (mobilePane !== null) {
+      updateMobilePane('code')
+    }
     detach()
     sendEvent('project-layout-detach')
-  }, [detach, sendEvent])
+  }, [detach, sendEvent, mobilePane])
 
   const handleReattach = useCallback(() => {
     if (detachRole !== 'detacher') {
@@ -373,6 +427,8 @@ export const LayoutProvider: FC<React.PropsWithChildren> = ({ children }) => {
 
   const value = useMemo<LayoutContextValue>(
     () => ({
+      mobilePane,
+      setMobilePane,
       reattach,
       detach,
       detachIsLinked,
@@ -404,6 +460,8 @@ export const LayoutProvider: FC<React.PropsWithChildren> = ({ children }) => {
       setFocusMode,
     }),
     [
+      mobilePane,
+      setMobilePane,
       reattach,
       detach,
       detachIsLinked,

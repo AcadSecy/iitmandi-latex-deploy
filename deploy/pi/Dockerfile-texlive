@@ -7,10 +7,13 @@
 # already on the Pi as part of the app image, so the sandbox costs no disk.
 # pi-deploy tags it as the compile image named in pi.env.
 #
-# The upstream base image has only TeX Live's basic scheme, so this adds what
-# the IIT Mandi templates and most theses and reports use, without the 1.5 GB
-# of extra fonts or the documentation (the full TeX Live images are 5 GB, and
-# the Pi has a 29 GB card shared with other apps).
+# The upstream base image has only TeX Live's basic scheme, so this installs
+# all of TeX Live (scheme-full: every package, the journal and publisher
+# classes, all fonts and languages), without the documentation and sources
+# (tlpdbopt_install_docfiles/srcfiles 0 in Dockerfile-base): about 4.5 GB.
+# People bring documents from anywhere, not only the IIT Mandi templates, and
+# a missing package is the commonest way for those to fail. The platform has
+# its own disk on the Pi for this (README.md).
 #
 # Built by .github/workflows/pi-image.yml on top of server-ce/Dockerfile-base.
 
@@ -21,19 +24,15 @@ FROM $OVERLEAF_BASE_TAG AS texlive
 
 ARG TEXLIVE_MIRROR=https://mirror.ox.ac.uk/sites/ctan.org/systems/texlive/tlnet
 
-RUN tlmgr install --repository ${TEXLIVE_MIRROR} \
-      collection-latexrecommended \
-      collection-latexextra \
-      collection-fontsrecommended \
-      collection-pictures \
-      collection-mathscience \
-      collection-bibtexextra \
-      collection-luatex \
-      collection-xetex \
-      newtx fontaxes kastrup txfonts \
+RUN tlmgr install --repository ${TEXLIVE_MIRROR} scheme-full \
 &&  rm -rf /usr/local/texlive/*/tlpkg/backups/*
 
 FROM texlive
+
+# Link the programs of the packages installed above into /usr/local/bin, as
+# the upstream base image does for its own: compiles do not find them
+# otherwise (minted's latexminted, for one). biber's link is replaced below.
+RUN tlmgr path add
 
 # biblatex needs biber, and TeX Live has no working biber for arm64. Build the
 # version TeX Live lists, so that it matches the biblatex above (a different
@@ -63,6 +62,36 @@ RUN if ! biber --version > /dev/null 2>&1; then \
     fi \
 &&  biber --version
 
+# Fonts, and Ghostscript, which turns .eps figures into PDF.
+#
+# Documents from Word ask for Microsoft's fonts (Calibri, Cambria, Times New
+# Roman, Arial, Georgia, Mangal, ...), which no TeX distribution may include.
+# texmf/fontspec.cfg makes fontspec load free fonts for those names: ones with
+# the same metrics where they exist (Carlito, Caladea, Liberation), else the
+# closest free design. Noto covers Hindi and the other Indian scripts.
+#
+# XeLaTeX finds fonts by name through fontconfig, which is told where TeX
+# Live's own fonts are (TeX Live's list, less the Type 1 fonts, which are for
+# pdfLaTeX). LuaLaTeX keeps an index of its own: it is built here, as every
+# compile starts afresh from this image and would otherwise build it again.
+RUN apt-get update \
+&&  apt-get install -y --no-install-recommends \
+      fontconfig fonts-crosextra-carlito fonts-crosextra-caladea fonts-liberation \
+      fonts-noto-core ghostscript \
+&&  rm -rf /var/lib/apt/lists/* \
+&&  sed '/type1/d' "$(kpsewhich -var-value TEXMFSYSVAR)/fonts/conf/texlive-fontconfig.conf" \
+      > /etc/fonts/conf.d/09-texlive.conf \
+&&  fc-cache -f > /dev/null \
+&&  luaotfload-tool --update --force --quiet
+COPY texmf/ /usr/local/texlive/texmf-local/tex/latex/iitmandi/
+RUN mktexlsr /usr/local/texlive/texmf-local > /dev/null 2>&1 \
+&&  kpsewhich fontspec.cfg
+
+# The compile service's latexmk settings, which the app image has as well
+# (server-ce/config/latexmkrc, given to the build as "config"). Compiles run
+# here, and without them latexmk does not run again after a failed compile
+# when no file changed, so the editor gets neither a log nor a PDF.
+COPY --from=config latexmkrc /usr/local/share/latexmk/LatexMk
 # The thesis and report templates load memoize to cache their figures. It needs
 # two packages that tlmgr does not install with it (advice, collargs), its
 # extraction script on the PATH, and Perl's PDF::API2 to read the figures out

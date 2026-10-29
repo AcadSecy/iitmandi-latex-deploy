@@ -121,12 +121,14 @@ export default function FileTreeActionButtons({
           )}
         </>
       )}
-      <FileTreeActionButton
-        id="close"
-        description={t('close')}
-        onClick={handlePaneCollapse}
-        iconType="close"
-      />
+      <span className="ide-file-tree-close">
+        <FileTreeActionButton
+          id="close"
+          description={t('close')}
+          onClick={handlePaneCollapse}
+          iconType="close"
+        />
+      </span>
     </div>
   )
 }

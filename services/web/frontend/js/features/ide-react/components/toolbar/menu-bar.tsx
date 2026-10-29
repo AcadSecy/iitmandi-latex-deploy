@@ -8,7 +8,7 @@ import { MenuBarDropdown } from '@/shared/components/menu-bar/menu-bar-dropdown'
 import { MenuBarOption } from '@/shared/components/menu-bar/menu-bar-option'
 import { useTranslation } from 'react-i18next'
 import ChangeLayoutOptions from './change-layout-options'
-import { ElementType, useCallback, useMemo, useState } from 'react'
+import { ElementType, ReactNode, useCallback, useMemo, useState } from 'react'
 import { useLayoutContext } from '@/shared/context/layout-context'
 import { useCommandProvider } from '@/features/ide-react/hooks/use-command-provider'
 import CommandDropdown, {
@@ -27,6 +27,7 @@ import EditorCloneProjectModalWrapper from '@/features/clone-project-modal/compo
 import useOpenProject from '@/shared/hooks/use-open-project'
 import importOverleafModules from '../../../../../macros/import-overleaf-module.macro'
 import ReviewModeOptions from './review-mode-options'
+import MobileToolbarActions from './mobile-toolbar-actions'
 
 const menubarExtraComponents = importOverleafModules(
   'menubarExtraComponents'
@@ -42,7 +43,13 @@ const formatMenuSections = importOverleafModules('formatMenuSections') as {
   import: { default: MenuSectionStructure[] }
 }[]
 
-export const ToolbarMenuBar = () => {
+export const ToolbarMenuBar = ({
+  mobile = false,
+  mobileActions,
+}: {
+  mobile?: boolean
+  mobileActions?: ReactNode
+}) => {
   const { t } = useTranslation()
 
   const { setView, view } = useLayoutContext()
@@ -282,12 +289,20 @@ export const ToolbarMenuBar = () => {
         id="toolbar-menu-bar-item"
       >
         <CommandDropdown menu={fileMenuStructure} title={t('file')} id="file" />
-        <CommandDropdown menu={editMenuStructure} title={t('edit')} id="edit" />
-        <CommandDropdown
-          menu={insertMenuStructure}
-          title={t('insert')}
-          id="insert"
-        />
+        {!mobile && (
+          <CommandDropdown
+            menu={editMenuStructure}
+            title={t('edit')}
+            id="edit"
+          />
+        )}
+        {!mobile && (
+          <CommandDropdown
+            menu={insertMenuStructure}
+            title={t('insert')}
+            id="insert"
+          />
+        )}
         <MenuBarDropdown
           title={t('view')}
           id="view"
@@ -330,11 +345,13 @@ export const ToolbarMenuBar = () => {
             includeDivider
           />
         </MenuBarDropdown>
-        <CommandDropdown
-          menu={formatMenuStructure}
-          title={t('format')}
-          id="format"
-        />
+        {!mobile && (
+          <CommandDropdown
+            menu={formatMenuStructure}
+            title={t('format')}
+            id="format"
+          />
+        )}
         <MenuBarDropdown
           title={t('help')}
           id="help"
@@ -365,6 +382,25 @@ export const ToolbarMenuBar = () => {
             </>
           )}
         </MenuBarDropdown>
+        {mobile && (
+          <MobileToolbarActions
+            mobile
+            commands={[
+              ...editMenuStructure,
+              ...insertMenuStructure,
+              ...formatMenuStructure,
+            ].map((section, index) => (
+              <CommandSection
+                key={section.id}
+                section={section}
+                includeDivider={index > 0}
+                inlineGroups
+              />
+            ))}
+          >
+            {mobileActions}
+          </MobileToolbarActions>
+        )}
       </MenuBar>
       <WordCountModal
         show={showWordCountModal}

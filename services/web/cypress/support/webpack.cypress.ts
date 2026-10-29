@@ -1,11 +1,16 @@
+import './settings'
 import { merge } from 'webpack-merge'
 import path from 'path'
 import webpack from 'webpack'
 import HtmlWebpackPlugin from 'html-webpack-plugin'
-import devConfig from '../../webpack.config.dev'
+import productionConfig from '../../webpack.config.prod'
 
 const buildConfig = () => {
-  const webpackConfig = merge(devConfig, {
+  const webpackConfig = merge(productionConfig, {
+    mode: 'development',
+    devtool: false,
+    parallelism: 2,
+    optimization: { minimize: false },
     output: {
       workerPublicPath: '/__cypress/src/',
     },
