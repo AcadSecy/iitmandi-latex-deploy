@@ -17,10 +17,9 @@ permissions:
 
 env:
   PUBLISH: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/staging') }}
-  # The base image (no code of ours, only what the two Dockerfiles install)
-  # may also be stored from pull requests made in this repository; a fork's
-  # token cannot write packages
-  STORE_BASE: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+  # Pull requests read caches; only non-PR runs may write the registry.
+  # The organization supplies PR jobs with a read-only package token.
+  STORE_BASE: ${{ github.event_name != 'pull_request' }}
 
 jobs:
   build:
