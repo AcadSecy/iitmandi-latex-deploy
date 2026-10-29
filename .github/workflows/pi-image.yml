@@ -1,14 +1,6 @@
-name: Pi image
+name: Server image
 
-# Builds the image the Raspberry Pi test server runs, for every commit on
-# staging, checks it, and publishes it to the GitHub container registry as
-# ghcr.io/<owner>/iitmandi-latex:<commit> (owner: acadsecy). pi-deploy on the Pi sees the new
-# image within a minute and deploys it (deploy/pi/README.md). Pull requests
-# into staging get the same build and checks, without publishing, so a merge
-# cannot break the Pi.
-#
-# Runs only in the public repository, where Actions minutes are free; the
-# private one has no staging branch.
+# Build and test amd64 images for the LaTeX server.
 on:
   push:
     branches: [staging]
@@ -17,14 +9,14 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: pi-image-${{ github.ref }}
+  group: server-image-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
 
 env:
-  PUBLISH: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/staging' }}
+  PUBLISH: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/staging') }}
   # The base image (no code of ours, only what the two Dockerfiles install)
   # may also be stored from pull requests made in this repository; a fork's
   # token cannot write packages
@@ -34,16 +26,23 @@ jobs:
   build:
     name: Build and check
     if: ${{ !github.event.repository.private }}
-    # The Pi is arm64; GitHub's arm64 runners are free for public repositories
-    # MongoDB 8.0 refuses the newer kernels on the 24.04 ARM runner
-    # (SERVER-121912). The 22.04 ARM image uses the compatible 6.8 kernel.
-    runs-on: ubuntu-22.04-arm
+    runs-on: ubuntu-24.04
     timeout-minutes: 180
     permissions:
       contents: read
       packages: write
     steps:
       - uses: actions/checkout@v5
+
+      - name: Make room for full TeX Live and the application
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc
+          df -h /
+
+      - name: Check deployment script
+        run: |
+          python3 -m py_compile deploy/server/deploy.py
+          python3 deploy/server/deploy.py --help
 
       # The base image holds all of TeX Live (about 4.5 GB). With Docker's
       # default image store (overlay2), exporting the app image on top of it
@@ -63,8 +62,8 @@ jobs:
       - name: Image names
         run: |
           owner="${GITHUB_REPOSITORY_OWNER,,}"
-          echo "IMAGE=ghcr.io/$owner/iitmandi-latex" >> "$GITHUB_ENV"
-          echo "BASE_IMAGE=ghcr.io/$owner/iitmandi-latex-base" >> "$GITHUB_ENV"
+          echo "IMAGE=ghcr.io/$owner/iitmandi-latex-server" >> "$GITHUB_ENV"
+          echo "BASE_IMAGE=ghcr.io/$owner/iitmandi-latex-server-base" >> "$GITHUB_ENV"
 
       # Every run reads the registry (the base image, and the last image's
       # layers to build on); only staging publishes the app image
@@ -147,7 +146,7 @@ jobs:
           node-version: 24
           package-manager-cache: false
 
-      # In the compile image, the base: every compile on the Pi runs in it
+      # Compile every template in the same sandbox image the server uses.
       - name: Every template compiles in the compile image
         run: |
           dir="$RUNNER_TEMP/compiles"
@@ -159,38 +158,38 @@ jobs:
             -v "$PWD/deploy/pi/check-tex.sh:/check-tex.sh:ro" "$BASE" \
             -c 'chown -R www-data:www-data /var/lib/overleaf/data/compiles && bash /check-tex.sh /var/lib/overleaf/data/compiles/list.txt'
 
-      - name: The image starts with the Pi's settings, and a user can compile in the sandbox
+      - name: The image starts with the server settings, and a user can compile in the sandbox
         id: boot
-        working-directory: deploy/pi
+        working-directory: deploy/server
         env:
           LATEX_DATA: ${{ runner.temp }}/data
-          LATEX_PORT: "8095"
+          LATEX_PORT: "8080"
         run: |
           export LATEX_IMAGE="$IMAGE:$GITHUB_SHA"
-          # What pi-deploy does on the Pi: the compile image under its name in pi.env
-          docker tag "$BASE" "$(sed -n 's/^TEX_LIVE_DOCKER_IMAGE=//p' pi.env)"
+          # Retain the compile-image alias recorded in migrated projects.
+          docker tag "$BASE" "$(sed -n 's/^TEX_LIVE_DOCKER_IMAGE=//p' server.env)"
           printf 'OVERLEAF_INVITE_TOKEN_SECRET=%s\nOVERLEAF_SESSION_SECRET=%s\n' \
             "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" > secrets.env
           # A test directory: b00001 may log in; b00002 is in it but not on the allowlist
-          PASSWORDS_FILE="$RUNNER_TEMP/ldap-users.txt" EXTRA_USERS=b00002 bash ldap-users.sh b00001
+          PASSWORDS_FILE="$RUNNER_TEMP/ldap-users.txt" EXTRA_USERS=b00002 bash ../pi/ldap-users.sh b00001
           docker compose up -d
           for i in $(seq 1 120); do
-            curl -fsS -o /dev/null http://127.0.0.1:8095/status && break
+            curl -fsS -o /dev/null http://127.0.0.1:8080/status && break
             sleep 5
           done
-          curl -fsS http://127.0.0.1:8095/status
-          curl -fsS http://127.0.0.1:8095/login | grep -q 'IIT Mandi LaTeX'
-          code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8095/register)
+          curl -fsS http://127.0.0.1:8080/status
+          curl -fsS http://127.0.0.1:8080/login | grep -q 'IIT Mandi LaTeX'
+          code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/register)
           echo "sign-up page: HTTP $code"
           [ "$code" != 200 ]
           PASSWORD=$(openssl rand -hex 12)
-          PASSWORD="$PASSWORD" bash create-admin.sh admin@iitmandi-latex.test
-          python3 smoke-test.py http://127.0.0.1:8095 admin@iitmandi-latex.test "$PASSWORD" \
+          PASSWORD="$PASSWORD" bash ../pi/create-admin.sh admin@iitmandi-latex.test
+          python3 ../pi/smoke-test.py http://127.0.0.1:8080 admin@iitmandi-latex.test "$PASSWORD" \
             $(sed -n 1p "$RUNNER_TEMP/ldap-users.txt") $(sed -n 2p "$RUNNER_TEMP/ldap-users.txt")
 
       - name: Container logs
         if: failure() && steps.boot.outcome == 'failure'
-        working-directory: deploy/pi
+        working-directory: deploy/server
         env:
           LATEX_IMAGE: ${{ env.IMAGE }}:${{ github.sha }}
           LATEX_DATA: ${{ runner.temp }}/data
@@ -203,9 +202,11 @@ jobs:
         if: env.PUBLISH == 'true'
         run: |
           docker push -q "$IMAGE:$GITHUB_SHA"
-          docker tag "$IMAGE:$GITHUB_SHA" "$IMAGE:staging"
-          docker push -q "$IMAGE:staging"
+          if [ "$GITHUB_REF" = refs/heads/staging ]; then
+            docker tag "$IMAGE:$GITHUB_SHA" "$IMAGE:staging"
+            docker push -q "$IMAGE:staging"
+          fi
           {
             echo "### Published"
-            echo "\`$IMAGE:$GITHUB_SHA\`. The Pi deploys it within a minute."
+            echo "\`$IMAGE:$GITHUB_SHA\`. The LaTeX server deploys it after its next poll."
           } >> "$GITHUB_STEP_SUMMARY"
