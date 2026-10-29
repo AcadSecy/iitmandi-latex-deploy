@@ -43,6 +43,7 @@ jobs:
         run: |
           python3 -m py_compile deploy/server/deploy.py
           python3 deploy/server/deploy.py --help
+          python3 -m unittest discover -s deploy/server -p "test_*.py" -v
 
       # The base image holds all of TeX Live (about 4.5 GB). With Docker's
       # default image store (overlay2), exporting the app image on top of it

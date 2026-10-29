@@ -104,6 +104,11 @@ def deploy(commit=None):
             shutil.copytree(COMPOSE, backup)
             os.chmod(backup, 0o700)
             old_image = current.get("LATEX_IMAGE")
+            if old_image and subprocess.run(
+                ["docker", "image", "inspect", old_image], stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            ).returncode:
+                old_image = None
             try:
                 for name in ("docker-compose.yml", "server.env", "mongodb-init-replica-set.js"):
                     shutil.copy2(source / name, COMPOSE / name)

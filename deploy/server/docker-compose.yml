@@ -67,7 +67,7 @@ services:
       - ${LATEX_DATA:-/srv/iitmandi-latex/data}/mongo:/data/db
       - ./mongodb-init-replica-set.js:/docker-entrypoint-initdb.d/mongodb-init-replica-set.js:ro
     healthcheck:
-      test: echo 'db.stats().ok' | mongosh localhost:27017/test --quiet
+      test: ["CMD", "mongosh", "--quiet", "--eval", "quit(db.hello().isWritablePrimary ? 0 : 1)"]
       interval: 10s
       timeout: 10s
       retries: 10
