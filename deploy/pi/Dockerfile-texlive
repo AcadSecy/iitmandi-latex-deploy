@@ -29,6 +29,11 @@ RUN tlmgr install --repository ${TEXLIVE_MIRROR} scheme-full \
 
 FROM texlive
 
+# Link the programs of the packages installed above into /usr/local/bin, as
+# the upstream base image does for its own: compiles do not find them
+# otherwise (minted's latexminted, for one). biber's link is replaced below.
+RUN tlmgr path add
+
 # biblatex needs biber, and TeX Live has no working biber for arm64. Build the
 # version TeX Live lists, so that it matches the biblatex above (a different
 # version refuses biblatex's files), from its release on GitHub: CPAN lags
@@ -57,15 +62,27 @@ RUN if ! biber --version > /dev/null 2>&1; then \
     fi \
 &&  biber --version
 
-# Documents from Word ask for Calibri, Cambria, Times New Roman, Arial or
-# Courier New, Microsoft's fonts, which no TeX distribution may include. Free
-# fonts with the same metrics, and texmf/fontspec.cfg, which makes fontspec
-# load them for those names. fontconfig for fc-cache, which indexes them.
+# Fonts, and Ghostscript, which turns .eps figures into PDF.
+#
+# Documents from Word ask for Microsoft's fonts (Calibri, Cambria, Times New
+# Roman, Arial, Georgia, Mangal, ...), which no TeX distribution may include.
+# texmf/fontspec.cfg makes fontspec load free fonts for those names: ones with
+# the same metrics where they exist (Carlito, Caladea, Liberation), else the
+# closest free design. Noto covers Hindi and the other Indian scripts.
+#
+# XeLaTeX finds fonts by name through fontconfig, which is told where TeX
+# Live's own fonts are (TeX Live's list, less the Type 1 fonts, which are for
+# pdfLaTeX). LuaLaTeX keeps an index of its own: it is built here, as every
+# compile starts afresh from this image and would otherwise build it again.
 RUN apt-get update \
 &&  apt-get install -y --no-install-recommends \
       fontconfig fonts-crosextra-carlito fonts-crosextra-caladea fonts-liberation \
+      fonts-noto-core ghostscript \
 &&  rm -rf /var/lib/apt/lists/* \
-&&  fc-cache -f > /dev/null
+&&  sed '/type1/d' "$(kpsewhich -var-value TEXMFSYSVAR)/fonts/conf/texlive-fontconfig.conf" \
+      > /etc/fonts/conf.d/09-texlive.conf \
+&&  fc-cache -f > /dev/null \
+&&  luaotfload-tool --update --force --quiet
 COPY texmf/ /usr/local/texlive/texmf-local/tex/latex/iitmandi/
 RUN mktexlsr /usr/local/texlive/texmf-local > /dev/null 2>&1 \
 &&  kpsewhich fontspec.cfg
