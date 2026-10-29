@@ -48,7 +48,7 @@ services:
     tmpfs:
       - /var/lib/overleaf/data/cache:size=256m,uid=33,gid=33,mode=0755
     mem_limit: 8g
-    cpus: 8
+    cpus: ${LATEX_APP_CPUS:-8}
     logging: *logging
 
   mongo:

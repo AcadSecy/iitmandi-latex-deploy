@@ -172,6 +172,7 @@ jobs:
         env:
           LATEX_DATA: ${{ runner.temp }}/data
           LATEX_PORT: "8080"
+          LATEX_APP_CPUS: "4"
         run: |
           export LATEX_IMAGE="$IMAGE:$GITHUB_SHA"
           # Retain the compile-image alias recorded in migrated projects.
