@@ -3,7 +3,6 @@ import type {
   FooterMetadata,
 } from '@/shared/components/types/footer-metadata'
 import OLRow from '@/shared/components/ol/ol-row'
-import OLCol from '@/shared/components/ol/ol-col'
 import LanguagePicker from '@/shared/components/language-picker'
 import getMeta from '@/utils/meta.ts'
 import React from 'react'
@@ -53,12 +52,11 @@ function Separator() {
 
 function ThinFooter({
   showPoweredBy,
-  sourceCodeUrl,
   subdomainLang,
   leftItems,
   rightItems,
 }: FooterMetadata) {
-  const { env, appName } = getMeta('ol-ExposedSettings')
+  const { appName } = getMeta('ol-ExposedSettings')
   const showLanguagePicker = Boolean(
     subdomainLang && Object.keys(subdomainLang).length > 1
   )
@@ -72,10 +70,7 @@ function ThinFooter({
           <ul className="site-footer-items col-lg-9">
             {showPoweredBy ? (
               <>
-                <li>
-                  {appName} · <a href={sourceCodeUrl}>Source code</a> ·{' '}
-                  <a href="/license">License</a>
-                </li>
+                <li>{appName}</li>
                 {showLanguagePicker || hasCustomLeftNav ? <Separator /> : null}
               </>
             ) : null}
@@ -97,19 +92,6 @@ function ThinFooter({
             ))}
           </ul>
         </OLRow>
-        {env === 'server-ce' && (
-          <OLRow>
-            <OLCol lg={12}>
-              <p className="copyright-notice">
-                {appName} is free software, licensed under the{' '}
-                <a href="https://www.gnu.org/licenses/agpl-3.0.html">
-                  GNU Affero General Public License v3.0
-                </a>
-                . It is provided "as is", without warranty of any kind.
-              </p>
-            </OLCol>
-          </OLRow>
-        )}
       </div>
     </footer>
   )
