@@ -65,7 +65,7 @@ function SidebarDsNav({
         },
       })}
     >
-      {(activePage === 'library' || isTrashActive) && <DsNavOverleafLogo />}
+      <DsNavOverleafLogo />
       <nav
         className="flex-grow flex-shrink"
         aria-label={t('project_categories_tags')}
