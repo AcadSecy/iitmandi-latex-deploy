@@ -140,6 +140,7 @@ footer.site-footer {
   --link-hover-text-decoration: underline;
 
   background-color: var(--bg-light-primary);
+  color: var(--content-primary);
   border-top: 1px solid var(--border-primary-dark);
 
   @include body-sm;
@@ -159,11 +160,6 @@ footer.site-footer {
     i {
       font-size: var(--font-size-05);
     }
-  }
-
-  .copyright-notice {
-    font-size: var(--font-size-02);
-    line-height: calc($thin-footer-height / 2);
   }
 }
 
