@@ -737,6 +737,23 @@ describe('CompileManager', () => {
           { force: true }
         )
       })
+
+      it('removes a stub PDF left by a compile that exited normally', async ctx => {
+        pdfEnding(ctx, '%PDF-1.7\n')
+        await ctx.CompileManager.promises.doCompileWithLock(ctx.request, {}, {})
+        expect(ctx.fsPromises.rm).to.have.been.calledWith(
+          ctx.compileDir + '/output.pdf',
+          { force: true }
+        )
+      })
+
+      it('keeps a finished PDF after a compile that exited normally', async ctx => {
+        pdfEnding(ctx, 'startxref\n12345\n%%EOF\n')
+        await ctx.CompileManager.promises.doCompileWithLock(ctx.request, {}, {})
+        expect(ctx.fsPromises.rm).not.to.have.been.calledWith(
+          ctx.compileDir + '/output.pdf'
+        )
+      })
     })
 
     describe('with slow pngs from latexmk metrics', () => {

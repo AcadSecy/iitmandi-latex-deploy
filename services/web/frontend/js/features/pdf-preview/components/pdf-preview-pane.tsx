@@ -10,6 +10,7 @@ import PdfPreviewHybridToolbar from '@/features/pdf-preview/components/pdf-previ
 import importOverleafModules from '../../../../macros/import-overleaf-module.macro'
 import PdfCodeCheckFailedBanner from '@/features/pdf-preview/components/pdf-code-check-failed-banner'
 import PdfPartialBanner from '@/features/pdf-preview/components/pdf-partial-banner'
+import PdfFailedCompileBanner from '@/features/pdf-preview/components/pdf-failed-compile-banner'
 import getMeta from '@/utils/meta'
 import PdfLogsViewer from '@/features/pdf-preview/components/pdf-logs-viewer'
 
@@ -40,6 +41,7 @@ function PdfPreviewPane() {
         <PdfPreviewHybridToolbar />
         <PdfCodeCheckFailedBanner />
         <PdfPartialBanner />
+        <PdfFailedCompileBanner />
         <PdfPreviewMessages>
           {compileTimeout < 60 && <CompileTimeWarningUpgradePrompt />}
         </PdfPreviewMessages>

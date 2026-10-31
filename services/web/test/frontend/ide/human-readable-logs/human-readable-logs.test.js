@@ -13,6 +13,28 @@ async function parse(fixtureName) {
 }
 
 describe('HumanReadableLogs', function () {
+  describe('Missing image', function () {
+    before(async function () {
+      this.result = await parse('missing-image-xelatex.log')
+    })
+
+    it('lists the missing file with its line first', function () {
+      expect(this.result.errors[0]).to.include({
+        level: 'error',
+        line: 6,
+        file: './main.tex',
+        ruleId: 'hint_file_not_found',
+        message:
+          "File `assets/deliberately-missing.png' not found on input line 6.",
+      })
+    })
+
+    it('drops the errors that follow from the missing file', function () {
+      expect(this.result.errors).to.have.length(1)
+      expect(this.result.warnings).to.have.length(0)
+    })
+  })
+
   describe('Undefined commands', function () {
     before(async function () {
       this.errors = (await parse('undefined-control-sequence.log')).errors

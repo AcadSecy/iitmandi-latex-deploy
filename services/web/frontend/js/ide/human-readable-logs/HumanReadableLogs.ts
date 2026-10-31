@@ -1,4 +1,5 @@
 import LatexLogParser, {
+  LatexLogEntry,
   LatexParserOptions,
   ParseResult,
 } from '../log-parser/latex-log-parser'
@@ -87,6 +88,36 @@ export default {
         )
       }
     }
+    promoteMissingFileWarnings(parsedLogEntries)
+
     return parsedLogEntries
   },
+}
+
+const MISSING_FILE_WARNING = /^File `.+' not found/
+const MISSING_FILE_FALLOUT =
+  /^(Unable to load picture or PDF file|Package graphic[sx] Error: Division by 0)/i
+
+// XeTeX only warns about a missing image, then fails with errors that hide
+// the cause. Show the warning as the error and drop the errors it caused.
+function promoteMissingFileWarnings(parsedLogEntries: ParseResult) {
+  const promoted: LatexLogEntry[] = []
+  for (const warning of parsedLogEntries.warnings) {
+    if (!MISSING_FILE_WARNING.test(warning.message)) continue
+    const isFallout = (error: LatexLogEntry) =>
+      MISSING_FILE_FALLOUT.test(error.message) &&
+      error.file === warning.file &&
+      error.line === warning.line
+    if (parsedLogEntries.errors.some(isFallout)) {
+      parsedLogEntries.errors = parsedLogEntries.errors.filter(
+        error => !isFallout(error)
+      )
+      warning.level = 'error'
+      promoted.push(warning)
+    }
+  }
+  parsedLogEntries.warnings = parsedLogEntries.warnings.filter(
+    warning => !promoted.includes(warning)
+  )
+  parsedLogEntries.errors = [...promoted, ...parsedLogEntries.errors]
 }
