@@ -9,13 +9,16 @@ import { EditingPausedBanner } from '../toolbar/editing-paused-banner'
 import { useTranslation } from 'react-i18next'
 import { usePdfPane } from '@/features/ide-react/hooks/use-pdf-pane'
 import { useLayoutContext } from '@/shared/context/layout-context'
-import { ElementType, useState } from 'react'
+import { ElementType, useEffect, useState } from 'react'
 import EditorPanel from '../editor/editor-panel'
 import { useRailContext } from '../../context/rail-context'
 import HistoryContainer from '@/features/ide-react/components/history-container'
 import { DefaultSynctexControl } from '@/features/pdf-preview/components/detach-synctex-control'
 import importOverleafModules from '../../../../../macros/import-overleaf-module.macro'
 import MobilePaneSwitcher from './mobile-pane-switcher'
+import MobileHistoryPaneSwitcher, {
+  MobileHistoryPane,
+} from './mobile-history-pane-switcher'
 import { useMobileEditorLayout } from '../../hooks/use-mobile-editor-layout'
 
 const mainEditorLayoutPanels: Array<{
@@ -42,6 +45,13 @@ export default function MainLayout() {
   const { view, pdfLayout } = useLayoutContext()
   const { pane, setPane, isMobile } = useMobileEditorLayout()
   const mobileLayout = isMobile && view !== 'history'
+  const mobileHistoryLayout = isMobile && view === 'history'
+  const [mobileHistoryPane, setMobileHistoryPane] =
+    useState<MobileHistoryPane>('versions')
+
+  useEffect(() => {
+    if (view !== 'history') setMobileHistoryPane('versions')
+  }, [view])
 
   const editorIsOpen =
     view === 'editor' || view === 'file' || pdfLayout === 'sideBySide'
@@ -52,10 +62,19 @@ export default function MainLayout() {
     <div
       className="ide-redesign-main"
       data-mobile-pane={mobileLayout ? pane : undefined}
+      data-mobile-history-pane={
+        mobileHistoryLayout ? mobileHistoryPane : undefined
+      }
     >
       <Toolbar mobile={isMobile} />
       <EditingPausedBanner />
       {mobileLayout && <MobilePaneSwitcher pane={pane} onSelect={setPane} />}
+      {mobileHistoryLayout && (
+        <MobileHistoryPaneSwitcher
+          pane={mobileHistoryPane}
+          onSelect={setMobileHistoryPane}
+        />
+      )}
       <div className="ide-redesign-body">
         <PanelGroup
           autoSaveId="ide-redesign-outer-layout"
