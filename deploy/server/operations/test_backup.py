@@ -51,6 +51,19 @@ class SnapshotSafety(unittest.TestCase):
         b.os.killpg.assert_not_called()
         self.assertFalse((b.STORE/'last-success.json').exists())
 
+    def test_failed_pause_still_attempts_unpause(self):
+        # Docker can time out after actually pausing the container.
+        def fail_pause(*args, **kwargs):
+            self.calls.append(args)
+            if args == ('docker', 'pause', b.APP):
+                raise RuntimeError('simulated pause timeout')
+        with patch.object(b, 'run', side_effect=fail_pause):
+            with self.assertRaisesRegex(RuntimeError, 'pause timeout'):
+                b.main()
+        self.assertIn(('docker', 'unpause', b.APP), self.calls)
+        b.os.killpg.assert_called_once()
+        self.assertFalse((b.STORE/'last-success.json').exists())
+
     def test_success_includes_redis_and_config_without_copying_live_mongo_files(self):
         commands=[]
         def capture(path,*cmd):
