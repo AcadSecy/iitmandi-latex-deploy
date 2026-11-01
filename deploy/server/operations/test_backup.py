@@ -1,4 +1,5 @@
 import importlib.util
+import hashlib
 from pathlib import Path
 import tempfile
 import types
@@ -8,6 +9,12 @@ from unittest.mock import patch
 spec=importlib.util.spec_from_file_location('backup',Path(__file__).with_name('backup.py'))
 b=importlib.util.module_from_spec(spec)
 spec.loader.exec_module(b)
+
+restore_spec = importlib.util.spec_from_file_location(
+    'verify_backup', Path(__file__).with_name('verify-backup.py')
+)
+restore = importlib.util.module_from_spec(restore_spec)
+restore_spec.loader.exec_module(restore)
 
 class SnapshotSafety(unittest.TestCase):
     def setUp(self):
@@ -27,6 +34,17 @@ class SnapshotSafety(unittest.TestCase):
     def tearDown(self):
         for p in reversed(self.patches):p.stop()
         self.tmp.cleanup()
+    def test_hashes_work_on_python_310_and_detect_changes(self):
+        sample = Path(self.tmp.name)/'example.bin'
+        payload = b'abcd' * (1024 * 300 + 7)
+        sample.write_bytes(payload)
+        expected = hashlib.sha256(payload).hexdigest()
+        self.assertEqual(b.sha256_file(sample), expected)
+        self.assertEqual(restore.sha256_file(sample), expected)
+        sample.write_bytes(payload + b'corrupted')
+        self.assertNotEqual(b.sha256_file(sample), expected)
+        self.assertNotEqual(restore.sha256_file(sample), expected)
+
     def test_capture_failure_resumes_app_and_never_publishes_success(self):
         with patch.object(b,'capture',side_effect=RuntimeError('simulated dump failure')):
             with self.assertRaisesRegex(RuntimeError,'simulated'):
