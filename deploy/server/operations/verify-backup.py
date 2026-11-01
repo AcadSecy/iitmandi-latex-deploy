@@ -16,13 +16,22 @@ ROOT = Path(os.environ.get('LATEX_ROOT', '/srv/iitmandi-latex'))
 def run(*args, **kw):
     return sp.run(args, check=True, timeout=kw.pop('timeout',120), **kw)
 
+def sha256_file(path):
+    """Hash snapshot data without Python 3.11-only hashlib.file_digest."""
+    digest = hashlib.sha256()
+    with path.open('rb') as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b''):
+            digest.update(block)
+    return digest.hexdigest()
+
+
 def main():
     os.umask(0o077)
     info=json.loads((ROOT/'backups/scheduled/last-success.json').read_text())
     snap=Path(info['snapshot'])
     for name,digest in info['sha256'].items():
-        with (snap/name).open('rb') as f:
-            assert hashlib.file_digest(f,'sha256').hexdigest()==digest, f'hash mismatch: {name}'
+        if sha256_file(snap / name) != digest:
+            raise RuntimeError(f'hash mismatch: {name}')
     for name in ['app.tar.gz','compose.tar.gz']:
         with tarfile.open(snap/name) as t:
             for m in t:
