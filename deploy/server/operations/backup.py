@@ -25,6 +25,14 @@ REDIS = APP + '-redis'
 def run(*args, **kw):
     return sp.run(args, check=True, timeout=kw.pop('timeout', 180), **kw)
 
+def sha256_file(path):
+    """Hash large snapshots in bounded memory, compatible with Python 3.10."""
+    digest = hashlib.sha256()
+    with path.open('rb') as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b''):
+            digest.update(block)
+    return digest.hexdigest()
+
 def capture(path, *cmd):
     with path.open('wb') as out:
         run(*cmd, stdout=out)
@@ -93,8 +101,7 @@ def main():
         files = {}
         for path in work.iterdir():
             if path.is_file():
-                with path.open('rb') as stream:
-                    files[path.name] = hashlib.file_digest(stream, 'sha256').hexdigest()
+                files[path.name] = sha256_file(path)
         manifest = {'created_at': time.time(), 'freeze_seconds': round(time.time()-start, 2),
                     'image': image, 'sha256': files, 'off_host': False}
         (work/'manifest.json').write_text(json.dumps(manifest, indent=2)+'\n')
