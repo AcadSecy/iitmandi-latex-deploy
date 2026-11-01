@@ -25,6 +25,7 @@ STATE = ROOT / "deploy"
 
 def run(*args, cwd=None, capture=False):
     return subprocess.run(args, cwd=cwd, check=True, text=True,
+                          timeout=90 if args[0] == "git" else 1800,
                           stdout=subprocess.PIPE if capture else None).stdout
 
 
