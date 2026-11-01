@@ -50,15 +50,17 @@ def main():
         work = STORE / (stamp + '.partial')
         work.mkdir(mode=0o700)
         image = sp.check_output(['docker', 'inspect', '-f', '{{.Config.Image}}', APP], text=True).strip()
-        paused = False
+        pause_attempted = False
         watchdog = None
         start = time.time()
         try:
             # Watchdog is independent of this process, including on SIGKILL.
             watchdog = sp.Popen(['sh', '-c', 'sleep 300; docker unpause iitmandi-latex >/dev/null 2>&1'],
                                 start_new_session=True, stdout=sp.DEVNULL, stderr=sp.DEVNULL)
+            # A timed-out pause call may still have paused the container.
+            # Always attempt the matching unpause, even if pause raised.
+            pause_attempted = True
             run('docker', 'pause', APP)
-            paused = True
             capture(work/'counts.json', 'docker', 'exec', MONGO, 'mongosh', '--quiet', 'sharelatex',
                     '--eval', 'print(JSON.stringify({users:db.users.countDocuments({}),projects:db.projects.countDocuments({}),docs:db.docs.countDocuments({})}))')
             capture(work/'mongo.archive.gz', 'docker', 'exec', MONGO,
@@ -78,10 +80,10 @@ def main():
             # confirmed the app is unpaused. If this call fails (for example,
             # because the daemon briefly stops responding), the detached
             # watchdog must remain alive as a second chance to unpause.
-            if paused:
+            if pause_attempted:
                 run('docker', 'unpause', APP, timeout=30)
             if watchdog is not None:
-                # The app has been unpaused, or pause never succeeded.
+                # Unpause was confirmed, or no pause was attempted.
                 # Terminate the whole process group, including sleep.
                 import signal
                 try:
