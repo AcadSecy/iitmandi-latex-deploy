@@ -1,5 +1,8 @@
 import { expect } from 'chai'
+import { createElement, Fragment } from 'react'
+import { render } from '@testing-library/react'
 import AdvancedReferenceIndex from '../../frontend/reference-index/advanced-reference-index'
+import { highlight } from '../../frontend/components/reference-picker-modal'
 
 function keys(result: { hits: { _source: { EntryKey: string } }[] }) {
   return result.hits.map(hit => hit._source.EntryKey)
@@ -130,6 +133,47 @@ describe('AdvancedReferenceIndex', function () {
     expect(keys(await index.search('neural chemistry'))).to.deep.equal([
       'das2022',
     ])
+  })
+
+  it('finds letters that have no separate accent mark', async function () {
+    const index = new AdvancedReferenceIndex()
+    index.updateIndex({
+      updates: [
+        {
+          path: 'u.bib',
+          content: `@book{kierkegaard1843, author = {Kierkegaard, Søren}, title = {Either Or}, year = {1843}}
+@article{lukasiewicz1920, author = {Łukasiewicz, Jan}, title = {On Three-Valued Logic}, year = {1920}}`,
+        },
+      ],
+      deletes: [],
+    })
+    expect(keys(await index.search('soren'))).to.deep.equal(['kierkegaard1843'])
+    expect(keys(await index.search('lukasiewicz'))).to.deep.equal([
+      'lukasiewicz1920',
+    ])
+  })
+
+  it('highlights the accented letters that an unaccented query matched', function () {
+    const { container } = render(
+      createElement(
+        Fragment,
+        null,
+        highlight('Müller, Søren', ['muller', 'soren'])
+      )
+    )
+    const marked = [...container.querySelectorAll('.found-token')].map(
+      el => el.textContent
+    )
+    expect(marked).to.deep.equal(['Müller', 'Søren'])
+    expect(container.textContent).to.equal('Müller, Søren')
+
+    // an accent stored as its own character stays with the marked letter
+    const decomposed = render(
+      createElement(Fragment, null, highlight('Müller', ['muller']))
+    )
+    expect(
+      decomposed.container.querySelector('.found-token')?.textContent
+    ).to.equal('Müller')
   })
 
   it('searches 500 entries quickly', async function () {

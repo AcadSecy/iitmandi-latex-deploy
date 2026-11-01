@@ -26,12 +26,26 @@ function normalizeAccents(content: string): string {
     .replace(/(\\["'`^~=.])\{i\}/g, '$1{\\i}')
 }
 
+// Letters that Unicode does not split into a base letter and an accent
+const LETTERS: Record<string, string> = {
+  ø: 'o',
+  ł: 'l',
+  đ: 'd',
+  ð: 'd',
+  þ: 'th',
+  ß: 'ss',
+  æ: 'ae',
+  œ: 'oe',
+  ı: 'i',
+}
+
 // Lower-case and drop accents, so "muller" finds "Müller" and the reverse.
-function fold(text: string): string {
+export function fold(text: string): string {
   return text
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
+    .replace(/[øłđðþßæœı]/g, letter => LETTERS[letter])
 }
 
 export default class AdvancedReferenceIndex extends ReferenceIndex {
