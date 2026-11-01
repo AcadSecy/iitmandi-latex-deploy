@@ -798,6 +798,10 @@ module.exports = {
   sourceCodeUrl: process.env.SOURCE_CODE_URL || '/source',
   sourceArchiveDir: process.env.SOURCE_ARCHIVE_DIR || '/overleaf/source',
 
+  // Where "Report a problem" (modules/support) sends students' reports; the
+  // admin address when unset
+  supportEmail: process.env.OVERLEAF_SUPPORT_EMAIL,
+
   adminEmail: process.env.ADMIN_EMAIL || 'placeholder@example.com',
   adminDomains: process.env.ADMIN_DOMAINS
     ? JSON.parse(process.env.ADMIN_DOMAINS)

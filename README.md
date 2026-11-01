@@ -78,6 +78,7 @@ The image is configured with environment variables, using the upstream names (`O
 | `OVERLEAF_APP_NAME` | `IIT Mandi LaTeX` | Name in the UI, page titles and emails |
 | `OVERLEAF_SOURCE_CODE_URL` | `https://github.com/TayalAditya/iitmandi-latex` | Footer "Source code" link (see [License](#license)) |
 | `OVERLEAF_NAV_TITLE` | unset | Show this text in the navbar instead of the logo |
+| `OVERLEAF_SUPPORT_EMAIL` | `OVERLEAF_ADMIN_EMAIL` | Where "Report a problem" sends students' reports |
 
 `OVERLEAF_SITE_URL`, `OVERLEAF_ADMIN_EMAIL`, the email (SMTP) settings and the rest are described in [`server-ce/config/settings.js`](server-ce/config/settings.js).
 
