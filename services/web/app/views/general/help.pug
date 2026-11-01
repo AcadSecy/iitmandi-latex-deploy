@@ -19,23 +19,44 @@ block content
 						li Click <strong>New project</strong>, then <strong>Blank project</strong>. Give the project a name.
 						li Type in the editor on the left. A LaTeX file is plain text; the commands in it start with a backslash, such as <code>\section{Introduction}</code>.
 						li Click <strong>Recompile</strong>. The PDF appears on the right.
-						li To start from a ready-made layout instead, see
-							|
-							a(href='#templates') Start from a template
-							| .
+						li To start from a ready-made layout instead, see #[a(href='#templates') Start from a template].
 
 					h2.h3#templates Start from a template
 					ol
-						li Click <strong>New project</strong>, then <strong>More templates</strong> and <strong>All templates</strong>, or open the
+						li Click <strong>New project</strong>, then <strong>More templates</strong> and <strong>All templates</strong>, or open the #[a(href='/templates') template gallery].
+						li
+							| Pick the one that fits (see
 							|
-							a(href='/templates') template gallery
-							| .
-						li Pick the one that fits: thesis, project report, lab report, assignment, presentation, research poster, formal letter or resume.
+							a(href='#which-template') Which template to use
+							| ).
 						li Open the project and click <strong>Recompile</strong>. Replace the sample text with your own.
-						li To change the font size, line spacing or margins, choose <strong>Format › Page setup</strong>. See
-							|
-							a(href='#visual-editor') Editing without knowing LaTeX
-							| .
+						li To change the font size, line spacing or margins, choose <strong>Format › Page setup</strong>. See #[a(href='#visual-editor') Editing without knowing LaTeX].
+					h3.h4#which-template Which template to use
+					ul
+						li
+							strong IIT Mandi Thesis
+							|  — a PhD, MS (by Research), M.Tech (by Research) or I-PhD thesis.
+						li
+							strong IIT Mandi Project Report
+							|  — a DP, ISTP, MTP, M.Tech or M.Sc project, by one student or a group.
+						li
+							strong IIT Mandi Lab Report
+							|  — a report on a lab experiment.
+						li
+							strong IIT Mandi Assignment
+							|  — numbered problems with marks, and your solutions.
+						li
+							strong IIT Mandi Presentation
+							|  — slides for a talk, a seminar or a viva.
+						li
+							strong IIT Mandi Research Poster
+							|  — an A0 portrait poster for a conference or a poster session.
+						li
+							strong IIT Mandi Formal Letter
+							|  — a letter you write yourself, such as an application. It is not the Institute's official letterhead.
+						li
+							strong IIT Mandi Resume
+							|  — a one-page resume for placements and internships.
 					p
 						| The thesis, project report and resume templates follow the best sources available, not an official circular. Check the current guidelines of the Academic Section or the Career and Placement Cell before you submit.
 
@@ -238,6 +259,47 @@ block content
 							|
 							| shows every change to a project and can restore earlier versions.
 
+					h2.h3#review Comments and suggested changes
+					p
+						| Use these when a supervisor or a teammate reads your work: they can leave comments and suggest changes without overwriting your text.
+					ul
+						li
+							| To comment, select some text in the editor and click
+							|
+							strong Add comment
+							| . Comments show beside the text in the
+							|
+							strong Review
+							|
+							| panel, where anyone on the project can reply. Click the tick on a comment to mark it resolved; resolved comments stay under
+							|
+							strong Resolved comments
+							| .
+						li
+							| To suggest changes instead of making them, click the pencil button in the editor toolbar, next to
+							|
+							strong Code
+							|
+							| and
+							|
+							strong Visual
+							| , and choose
+							|
+							strong Reviewing
+							| . What you type and delete is then shown as a suggestion, marked in colour, until someone accepts or rejects it.
+						li
+							| In the
+							|
+							strong Review
+							|
+							| panel, click the tick on a suggestion to accept it, or the cross to reject it.
+						li
+							| When you share a project, you can give someone the
+							|
+							strong Reviewer
+							|
+							| role. A reviewer can comment and suggest changes, but cannot change the text directly. Give it to a supervisor who should mark up a draft without editing it.
+
 					h2.h3 Projects
 					ul
 						li
@@ -291,9 +353,45 @@ block content
 							li
 								| After #{settings.editorPlaces.idleMinutes} minutes without typing, clicking or scrolling, your place goes to the next person waiting. When you come back, you get a free place again, or a place in the queue.
 
-					h2.h3 Git
-					p
-						| You can clone, pull and push projects with git. Create an authentication token in your account settings, and use it as the password when git asks for one.
+					if settings.enableGitBridge
+						h2.h3#git Git
+						p
+							| You can clone, pull and push projects with git, and work on them on your own computer.
+						ol
+							li
+								| Open your
+								|
+								a(href='/user/settings') account settings
+								| , find
+								|
+								strong Git integration
+								|
+								| and click
+								|
+								strong Generate token
+								| . Copy the token and keep it safe: it is shown only once.
+							li
+								| Open the project, click
+								|
+								strong Integrations
+								|
+								| on the left edge of the editor, then
+								|
+								strong Git
+								| . Copy the
+								|
+								code git clone
+								|
+								| command it shows and run it in a terminal.
+							li
+								| When git asks for a password, paste the token. Your Google password does not work here.
+							li
+								| Work as with any git repository. After
+								|
+								code git push
+								| , the changes appear in the editor. Pull before you start, so that you have the changes made in the editor.
+						p
+							| If you can only view or review a project, you can pull from it but not push.
 
 					h2.h3 Browsers
 					p
