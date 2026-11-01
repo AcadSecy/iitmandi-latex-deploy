@@ -14,6 +14,7 @@ const FIELDS = [
   'date',
   'booktitle',
   'publisher',
+  'keywords',
 ]
 
 // Upstream's parser only converts the braced form \"{u}. Rewrite {\"u}, \"u and
@@ -34,7 +35,11 @@ function fold(text: string): string {
 }
 
 export default class AdvancedReferenceIndex extends ReferenceIndex {
-  fileIndex: Map<string, Set<string>> = new Map()
+  // Each .bib file's entries with their search text, in the order the files
+  // were first indexed
+  fileEntries: Map<string, { entry: Bib2JsonEntry; text: string }[]> =
+    new Map()
+
   entryIndex: Map<string, Bib2JsonEntry> = new Map()
   searchText: Map<string, string> = new Map()
 
@@ -55,46 +60,34 @@ export default class AdvancedReferenceIndex extends ReferenceIndex {
 
   updateIndex({ updates, deletes }: Changes): Set<string> {
     for (const path of deletes) {
-      const keys = this.fileIndex.get(path)
-      if (keys) {
-        for (const k of keys) {
-          this.entryIndex.delete(k)
-          this.searchText.delete(k)
-        }
-      }
-      this.fileIndex.delete(path)
+      this.fileEntries.delete(path)
     }
 
     for (const { path, content } of updates) {
-      const previous = this.fileIndex.get(path)
-      if (previous) {
-        for (const k of previous) {
-          this.entryIndex.delete(k)
-          this.searchText.delete(k)
-        }
-      }
-
-      const fileReferences = new Set<string>()
-      const entries = this.parseEntries(content)
-
-      for (const entry of entries) {
-        fileReferences.add(entry.EntryKey)
-        this.entryIndex.set(entry.EntryKey, entry)
-        this.searchText.set(
-          entry.EntryKey,
-          fold(
-            [entry.EntryKey, ...FIELDS.map(name => entry.Fields[name])].join(' ')
-          )
-        )
-      }
-
-      this.fileIndex.set(path, fileReferences)
+      this.fileEntries.set(
+        path,
+        this.parseEntries(content).map(entry => {
+          const fields = FIELDS.map(name => entry.Fields[name])
+          return { entry, text: fold([entry.EntryKey, ...fields].join(' ')) }
+        })
+      )
     }
 
-    this.keys = new Set(
-      this.fileIndex.values().flatMap(entry => Array.from(entry))
-    )
+    // Rebuilt from every file, so a key that two files share survives a change
+    // to either of them. The copy from the file indexed first is shown; the
+    // key inserted into \cite is the same either way.
+    this.entryIndex.clear()
+    this.searchText.clear()
+    for (const entries of this.fileEntries.values()) {
+      for (const { entry, text } of entries) {
+        if (!this.entryIndex.has(entry.EntryKey)) {
+          this.entryIndex.set(entry.EntryKey, entry)
+          this.searchText.set(entry.EntryKey, text)
+        }
+      }
+    }
 
+    this.keys = new Set(this.entryIndex.keys())
     return this.keys
   }
 

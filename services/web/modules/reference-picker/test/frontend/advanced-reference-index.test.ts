@@ -5,6 +5,12 @@ function keys(result: { hits: { _source: { EntryKey: string } }[] }) {
   return result.hits.map(hit => hit._source.EntryKey)
 }
 
+function titles(result: {
+  hits: { _source: { Fields: { title: string } } }[]
+}) {
+  return result.hits.map(hit => hit._source.Fields.title)
+}
+
 describe('AdvancedReferenceIndex', function () {
   beforeEach(function () {
     this.index = new AdvancedReferenceIndex()
@@ -89,6 +95,41 @@ describe('AdvancedReferenceIndex', function () {
     expect(keys(await this.index.search('linked'))).to.deep.equal(['linked2021'])
     this.index.updateIndex({ updates: [], deletes: ['linked/other.bib'] })
     expect(keys(await this.index.search('linked'))).to.deep.equal([])
+  })
+
+  it('keeps the first definition of a key that two .bib files share', async function () {
+    const index = new AdvancedReferenceIndex()
+    const fileA = { path: 'a.bib', content: '@misc{shared, title = {From A}}' }
+    const fileB = { path: 'b.bib', content: '@misc{shared, title = {From B}}' }
+    index.updateIndex({ updates: [fileA, fileB], deletes: [] })
+    // the copy from the file indexed first is the one shown
+    expect(titles(await index.search('shared'))).to.deep.equal(['From A'])
+
+    // editing the second file does not make its copy win
+    index.updateIndex({ updates: [fileB], deletes: [] })
+    expect(titles(await index.search('shared'))).to.deep.equal(['From A'])
+
+    // deleting the first file falls back to the second copy
+    index.updateIndex({ updates: [], deletes: ['a.bib'] })
+    expect(titles(await index.search('shared'))).to.deep.equal(['From B'])
+    expect([...index.getKeys()]).to.deep.equal(['shared'])
+  })
+
+  it('finds by keyword', async function () {
+    const index = new AdvancedReferenceIndex()
+    index.updateIndex({
+      updates: [
+        {
+          path: 'k.bib',
+          content:
+            '@article{das2022, author = {Das, Ravi}, title = {A Study}, keywords = {graph neural networks, chemistry}, year = {2022}}',
+        },
+      ],
+      deletes: [],
+    })
+    expect(keys(await index.search('neural chemistry'))).to.deep.equal([
+      'das2022',
+    ])
   })
 
   it('searches 500 entries quickly', async function () {
