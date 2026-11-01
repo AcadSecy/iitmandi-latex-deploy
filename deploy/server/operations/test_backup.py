@@ -35,6 +35,22 @@ class SnapshotSafety(unittest.TestCase):
         self.assertIn(('docker','unpause',b.APP),self.calls)
         self.assertFalse((b.STORE/'last-success.json').exists())
         self.assertFalse(list(b.STORE.glob('*/manifest.json')))
+    def test_failed_unpause_does_not_disarm_independent_watchdog(self):
+        # A transient Docker failure must not cancel the only remaining
+        # safeguard against leaving the live application paused.
+        def fail_unpause(*args, **kwargs):
+            self.calls.append(args)
+            if args == ('docker', 'unpause', b.APP):
+                raise RuntimeError('simulated Docker unpause failure')
+        with patch.object(b, 'run', side_effect=fail_unpause):
+            with patch.object(b, 'capture', side_effect=RuntimeError('simulated dump failure')):
+                with self.assertRaisesRegex(RuntimeError, 'unpause failure'):
+                    b.main()
+        self.assertIn(('docker', 'pause', b.APP), self.calls)
+        self.assertIn(('docker', 'unpause', b.APP), self.calls)
+        b.os.killpg.assert_not_called()
+        self.assertFalse((b.STORE/'last-success.json').exists())
+
     def test_success_includes_redis_and_config_without_copying_live_mongo_files(self):
         commands=[]
         def capture(path,*cmd):
