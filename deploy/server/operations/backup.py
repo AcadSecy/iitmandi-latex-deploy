@@ -74,9 +74,14 @@ def main():
             if watchdog.poll() is not None or time.time()-start >= 290:
                 raise RuntimeError('snapshot exceeded safe freeze window')
         finally:
+            # Do not disarm the independent watchdog until Docker has actually
+            # confirmed the app is unpaused. If this call fails (for example,
+            # because the daemon briefly stops responding), the detached
+            # watchdog must remain alive as a second chance to unpause.
             if paused:
                 run('docker', 'unpause', APP, timeout=30)
             if watchdog is not None:
+                # The app has been unpaused, or pause never succeeded.
                 # Terminate the whole process group, including sleep.
                 import signal
                 try:
