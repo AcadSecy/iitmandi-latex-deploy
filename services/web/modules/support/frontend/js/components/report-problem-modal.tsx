@@ -1,7 +1,5 @@
-import { useEffect, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import getMeta from '@/utils/meta'
-import { getJSON } from '@/infrastructure/fetch-json'
 import { isSplitTestEnabled } from '@/utils/splitTestUtils'
 import {
   OLModal,
@@ -18,26 +16,17 @@ type Props = {
 }
 
 // Fills the contactUsModal slot, which "Contact us" in the editor's Help
-// menus opens. The button opens /report-problem in a new tab: any link
-// followed in the editor's tab, even one that ends at a mailto: address,
-// fires beforeunload, and the editor then treats its connection as closing.
-// The dialog stays open so the address is still there if no email app opens.
-// Also mounted, hidden, with the navbar, so it uses no editor context and
-// asks for the address only once it is shown.
+// menus opens. The button opens /report-problem, which shows what the report
+// will hold, in a new tab: any link followed in the editor's tab, even one
+// that ends at a mailto: address, fires beforeunload, and the editor then
+// treats its connection as closing. Also mounted, hidden, with the navbar, so
+// it uses no editor context.
 export default function ReportProblemModal({ show, handleHide }: Props) {
   const { t } = useTranslation()
-  const [email, setEmail] = useState<string>()
+  const email = getMeta('ol-ExposedSettings').adminEmail
   const reportUrl = `/report-problem?page=${encodeURIComponent(
     window.location.pathname
   )}`
-
-  useEffect(() => {
-    if (show && !email) {
-      getJSON<{ email: string }>('/report-problem/address')
-        .then(data => setEmail(data.email))
-        .catch(() => setEmail(getMeta('ol-ExposedSettings').adminEmail))
-    }
-  }, [show, email])
 
   return (
     <OLModal
@@ -73,7 +62,7 @@ export default function ReportProblemModal({ show, handleHide }: Props) {
           target="_blank"
           rel="noopener noreferrer"
         >
-          {t('write_an_email')}
+          {t('continue')}
         </OLButton>
       </OLModalFooter>
     </OLModal>
