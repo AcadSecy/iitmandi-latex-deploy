@@ -13,11 +13,9 @@ export default {
     logger.debug({}, 'Init support module')
 
     AuthenticationController.addEndpointToLoginWhitelist('/report-problem')
-    webRouter.get('/report-problem', ReportProblemController.reportProblem)
-    webRouter.get(
-      '/report-problem/address',
-      ReportProblemController.supportAddress
-    )
+    AuthenticationController.addEndpointToLoginWhitelist('/report-problem/email')
+    webRouter.get('/report-problem', ReportProblemController.showReport)
+    webRouter.get('/report-problem/email', ReportProblemController.sendReport)
 
     // The footer shows on the login page too, so people who cannot log in
     // find the link. Footer links set in OVERLEAF_LEFT_FOOTER stay first.

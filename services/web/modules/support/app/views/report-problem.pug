@@ -1,0 +1,37 @@
+extends ../../../../app/views/layout-marketing
+
+block vars
+	- metadata = {title: 'Report a problem'}
+	- isWebsiteRedesign = true
+
+block content
+	main#main-content.content
+		.container
+			.row
+				.col-lg-8.offset-lg-2
+					h1 Report a problem
+					p
+						| Your email app opens a message to #{settings.adminEmail} with the details below filled in. Nothing from your files is included. Add what went wrong and what you were doing, change anything you like, then send it.
+					form(method='get' action='/report-problem/email')
+						dl
+							if details.page
+								dt Page
+								dd
+									code #{details.page}
+							dt Version of #{settings.appName}
+							dd
+								code #{details.version}
+							dt Browser
+							dd
+								code #{details.browser}
+						if details.page
+							input(type='hidden' name='page' value=page)
+							.form-check.mb-3
+								input.form-check-input#include-page(type='checkbox' name='include_page' value='1' checked)
+								label.form-check-label(for='include-page') Include the link to this page. Leave it out if the page is a project you would rather not share.
+						button.btn.btn-primary(type='submit') Write an email
+					p.mt-3
+						| If no email app opens, write to
+						|
+						a(href='mailto:' + settings.adminEmail) #{settings.adminEmail}
+						| .
