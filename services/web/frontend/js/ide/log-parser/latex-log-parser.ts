@@ -87,7 +87,8 @@ export default class LatexParser {
             line: null,
             file: this.currentFilePath,
             level: 'error',
-            message: this.currentLine.slice(2),
+            // pdfTeX writes "!pdfTeX error:" with no space after the "!"
+            message: this.currentLine.replace(/^! ?/, ''),
             content: '',
             raw: this.currentLine + '\n',
           }
