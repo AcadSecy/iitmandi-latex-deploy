@@ -453,7 +453,7 @@ async function _removeUnfinishedPdf(compileDir) {
     if (err.code === 'ENOENT') {
       return
     }
-    logger.warn({ err, pdfPath }, 'cannot check the PDF of a stopped compile')
+    logger.warn({ err, pdfPath }, 'cannot check the PDF of a compile')
   } finally {
     await handle?.close()
   }
