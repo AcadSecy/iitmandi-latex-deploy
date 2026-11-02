@@ -756,6 +756,16 @@ describe('CompileManager', () => {
         )
       })
 
+      it('keeps a PDF it could not read', async ctx => {
+        ctx.fsPromises.open.rejects(
+          Object.assign(new Error('EACCES'), { code: 'EACCES' })
+        )
+        await ctx.CompileManager.promises.doCompileWithLock(ctx.request, {}, {})
+        expect(ctx.fsPromises.rm).not.to.have.been.calledWith(
+          ctx.compileDir + '/output.pdf'
+        )
+      })
+
       describe('with the bytes of a real four-page PDF', () => {
         const pdf = fs.readFileSync(
           Path.join(
