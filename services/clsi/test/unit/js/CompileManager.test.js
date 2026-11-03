@@ -766,6 +766,53 @@ describe('CompileManager', () => {
         )
       })
 
+      it('removes an empty PDF', async ctx => {
+        ctx.fsPromises.open.resolves({
+          stat: sinon.stub().resolves({ size: 0 }),
+          read: sinon.stub().callsFake(({ buffer }) => ({ buffer })),
+          close: sinon.stub().resolves(),
+        })
+        await ctx.CompileManager.promises.doCompileWithLock(ctx.request, {}, {})
+        expect(ctx.fsPromises.rm).to.have.been.calledWith(
+          ctx.compileDir + '/output.pdf',
+          { force: true }
+        )
+      })
+
+      it('removes nothing when the compile wrote no PDF', async ctx => {
+        // fsPromises.open rejects with ENOENT unless a test gives it a PDF
+        await ctx.CompileManager.promises.doCompileWithLock(ctx.request, {}, {})
+        expect(ctx.fsPromises.rm).not.to.have.been.calledWith(
+          ctx.compileDir + '/output.pdf'
+        )
+        expect(ctx.OutputFileFinder.promises.findOutputFiles).to.have.been
+          .called
+      })
+
+      it('removes an unfinished PDF before it collects the output files', async ctx => {
+        const removePdf = ctx.fsPromises.rm.withArgs(
+          ctx.compileDir + '/output.pdf',
+          { force: true }
+        )
+        pdfEnding(ctx, '%PDF-1.7\n')
+        await ctx.CompileManager.promises.doCompileWithLock(ctx.request, {}, {})
+        expect(removePdf).to.have.been.calledBefore(
+          ctx.OutputFileFinder.promises.findOutputFiles
+        )
+      })
+
+      it('removes an unfinished PDF of a stopped compile before it collects the output files', async ctx => {
+        const removePdf = ctx.fsPromises.rm.withArgs(
+          ctx.compileDir + '/output.pdf',
+          { force: true }
+        )
+        pdfEnding(ctx, '/Length 42 >>\nstream\n')
+        await stopCompile(ctx)
+        expect(removePdf).to.have.been.calledBefore(
+          ctx.OutputFileFinder.promises.findOutputFiles
+        )
+      })
+
       describe('with the bytes of a real four-page PDF', () => {
         const pdf = fs.readFileSync(
           Path.join(

@@ -23,6 +23,23 @@ Page three.
 \end{document}
 `
 
+const THREE_PAGES = String.raw`\documentclass{article}
+\begin{document}
+Page one.
+\newpage
+Page two.
+\newpage
+Page three.
+\end{document}
+`
+
+// TeX stops at the end of the file before it finishes a page, so it writes no
+// output at all
+const NO_END = String.raw`\documentclass{article}
+\begin{document}
+A document without an end.
+`
+
 // as in GracefulStop.test.js: every page keeps TeX busy for a while
 const SLOW_DOCUMENT = String.raw`\documentclass{article}
 \newcount\pageno
@@ -110,7 +127,7 @@ describe.skipIf(!enabled)('failed compiles in Docker', () => {
     expect(pdf.subarray(-1024).toString('latin1')).toContain('%%EOF')
     const log = await fs.readFile(Path.join(build, 'output.log'), 'latin1')
     const written = log.match(
-      /Output written on output\.(pdf|xdv) \((\d+) pages?/
+      /Output written on output\.(pdf|xdv|dvi) \((\d+) pages?/
     )
     expect(written).not.toBeNull()
     return Number(written[2])
@@ -165,6 +182,20 @@ describe.skipIf(!enabled)('failed compiles in Docker', () => {
       expect(await pagesOfPdf(projectId, pdfOf(outputFiles))).toBe(3)
     }, 180_000)
   }
+
+  // LaTeX writes a DVI file and latexmk turns it into the PDF (-pdfdvi)
+  it('returns a valid PDF from LaTeX and keeps it when a later compile writes none', async () => {
+    const projectId = await newProject()
+
+    const good = await compile(projectId, 'latex', THREE_PAGES)
+    expect(good.error).toBeUndefined()
+    const goodPdf = pdfOf(good.outputFiles)
+    expect(await pagesOfPdf(projectId, goodPdf)).toBe(3)
+
+    const failed = await compile(projectId, 'latex', NO_END)
+    expect(pdfOf(failed.outputFiles)).toBeUndefined()
+    expect(await pagesOfPdf(projectId, goodPdf)).toBe(3)
+  }, 180_000)
 
   it('keeps the pages typeset when the time is up', async () => {
     const projectId = await newProject()
