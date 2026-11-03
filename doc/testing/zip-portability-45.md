@@ -14,6 +14,24 @@ and acceptance status are listed under
 These results do not establish that all projects, compilers, or deployment
 configurations behave identically.
 
+### Independent merge scope
+
+I am submitting PR #59 only for portability documentation, verification scripts,
+regression tests, and sanitized evidence under `doc/testing/`. No application
+authorization, sharing, source ZIP endpoints, or deployment logic has been
+modified. This limited scope allows the PR to be considered for independent
+merge, subject to maintainer review and approval, without waiting for the
+separate security fix.
+
+I have now submitted the access-control vulnerability through GitHub's private
+vulnerability reporting workflow. Merging this PR does not fix that vulnerability
+or satisfy all Issue #45 acceptance criteria. Permission-related remediation and
+retesting require private coordination with the maintainers. Collaborator-specific
+permissions, cancellation during an active upload, and deployment verification
+remain pending; the deployed release/image commit must be captured on the next
+authorized verification run. Issue #45 should remain open until the remaining
+acceptance criteria are met.
+
 ## 2. Test environment
 
 | Item | Recorded environment or limitation |
@@ -461,7 +479,7 @@ identifiers, and credentials remain outside the contribution.
 | Acceptance test | Status | Coverage and required follow-up |
 | --- | --- | --- |
 | Authorized collaborator access | **NOT VALIDATED** | I did not separately test the owner-to-invited-collaborator workflow. This requires coordinated testing with authorized disposable accounts and projects under privately approved scope. |
-| Unauthorized source ZIP download denial | **DID NOT PASS** | Permission testing identified an access-control concern. I notified the maintainer privately. A private vulnerability report is pending because the reporting option was not accessible; no private vulnerability report has been submitted. Further permission-related tests require maintainer-approved scope. |
+| Unauthorized source ZIP download denial | **DID NOT PASS** | I have submitted the concern through GitHub's private vulnerability reporting workflow. Submission does not resolve the failed criterion; remediation and retesting require private coordination with the maintainers and approved scope. |
 | Cancellation during an active ZIP upload | **NOT VALIDATED** | Cancelling the import dialog before upload was tested successfully. Cancelling an upload already in progress was not tested; these are different actions. |
 | Deployment environment and acceptance | **INCOMPLETE** | The deployed server release/image commit and complete environment metadata have not been independently recorded. The later compiler logs do not establish the full deployment environment. Missing metadata must be recorded during an authorized rerun. Maintainer review and final acceptance remain pending. |
 
