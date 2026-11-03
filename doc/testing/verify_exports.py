@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 import zipfile
+import zlib
 from pathlib import Path
 from collections import Counter
 
@@ -91,7 +92,7 @@ for i in range(1, 4):
             print(f"\nEXPORT {i}: {status}")
             results[f"export_{i}"] = status
 
-    except (zipfile.BadZipFile, OSError, RuntimeError) as e:
+    except (zipfile.BadZipFile, OSError, RuntimeError, zlib.error) as e:
         print(f"FAIL: {e}")
         results[f"export_{i}"] = "FAIL"
 
