@@ -6,7 +6,8 @@ I tested ZIP export/import, compilation, and error handling with a disposable
 project on IIT Mandi LaTeX on 31 October 2026. This report records my results for
 Issue #45 and PR #59 on branch `test/zip-portability-45`, together with subsequent
 local artifact checks and verifier regression tests. It changes only testing
-documentation and helpers; maintainer acceptance remains pending.
+documentation, helpers, and lightweight CI integration; maintainer acceptance
+remains pending.
 
 ZIP integrity and portability checks passed for this fixture. Remaining coverage
 and acceptance status are listed under
@@ -16,18 +17,18 @@ configurations behave identically.
 
 ### Independent merge scope
 
-I am submitting PR #59 only for portability documentation, verification scripts,
-regression tests, and sanitized evidence under `doc/testing/`. No application
-authorization, sharing, source ZIP endpoints, or deployment logic has been
-modified. This limited scope allows the PR to be considered for independent
-merge, subject to maintainer review and approval, without waiting for the
-separate security fix.
+I am submitting PR #59 for portability documentation, verification scripts,
+regression tests, and sanitized evidence under `doc/testing/`, plus a lightweight
+CI integration in `.github/workflows/ci.yml`. It does not modify application
+authorization, sharing, ZIP endpoints, or deployment functionality. This limited
+scope allows the PR to be considered for independent merge, subject to maintainer
+review and approval, without waiting for the separate security fix.
 
 I have now submitted the access-control vulnerability through GitHub's private
 vulnerability reporting workflow. Merging this PR does not fix that vulnerability
 or satisfy all Issue #45 acceptance criteria. Permission-related remediation and
 retesting require private coordination with the maintainers. Collaborator-specific
-permissions, cancellation during an active upload, and deployment verification
+permissions, verification of active-upload cancellation, and deployment verification
 remain pending; the deployed release/image commit must be captured on the next
 authorized verification run. Issue #45 should remain open until the remaining
 acceptance criteria are met.
@@ -45,7 +46,7 @@ acceptance criteria are met.
 | Bibliography | BibTeX fixture; the later logs show a prepared `output.bbl` being read, not a captured BibTeX run |
 | Local verification tools | Python 3.12.3; Poppler `pdfinfo` and `pdftotext` 24.02.0. These are review-tool versions, not proof of the initial session's tool versions. |
 | Later recompilation logs | 2 November 2026; pdfTeX 3.141592653-2.6-1.40.29, TeX Live 2026, preloaded `pdflatex 2026.10.29` |
-| Deployed server release/image commit and OS | **Not independently recorded**; the local Git revision does not establish the deployed version |
+| Deployed server release/image commit and OS | **UNKNOWN / NOT RECORDED**; the local Git revision does not establish the deployed version |
 | Original-session environment details | Exact browser version, original compiler/tool versions, and session times **Not independently recorded** |
 | External workspace | `~/zip-verification-work/`; raw ZIPs, PDFs, text extracts, and logs stay outside the repository |
 
@@ -283,9 +284,8 @@ application's responses.
 | Import using an existing project name | Created a separate project |
 | Check the older project with that duplicate name | Remained intact and compiled successfully |
 
-I tested cancellation before upload, but **did not test cancellation during an
-active upload**. The dialog cancellation result does not cover upload
-interruption.
+The successful pre-upload dialog cancellation above does not establish that an
+upload already in progress can be cancelled.
 
 For a repeat run, create fresh invalid and empty fixtures outside the checkout:
 
@@ -305,6 +305,19 @@ PY
 
 Use disposable projects for the duplicate-name case and record the older
 project's content and compilation result before and after import.
+
+### Active-upload cancellation attempt — 4 November 2026
+
+I used Firefox Developer Tools with GPRS network throttling and selected the
+existing disposable ZIP portability fixture. I clicked Cancel while the upload
+appeared to be loading. The application continued to a loading screen, and
+Firefox's Network tab subsequently showed a POST upload request with HTTP 200.
+
+**Result: NOT VERIFIED (INCONCLUSIVE).** I could not establish whether the server
+had already accepted the request before I clicked Cancel. I also did not
+independently confirm whether an unintended new project was created. The observed response
+does not establish that cancellation succeeded or that it is broken. This
+attempt leaves active-upload cancellation unverified.
 
 ### Verification-script regression tests
 
@@ -344,6 +357,20 @@ python3 -m py_compile \
 git diff --check
 git status --short
 ```
+
+The manual `CI` workflow includes a **ZIP portability verification** job that
+runs the unittest command above on `ubuntu-24.04`, using the runner's Python 3
+and standard library. No package installation or application services are needed.
+After this change is pushed, run `CI` from the Actions tab with branch
+`test/zip-portability-45` selected. The job is selected when `doc/testing/` changes;
+the `all=true` dispatch option also includes it. The existing first-run and
+workflow-change rules select it as well. No automatic push or pull-request
+trigger is added. A passing local run does not establish a GitHub Actions result;
+the new job's CI result remains unverified until a dispatched run completes.
+For the maintainer's CI evidence, dispatch with `all=true` to force selection even
+if the branch SHA matches a previous passing run. Record the actual run/job URL,
+commit SHA, conclusion, and nine-test output after it completes; none of those
+CI results are established by this local review.
 
 ### Final local validation
 
@@ -456,8 +483,9 @@ that selection. I can provide sanitized screenshots of portability testing
 separately after checking them for sensitive content. Security-finding
 screenshots or demonstrations must not be shared publicly.
 Only Markdown reports, the two helper scripts, the regression suite, and three
-JSON evidence files are included. ZIPs, PDFs, raw logs, screenshots, private
-identifiers, and credentials remain outside the contribution.
+JSON evidence files, plus the lightweight CI integration, are included. ZIPs,
+PDFs, raw logs, screenshots, private identifiers, and credentials remain outside
+the contribution.
 
 ## 9. Final status and remaining acceptance criteria
 
@@ -478,9 +506,9 @@ identifiers, and credentials remain outside the contribution.
 
 | Acceptance test | Status | Coverage and required follow-up |
 | --- | --- | --- |
-| Authorized collaborator access | **NOT VALIDATED** | I did not separately test the owner-to-invited-collaborator workflow. This requires coordinated testing with authorized disposable accounts and projects under privately approved scope. |
+| Authorized collaborator access | **NOT VERIFIED** | I did not separately test the owner-to-invited-collaborator workflow. This requires coordinated testing with authorized disposable accounts and projects under privately approved scope. |
 | Unauthorized source ZIP download denial | **DID NOT PASS** | I have submitted the concern through GitHub's private vulnerability reporting workflow. Submission does not resolve the failed criterion; remediation and retesting require private coordination with the maintainers and approved scope. |
-| Cancellation during an active ZIP upload | **NOT VALIDATED** | Cancelling the import dialog before upload was tested successfully. Cancelling an upload already in progress was not tested; these are different actions. |
+| Cancellation during an active ZIP upload | **NOT VERIFIED (INCONCLUSIVE)** | Pre-upload dialog cancellation succeeded. The 4 November attempt with Firefox GPRS throttling showed a loading screen and a subsequent HTTP 200 upload response, but request acceptance timing and unintended project creation were not independently established. Active-upload cancellation remains unverified. |
 | Deployment environment and acceptance | **INCOMPLETE** | The deployed server release/image commit and complete environment metadata have not been independently recorded. The later compiler logs do not establish the full deployment environment. Missing metadata must be recorded during an authorized rerun. Maintainer review and final acceptance remain pending. |
 
 I am submitting the portability results for review. Maintainer acceptance and the
