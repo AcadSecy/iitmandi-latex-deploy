@@ -6,6 +6,10 @@ name: CI
 on:
   workflow_dispatch:
     inputs:
+      zip_only:
+        description: Run only ZIP portability verification (overrides all)
+        type: boolean
+        default: false
       all:
         description: Run every job, not only those whose code changed since the last passing run
         type: boolean
@@ -36,6 +40,7 @@ jobs:
       web: ${{ steps.areas.outputs.web }}
       clsi: ${{ steps.areas.outputs.clsi }}
       git_bridge: ${{ steps.areas.outputs.git_bridge }}
+      zip_portability: ${{ steps.areas.outputs.zip_portability }}
       base: ${{ steps.areas.outputs.base }}
     steps:
       - id: areas
@@ -43,8 +48,16 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           HEAD_SHA: ${{ github.sha }}
           ALL: ${{ inputs.all }}
+          ZIP_ONLY: ${{ inputs.zip_only }}
         run: |
-          AREAS="branding templates web clsi git_bridge"
+          AREAS="branding templates web clsi git_bridge zip_portability"
+          if [ "$ZIP_ONLY" = true ]; then
+            for area in $AREAS; do
+              if [ "$area" = zip_portability ]; then value=true; else value=false; fi
+              echo "$area=$value" >> "$GITHUB_OUTPUT"
+            done
+            exit 0
+          fi
           run_all() {
             echo "Running every job: $1"
             for area in $AREAS; do echo "$area=true" >> "$GITHUB_OUTPUT"; done
@@ -76,6 +89,18 @@ jobs:
           area web "^(services/web/|$deps)"
           area clsi "^(services/clsi/|server-ce/|deploy/iitmandi/texlive/|$deps)"
           area git_bridge '^services/git-bridge/'
+          area zip_portability '^doc/testing/'
+
+  zip-portability:
+    name: ZIP portability verification
+    needs: changes
+    if: needs.changes.outputs.zip_portability == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - name: ZIP verification regression tests
+        run: python3 -m unittest discover -s doc/testing -p 'test_zip_verification.py' -v
 
   branding:
     name: Branding and stylesheets
