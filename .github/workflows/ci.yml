@@ -6,6 +6,10 @@ name: CI
 on:
   workflow_dispatch:
     inputs:
+      zip_only:
+        description: Run only ZIP portability verification (overrides all)
+        type: boolean
+        default: false
       all:
         description: Run every job, not only those whose code changed since the last passing run
         type: boolean
@@ -44,8 +48,16 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           HEAD_SHA: ${{ github.sha }}
           ALL: ${{ inputs.all }}
+          ZIP_ONLY: ${{ inputs.zip_only }}
         run: |
           AREAS="branding templates web clsi git_bridge zip_portability"
+          if [ "$ZIP_ONLY" = true ]; then
+            for area in $AREAS; do
+              if [ "$area" = zip_portability ]; then value=true; else value=false; fi
+              echo "$area=$value" >> "$GITHUB_OUTPUT"
+            done
+            exit 0
+          fi
           run_all() {
             echo "Running every job: $1"
             for area in $AREAS; do echo "$area=true" >> "$GITHUB_OUTPUT"; done
