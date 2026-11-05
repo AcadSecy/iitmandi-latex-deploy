@@ -6,6 +6,10 @@ name: CI
 on:
   workflow_dispatch:
     inputs:
+      cypress_only:
+        description: "Run only PR #54 mobile Cypress component tests"
+        type: boolean
+        default: false
       all:
         description: Run every job, not only those whose code changed since the last passing run
         type: boolean
@@ -25,6 +29,7 @@ jobs:
   # everything. `base` is the commit of the last passing run, if any.
   changes:
     name: Changed areas
+    if: ${{ !inputs.cypress_only }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -428,3 +433,107 @@ jobs:
       - name: Remove the container
         if: always()
         run: docker rm -f git-bridge || true
+
+  mobile-cypress:
+    if: github.event_name == 'workflow_dispatch' && inputs.cypress_only && github.ref == 'refs/heads/m/mobile-history'
+    name: Mobile Cypress (PR 54)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    env:
+      NODE_ENV: development
+      NODE_OPTIONS: --max-old-space-size=4096
+      CYPRESS_VERIFY_TIMEOUT: "90000"
+      CYPRESS_VIDEO: "false"
+      EXPECTED_DISPATCH_SHA: ${{ github.sha }}
+      ALL_REQUESTED: ${{ inputs.all }}
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Record and verify source revision
+        run: |
+          mkdir -p services/web/artifacts
+          git rev-parse HEAD | tee services/web/artifacts/source-sha.txt
+          test "$(git rev-parse HEAD)" = "$EXPECTED_DISPATCH_SHA"
+          if [ "$ALL_REQUESTED" = true ]; then
+            echo "::error::Choose cypress_only or all, not both."
+            exit 1
+          fi
+          printf '%s\n' "$GITHUB_SHA" > services/web/artifacts/event-sha.txt
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24.22.1
+          package-manager-cache: false
+
+      - run: corepack enable
+
+      - uses: actions/cache@v6
+        with:
+          path: |
+            .yarn/cache
+            ~/.cache/Cypress
+          key: pr54-mobile-ct-${{ runner.os }}-x64-${{ hashFiles('yarn.lock', '.yarnrc.yml') }}
+
+      - name: Install browser prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libgtk-3-0t64 libgbm-dev libnotify-dev libnss3 \
+            libxss1 libasound2t64 libxtst6 xauth xvfb
+
+      - name: Install focused development dependencies
+        env:
+          CYPRESS_INSTALL_BINARY: "0"
+        run: |
+          yarn workspaces focus @overleaf/web 2>&1 \
+            | tee services/web/artifacts/dependencies.log
+
+      - name: Generate editor parsers
+        run: |
+          yarn workspace @overleaf/web run lezer-latex:generate 2>&1 \
+            | tee services/web/artifacts/parsers.log
+
+      - name: Install and verify Cypress
+        working-directory: services/web
+        run: |
+          yarn exec cypress install 2>&1 | tee artifacts/cypress-install.log
+          yarn exec cypress verify 2>&1 | tee artifacts/cypress-verify.log
+          node --version > artifacts/versions.txt
+          yarn --version >> artifacts/versions.txt
+          yarn exec cypress version >> artifacts/versions.txt
+
+      - name: Run the 16 mobile component tests
+        working-directory: services/web
+        env:
+          CYPRESS_RESULTS: cypress/results
+          CYPRESS_DOWNLOADS: cypress/downloads
+        run: |
+          set +e
+          /usr/bin/time -v -o artifacts/resources.txt \
+            yarn run cypress:run-ct \
+              --browser electron \
+              --reporter spec \
+              --spec test/frontend/features/ide-react/components/layout/mobile-history-layout.spec.tsx,test/frontend/features/ide-react/components/layout/mobile-pdf-state.spec.tsx,test/frontend/features/ide-react/components/layout/mobile-pane-switcher.spec.tsx \
+              --config retries=0 \
+              2>&1 | tee artifacts/cypress.log
+          status=${PIPESTATUS[0]}
+          echo "$status" > artifacts/exit-status.txt
+          exit "$status"
+
+      - name: Upload verification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr54-mobile-cypress-${{ github.sha }}-${{ github.run_attempt }}
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            services/web/artifacts/
+            services/web/cypress/results/
