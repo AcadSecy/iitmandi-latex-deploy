@@ -1,4 +1,5 @@
 import { EditorView } from '@codemirror/view'
+import { pressKey } from '../../../../helpers/press-key'
 import MainLayout from '@/features/ide-react/components/layout/main-layout'
 import {
   LayoutProvider,
@@ -8,6 +9,7 @@ import { EditorProviders } from '../../../../helpers/editor-providers'
 import { withTestContainerErrorBoundary } from '../../../../helpers/error-boundary'
 import { updates } from '../../../history/fixtures/updates'
 import { labels } from '../../../history/fixtures/labels'
+import { mockScope } from '../../../source-editor/helpers/mock-scope'
 
 function HistoryLayout() {
   const { setView } = useLayoutContext()
@@ -28,11 +30,12 @@ function openHistory() {
     <EditorProviders
       providers={{ LayoutProvider }}
       projectFeatures={{ versioning: true }}
+      scope={mockScope()}
     >
       <TestLayout />
     </EditorProviders>
   )
-  cy.findByRole('button', { name: 'Open History', exact: true }).click()
+  cy.findByRole('button', { name: 'Open History' }).click()
   cy.wait(['@updates', '@labels', '@fileDiff', '@docDiff'])
   cy.get('.history-react .cm-content').should(
     'contain.text',
@@ -41,9 +44,9 @@ function openHistory() {
 }
 
 function selectPane(name: 'Files' | 'Diff' | 'Versions') {
-  cy.findByRole('group', { name: 'History', exact: true }).within(() => {
-    cy.findByRole('button', { name, exact: true }).click()
-    cy.findByRole('button', { name, exact: true }).should(
+  cy.findByRole('group', { name: 'History' }).within(() => {
+    cy.findByRole('button', { name }).click()
+    cy.findByRole('button', { name }).should(
       'have.attr',
       'aria-pressed',
       'true'
@@ -67,6 +70,9 @@ function panelPreferences(storage: Storage) {
 describe('Responsive History in MainLayout', function () {
   beforeEach(function () {
     window.metaAttributesCache.set('ol-preventCompileOnLoad', true)
+    window.metaAttributesCache.set('ol-compileSettings', {
+      compileTimeout: 240,
+    })
     cy.interceptEvents()
     cy.interceptMetadata()
     cy.intercept('GET', '/project/*/updates*', { body: updates }).as('updates')
@@ -91,7 +97,7 @@ describe('Responsive History in MainLayout', function () {
     it(`shows one full-width pane and retains History state at ${width}px`, function () {
       cy.viewport(width, 844)
       openHistory()
-      cy.findByRole('button', { name: 'Versions', exact: true }).should(
+      cy.findByRole('button', { name: 'Versions' }).should(
         'have.attr',
         'aria-pressed',
         'true'
@@ -111,8 +117,12 @@ describe('Responsive History in MainLayout', function () {
           selectPane('Files')
           cy.get('#history-file-tree').should('be.visible')
           cy.get('.change-list').should('not.be.visible')
-          cy.findByRole('treeitem', { name: 'main.tex', exact: true }).click()
-          cy.wait('@docDiff')
+          cy.findByRole('treeitem', { name: 'main.tex' }).click()
+          cy.findByRole('treeitem', { name: 'main.tex' }).should(
+            'have.attr',
+            'aria-selected',
+            'true'
+          )
           selectPane('Diff')
           cy.get('#history-file-tree').should('not.be.visible')
           cy.get('.doc-panel').should('be.visible')
@@ -134,7 +144,7 @@ describe('Responsive History in MainLayout', function () {
             selectPane('Versions')
             cy.get('@firstVersion').should('be.visible')
             selectPane('Files')
-            cy.findByRole('treeitem', { name: 'main.tex', exact: true }).should(
+            cy.findByRole('treeitem', { name: 'main.tex' }).should(
               'have.attr',
               'aria-selected',
               'true'
@@ -205,7 +215,6 @@ describe('Responsive History in MainLayout', function () {
       .within(() => {
         cy.findByRole('button', {
           name: 'Compare from this version',
-          exact: true,
         }).click()
       })
     cy.wait(['@fileDiff', '@docDiff'])
@@ -282,15 +291,13 @@ describe('Responsive History in MainLayout', function () {
     selectPane('Files')
     for (const width of [768, 1440]) {
       cy.viewport(width, 900)
-      cy.findByRole('group', { name: 'History', exact: true }).should(
-        'not.exist'
-      )
+      cy.findByRole('group', { name: 'History' }).should('not.exist')
       cy.get('#history-file-tree').should('be.visible')
       cy.get('.doc-panel').should('be.visible')
       cy.get('.change-list').should('be.visible')
     }
     cy.viewport(767, 844)
-    cy.findByRole('button', { name: 'Files', exact: true }).should(
+    cy.findByRole('button', { name: 'Files' }).should(
       'have.attr',
       'aria-pressed',
       'true'
@@ -300,27 +307,40 @@ describe('Responsive History in MainLayout', function () {
   it('supports keyboard activation and resets to Versions after Back to Editor', function () {
     cy.viewport(390, 844)
     openHistory()
-    cy.findByRole('button', { name: 'Diff', exact: true })
-      .focus()
-      .type('{enter}')
+    cy.findByRole('button', { name: 'Diff' }).focus().should('have.focus')
+    pressKey('Enter')
+    cy.findByRole('button', { name: 'Diff' }).should(
+      'have.attr',
+      'aria-pressed',
+      'true'
+    )
     cy.get('.doc-panel').should('be.visible')
-    cy.findByRole('button', { name: 'Back to editor', exact: true }).click()
+    cy.findByRole('button', { name: 'Files' }).focus().should('have.focus')
+    pressKey('Space')
+    cy.findByRole('button', { name: 'Files' }).should(
+      'have.attr',
+      'aria-pressed',
+      'true'
+    )
+    cy.get('#history-file-tree').should('be.visible')
+    cy.get('.doc-panel').should('not.be.visible')
+    cy.findByRole('button', { name: 'Back to editor' }).click()
     cy.get('.mobile-history-pane-switcher').should('not.exist')
-    cy.findByRole('button', { name: 'Files', exact: true }).click()
-    cy.findByRole('button', { name: 'Files', exact: true }).should(
+    cy.findByRole('button', { name: 'Files' }).click()
+    cy.findByRole('button', { name: 'Files' }).should(
       'have.attr',
       'aria-pressed',
       'true'
     )
-    cy.findByRole('button', { name: 'PDF', exact: true }).click()
-    cy.findByRole('button', { name: 'PDF', exact: true }).should(
+    cy.findByRole('button', { name: 'PDF' }).click()
+    cy.findByRole('button', { name: 'PDF' }).should(
       'have.attr',
       'aria-pressed',
       'true'
     )
-    cy.findByRole('button', { name: 'Code', exact: true }).click()
-    cy.findByRole('button', { name: 'Open History', exact: true }).click()
-    cy.findByRole('button', { name: 'Versions', exact: true }).should(
+    cy.findByRole('button', { name: 'Code' }).click()
+    cy.findByRole('button', { name: 'Open History' }).click()
+    cy.findByRole('button', { name: 'Versions' }).should(
       'have.attr',
       'aria-pressed',
       'true'
