@@ -282,6 +282,19 @@ jobs:
           test/unit/src/User/UserEmailsController.test.mjs
           test/unit/src/TokenAccess/TokenAccessController.test.mjs
 
+      - name: Frontend tests (compile errors, stale PDF banner)
+        working-directory: services/web
+        env:
+          NODE_ENV: test
+          TZ: GMT
+        run: >
+          yarn mocha --timeout 5000 --exit
+          --extension js,jsx,mjs,ts,tsx
+          --require test/frontend/bootstrap.js
+          test/frontend/ide/human-readable-logs/human-readable-logs.test.js
+          test/frontend/ide/log-parser/logParserTests.js
+          test/frontend/components/pdf-preview/pdf-failed-compile-banner.test.tsx
+
       # Only the handlers the compile queue changes. Six upstream tests for the
       # SyncTeX request validation (proxySyncCode/proxySyncPdf) fail in this
       # environment; they cover code this branch does not change.

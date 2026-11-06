@@ -617,6 +617,83 @@ describe('<PdfPreview/>', function () {
     })
   })
 
+  describe('after a failed compile', function () {
+    const STALE_PDF =
+      'The latest compile failed. This is the PDF from your last successful compile.'
+
+    // the response for a compile that wrote only a log, as CLSI sends it
+    // after dropping an unfinished PDF
+    const interceptFailedCompile = () => {
+      cy.intercept(
+        { method: 'POST', pathname: '/project/*/compile', times: 1 },
+        {
+          body: {
+            status: 'failure',
+            clsiServerId: 'foo',
+            compileGroup: 'priority',
+            outputFiles: [
+              {
+                path: 'output.log',
+                build: 'failed-build',
+                url: '/build/failed-build/output.log',
+                type: 'log',
+              },
+            ],
+          },
+        }
+      ).as('failed-compile')
+      cy.intercept(
+        { pathname: '/build/failed-build/output.log', times: 1 },
+        { fixture: 'build/output.log' }
+      )
+    }
+
+    const mountPreview = () => {
+      cy.mount(
+        <EditorProviders scope={mockScope()}>
+          <PdfViewer>
+            <PdfPreview />
+          </PdfViewer>
+        </EditorProviders>
+      )
+    }
+
+    it('shows the last good PDF as out of date until the next good compile', function () {
+      cy.interceptCompile()
+      mountPreview()
+      cy.findByRole('button', { name: 'Recompile' }).click()
+      cy.waitForCompile({ pdf: true })
+      cy.contains('Your Paper')
+      cy.findByText(STALE_PDF).should('not.exist')
+
+      interceptFailedCompile()
+      cy.findByRole('button', { name: 'Recompile' }).click()
+      cy.wait('@failed-compile')
+      cy.findByText('No PDF')
+      cy.findByRole('button', { name: 'Back to PDF' })
+        .should('be.enabled')
+        .click()
+      cy.contains('Your Paper')
+      cy.findByText(STALE_PDF)
+
+      cy.interceptCompile({ prefix: 'recompile' })
+      cy.findByRole('button', { name: 'Recompile' }).click()
+      cy.waitForCompile({ prefix: 'recompile', pdf: true })
+      cy.contains('Your Paper')
+      cy.findByText(STALE_PDF).should('not.exist')
+    })
+
+    it('shows the logs and no PDF when the first compile fails', function () {
+      interceptFailedCompile()
+      mountPreview()
+      cy.findByRole('button', { name: 'Recompile' }).click()
+      cy.wait('@failed-compile')
+      cy.findByText('No PDF')
+      cy.findByRole('button', { name: 'Back to PDF' }).should('be.disabled')
+      cy.findByText(STALE_PDF).should('not.exist')
+    })
+  })
+
   it('displays expandable raw logs', function () {
     cy.interceptCompile()
 

@@ -2796,6 +2796,7 @@
   "sso_user_explanation_enabled_with_group_name": "Your group <0>__groupName__</0> has SSO enabled so you can log in without needing to remember a password.",
   "sso_user_explanation_ready_with_admin_email": "Your group administered by <0>__adminEmail__</0> has SSO enabled so you can log in without needing to remember a password. Click <1>__buttonText__</1> to get started.",
   "sso_user_explanation_ready_with_group_name": "Your group <0>__groupName__</0> has SSO enabled so you can log in without needing to remember a password. Click <1>__buttonText__</1> to get started.",
+  "stale_pdf_after_failed_compile": "The latest compile failed. This is the PDF from your last successful compile.",
   "standard": "Standard",
   "start_by_adding_your_email": "Start by adding your email address.",
   "start_by_fixing_the_first_error_in_your_document": "Start by fixing the first error in the document to avoid cascading problems later on.",

@@ -344,6 +344,11 @@ async function doCompile(request, stats, timings) {
     'done compile'
   )
 
+  // latexmk can exit normally and leave a stub PDF (a failed XeTeX image
+  // conversion leaves 15 bytes). Drop it so the compile reports a failure and
+  // the editor keeps the last good PDF.
+  await _removeUnfinishedPdf(compileDir)
+
   const { outputFiles, buildId } = await _saveOutputFiles({
     request,
     compileDir,
@@ -445,10 +450,11 @@ async function _removeUnfinishedPdf(compileDir) {
       return
     }
   } catch (err) {
-    if (err.code === 'ENOENT') {
-      return
+    if (err.code !== 'ENOENT') {
+      // keep a PDF that could not be checked rather than lose a good one
+      logger.warn({ err, pdfPath }, 'cannot check the PDF of a compile')
     }
-    logger.warn({ err, pdfPath }, 'cannot check the PDF of a stopped compile')
+    return
   } finally {
     await handle?.close()
   }
