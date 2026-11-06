@@ -798,6 +798,10 @@ module.exports = {
   sourceCodeUrl: process.env.SOURCE_CODE_URL || '/source',
   sourceArchiveDir: process.env.SOURCE_ARCHIVE_DIR || '/overleaf/source',
 
+  // Where "Report a problem" (modules/support) sends students' reports; the
+  // admin address when unset
+  supportEmail: process.env.OVERLEAF_SUPPORT_EMAIL,
+
   adminEmail: process.env.ADMIN_EMAIL || 'placeholder@example.com',
   adminDomains: process.env.ADMIN_DOMAINS
     ? JSON.parse(process.env.ADMIN_DOMAINS)
@@ -1109,7 +1113,12 @@ module.exports = {
         '../modules/zotero/frontend/js/components/tpr-file-view-not-original-importer'
       ),
     ],
-    contactUsModal: [],
+    contactUsModal: [
+      Path.resolve(
+        __dirname,
+        '../modules/support/frontend/js/components/report-problem-modal.tsx'
+      ),
+    ],
     sourceEditorExtensions: [],
     sourceEditorVisualExtensions: [],
     sourceEditorComponents: [
@@ -1361,6 +1370,7 @@ module.exports = {
     'iitmandi-logo',
     'retention',
     'chapter-compile',
+    'support',
   ],
   viewIncludes: {},
 
