@@ -5,14 +5,7 @@ footer.site-footer
 		.row
 			ul.site-footer-items.col-lg-9
 				if !settings.nav.hide_powered_by
-					li
-						| #{settings.appName} ·
-						|
-						a(href=settings.sourceCodeUrl) Source code
-						|
-						| ·
-						|
-						a(href='/license') License
+					li #{settings.appName}
 
 					if showLanguagePicker || hasCustomLeftNav
 						li
@@ -39,11 +32,3 @@ footer.site-footer
 							a(href=item.url class=item.class aria-label=item.label) !{item.text}
 						else
 							| !{item.text}
-		if settings.env === 'server-ce'
-			.row
-				.col-12
-					p.copyright-notice
-						| #{settings.appName} is free software, licensed under the
-						|
-						a(href='https://www.gnu.org/licenses/agpl-3.0.html') GNU Affero General Public License v3.0
-						| . It is provided "as is", without warranty of any kind.
