@@ -17,10 +17,24 @@ import MaterialIcon from '@/shared/components/material-icon'
 import { useReferencesContext } from '@/features/ide-react/context/references-context'
 import { useTranslation } from 'react-i18next'
 import type { Bib2JsonEntry } from '@/features/ide-react/references/types'
+import { fold } from '../reference-index/advanced-reference-index'
 
 type FocusArea = 'search' | 'list' | 'footer'
 
-function highlight(text: string, tokens: string[]) {
+// The folded text, and for each of its characters the position in `text` it
+// came from, so a match in the folded text marks the original letters
+function foldWithPositions(text: string): [string, number[]] {
+  let folded = ''
+  const positions: number[] = []
+  for (let i = 0; i < text.length; i++) {
+    const letter = fold(text[i])
+    folded += letter
+    for (let j = 0; j < letter.length; j++) positions.push(i)
+  }
+  return [folded, positions]
+}
+
+export function highlight(text: string, tokens: string[]) {
   if (!text || tokens.length === 0) return text
 
   const parts: React.ReactNode[] = [text]
@@ -34,22 +48,29 @@ function highlight(text: string, tokens: string[]) {
         return
       }
 
-      const lower = part.toLowerCase()
-      const t = token.toLowerCase()
+      // search ignores accents, so "muller" marks "Müller"
+      const [folded, positions] = foldWithPositions(part)
+      const t = fold(token)
       let start = 0
+      let last = 0
       let idx
 
-      while ((idx = lower.indexOf(t, start)) !== -1) {
-        if (idx > start) next.push(part.slice(start, idx))
+      while (t && (idx = folded.indexOf(t, start)) !== -1) {
+        const from = Math.max(positions[idx], last)
+        let to = positions[idx + t.length - 1] + 1
+        // keep accent marks stored as separate characters with their letter
+        while (to < part.length && /[̀-ͯ]/.test(part[to])) to++
+        if (from > last) next.push(part.slice(last, from))
         next.push(
           <span key={`${idx}-${token}-${globalIndex++}`} className="found-token">
-            {part.slice(idx, idx + t.length)}
+            {part.slice(from, to)}
           </span>
         )
         start = idx + t.length
+        last = to
       }
 
-      if (start < part.length) next.push(part.slice(start))
+      if (last < part.length) next.push(part.slice(last))
     })
     parts.splice(0, parts.length, ...next)
   })
@@ -299,7 +320,7 @@ const scrollToReference = useCallback((key: string) => {
   }, [focusArea, focusedIndex])
 
   return (
-    <OLModal show={show} onHide={onClose} size="lg" themed="true">
+    <OLModal show={show} onHide={onClose} size="lg" themed>
       <OLModalHeader>
         <OLModalTitle>{t('references_picker_title')}</OLModalTitle>
       </OLModalHeader>
@@ -348,8 +369,10 @@ const scrollToReference = useCallback((key: string) => {
                 <ul className="list-unstyled">
                   {results.map((hit, index) => {
                     const key = hit._source.EntryKey
-                    const { title = '', author = '', year = '', journal = '' } =
-                      hit._source.Fields ?? {}
+                    const fields = hit._source.Fields ?? {}
+                    const { title = '', author = '', year = '' } = fields
+                    const journal =
+                      fields.journal || fields.booktitle || fields.publisher || ''
 
                     return (
                       <li
@@ -384,7 +407,7 @@ const scrollToReference = useCallback((key: string) => {
                               highlight(year, tokens),
                             ]
                               .filter(Boolean)
-                              .reduce((acc, val, i) =>
+                              .reduce<React.ReactNode[]>((acc, val, i) =>
                                 i === 0 ? [val] : acc.concat('\u00A0—\u00A0', val),
                               [])}
                           </OLCol>
