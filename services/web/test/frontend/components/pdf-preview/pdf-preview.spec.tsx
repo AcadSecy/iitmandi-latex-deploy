@@ -346,7 +346,7 @@ describe('<PdfPreview/>', function () {
         // start compiling
         cy.findByRole('button', { name: 'Recompile' }).click()
 
-        cy.findByRole('button', { name: 'Compiling…' }).then(() => {
+        cy.findByRole('button', { name: /^Compiling… \d+ s$/ }).then(() => {
           // trigger a recompile
           cy.window().then(win => {
             win.dispatchEvent(new CustomEvent('pdf:recompile'))
@@ -378,7 +378,7 @@ describe('<PdfPreview/>', function () {
       )
 
       cy.findByRole('button', { name: 'Recompile' }).click()
-      cy.findByRole('button', { name: 'Compiling…' })
+      cy.findByRole('button', { name: /^Compiling… \d+ s$/ })
         .should('be.disabled')
         .then(() => resolveDeferredCompile())
 
@@ -1130,7 +1130,7 @@ describe('<PdfPreview/>', function () {
 
         cy.wait('@clear-cache')
 
-        cy.findByRole('button', { name: 'Compiling…' }).then(() =>
+        cy.findByRole('button', { name: /^Compiling… \d+ s$/ }).then(() =>
           resolveDeferredCompile()
         )
 
