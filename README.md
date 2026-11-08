@@ -94,3 +94,9 @@ This platform is based on [Overleaf Community Edition](https://github.com/overle
 The AGPL requires that everyone who uses a modified version over a network can get its source code. The footer links to `OVERLEAF_SOURCE_CODE_URL` for this. This repository is private, so before go-live point that variable at a copy of the source that all users can reach.
 
 "Overleaf" is a trademark of its owner. This platform does not use the name or logo in its interface.
+
+## Institute server deployment
+
+LaTeX runs on the x86_64 instance at http://172.19.17.79:8080.
+Pull requests still target `staging`; the checked amd64 image is deployed by the server.
+See [deploy/server](deploy/server/README.md) for migration, updates and rollback.

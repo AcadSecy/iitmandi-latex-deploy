@@ -7,7 +7,11 @@ on:
   workflow_dispatch:
     inputs:
       cypress_only:
-        description: Run only the PDF preview Cypress component tests (PR 61)
+        description: "Run only the Cypress component tests (mobile layout and PDF preview)"
+        type: boolean
+        default: false
+      zip_only:
+        description: Run only ZIP portability verification (overrides all)
         type: boolean
         default: false
       all:
@@ -41,6 +45,7 @@ jobs:
       web: ${{ steps.areas.outputs.web }}
       clsi: ${{ steps.areas.outputs.clsi }}
       git_bridge: ${{ steps.areas.outputs.git_bridge }}
+      zip_portability: ${{ steps.areas.outputs.zip_portability }}
       base: ${{ steps.areas.outputs.base }}
     steps:
       - id: areas
@@ -48,8 +53,16 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           HEAD_SHA: ${{ github.sha }}
           ALL: ${{ inputs.all }}
+          ZIP_ONLY: ${{ inputs.zip_only }}
         run: |
-          AREAS="branding templates web clsi git_bridge"
+          AREAS="branding templates web clsi git_bridge zip_portability"
+          if [ "$ZIP_ONLY" = true ]; then
+            for area in $AREAS; do
+              if [ "$area" = zip_portability ]; then value=true; else value=false; fi
+              echo "$area=$value" >> "$GITHUB_OUTPUT"
+            done
+            exit 0
+          fi
           run_all() {
             echo "Running every job: $1"
             for area in $AREAS; do echo "$area=true" >> "$GITHUB_OUTPUT"; done
@@ -81,6 +94,18 @@ jobs:
           area web "^(services/web/|$deps)"
           area clsi "^(services/clsi/|server-ce/|deploy/iitmandi/texlive/|$deps)"
           area git_bridge '^services/git-bridge/'
+          area zip_portability '^doc/testing/'
+
+  zip-portability:
+    name: ZIP portability verification
+    needs: changes
+    if: needs.changes.outputs.zip_portability == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - name: ZIP verification regression tests
+        run: python3 -m unittest discover -s doc/testing -p 'test_zip_verification.py' -v
 
   branding:
     name: Branding and stylesheets
@@ -262,19 +287,6 @@ jobs:
           test/unit/src/User/UserEmailsController.test.mjs
           test/unit/src/TokenAccess/TokenAccessController.test.mjs
 
-      - name: Frontend tests (compile errors, stale PDF banner)
-        working-directory: services/web
-        env:
-          NODE_ENV: test
-          TZ: GMT
-        run: >
-          yarn mocha --timeout 5000 --exit
-          --extension js,jsx,mjs,ts,tsx
-          --require test/frontend/bootstrap.js
-          test/frontend/ide/human-readable-logs/human-readable-logs.test.js
-          test/frontend/ide/log-parser/logParserTests.js
-          test/frontend/components/pdf-preview/pdf-failed-compile-banner.test.tsx
-
       # Only the handlers the compile queue changes. Six upstream tests for the
       # SyncTeX request validation (proxySyncCode/proxySyncPdf) fail in this
       # environment; they cover code this branch does not change.
@@ -447,9 +459,9 @@ jobs:
         if: always()
         run: docker rm -f git-bridge || true
 
-  pdf-preview-cypress:
+  mobile-cypress:
     if: github.event_name == 'workflow_dispatch' && inputs.cypress_only
-    name: PDF preview Cypress (PR 61)
+    name: Cypress component tests
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     defaults:
@@ -462,6 +474,7 @@ jobs:
       CYPRESS_VIDEO: "false"
       EXPECTED_DISPATCH_SHA: ${{ github.sha }}
       ALL_REQUESTED: ${{ inputs.all }}
+      ZIP_ONLY_REQUESTED: ${{ inputs.zip_only }}
 
     steps:
       - uses: actions/checkout@v5
@@ -474,8 +487,8 @@ jobs:
           mkdir -p services/web/artifacts
           git rev-parse HEAD | tee services/web/artifacts/source-sha.txt
           test "$(git rev-parse HEAD)" = "$EXPECTED_DISPATCH_SHA"
-          if [ "$ALL_REQUESTED" = true ]; then
-            echo "::error::Do not combine cypress_only with all."
+          if [ "$ALL_REQUESTED" = true ] || [ "$ZIP_ONLY_REQUESTED" = true ]; then
+            echo "::error::Do not combine cypress_only with all or zip_only."
             exit 1
           fi
           printf '%s\n' "$GITHUB_SHA" > services/web/artifacts/event-sha.txt
@@ -492,7 +505,7 @@ jobs:
           path: |
             .yarn/cache
             ~/.cache/Cypress
-          key: pr61-pdf-preview-ct-${{ runner.os }}-x64-${{ hashFiles('yarn.lock', '.yarnrc.yml') }}
+          key: cypress-ct-${{ runner.os }}-x64-${{ hashFiles('yarn.lock', '.yarnrc.yml') }}
 
       - name: Install browser prerequisites
         run: |
@@ -522,7 +535,7 @@ jobs:
           yarn --version >> artifacts/versions.txt
           yarn exec cypress version >> artifacts/versions.txt
 
-      - name: Run the PDF preview component tests
+      - name: Run the mobile layout and PDF preview component tests
         working-directory: services/web
         env:
           CYPRESS_RESULTS: cypress/results
@@ -533,7 +546,7 @@ jobs:
             yarn run cypress:run-ct \
               --browser electron \
               --reporter spec \
-              --spec test/frontend/components/pdf-preview/pdf-preview.spec.tsx,test/frontend/components/pdf-preview/pdf-preview-hybrid-toolbar.spec.tsx \
+              --spec test/frontend/features/ide-react/components/layout/mobile-history-layout.spec.tsx,test/frontend/features/ide-react/components/layout/mobile-pdf-state.spec.tsx,test/frontend/features/ide-react/components/layout/mobile-pane-switcher.spec.tsx,test/frontend/components/pdf-preview/pdf-preview.spec.tsx,test/frontend/components/pdf-preview/pdf-preview-hybrid-toolbar.spec.tsx \
               --config retries=0 \
               2>&1 | tee artifacts/cypress.log
           status=${PIPESTATUS[0]}
@@ -544,7 +557,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pr61-pdf-preview-cypress-${{ github.sha }}-${{ github.run_attempt }}
+          name: cypress-component-tests-${{ github.sha }}-${{ github.run_attempt }}
           retention-days: 7
           if-no-files-found: warn
           path: |

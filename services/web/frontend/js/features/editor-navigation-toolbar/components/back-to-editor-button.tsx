@@ -10,6 +10,7 @@ function BackToEditorButton({ onClick }: { onClick: () => void }) {
       variant="secondary"
       size="sm"
       onClick={onClick}
+      aria-label={t('back_to_editor')}
       className="back-to-editor-btn"
     >
       <MaterialIcon type="arrow_back" className="toolbar-btn-secondary-icon" />
