@@ -13,6 +13,137 @@ block content
 					p
 						| #{settings.appName} is the Institute's collaborative LaTeX editor. This page covers the platform itself; for LaTeX, start with the guides below.
 
+					h2.h3#first-project Start your first project
+					ol
+						li Log in with your IIT Mandi Google account.
+						li Click <strong>New project</strong>, then <strong>Blank project</strong>. Give the project a name.
+						li Type in the editor on the left. A LaTeX file is plain text; the commands in it start with a backslash, such as <code>\section{Introduction}</code>.
+						li Click <strong>Recompile</strong>. The PDF appears on the right.
+						li To start from a ready-made layout instead, see #[a(href='#templates') Start from a template].
+
+					h2.h3#templates Start from a template
+					ol
+						li Click <strong>New project</strong>, then <strong>More templates</strong> and <strong>All templates</strong>, or open the #[a(href='/templates') template gallery].
+						li
+							| Pick the one that fits (see
+							|
+							a(href='#which-template') Which template to use
+							| ).
+						li Open the project and click <strong>Recompile</strong>. Replace the sample text with your own.
+						li To change the font size, line spacing or margins, choose <strong>Format › Page setup</strong>. See #[a(href='#visual-editor') Editing without knowing LaTeX].
+					h3.h4#which-template Which template to use
+					ul
+						li
+							strong IIT Mandi Thesis
+							|  — a PhD, MS (by Research), M.Tech (by Research) or I-PhD thesis.
+						li
+							strong IIT Mandi Project Report
+							|  — a DP, ISTP, MTP, M.Tech or M.Sc project, by one student or a group.
+						li
+							strong IIT Mandi Lab Report
+							|  — a report on a lab experiment.
+						li
+							strong IIT Mandi Assignment
+							|  — numbered problems with marks, and your solutions.
+						li
+							strong IIT Mandi Presentation
+							|  — slides for a talk, a seminar or a viva.
+						li
+							strong IIT Mandi Research Poster
+							|  — an A0 portrait poster for a conference or a poster session.
+						li
+							strong IIT Mandi Formal Letter
+							|  — a letter you write yourself, such as an application. It is not the Institute's official letterhead.
+						li
+							strong IIT Mandi Resume
+							|  — a one-page resume for placements and internships.
+					p
+						| The thesis, project report and resume templates follow the best sources available, not an official circular. Check the current guidelines of the Academic Section or the Career and Placement Cell before you submit.
+
+					h2.h3#faq Common questions
+					details#faq-compile-paused
+						summary Why did my compile pause?
+						p
+							if settings.compileQueue && settings.compileQueue.turnMs
+								| When other people are waiting for a compile slot, a long compile pauses after #{Math.round(settings.compileQueue.turnMs / 1000)} seconds and lets the next one run. Yours carries on by itself when a slot is free. You don't need to click anything.
+							else
+								| When other people are waiting for a compile slot, a long compile pauses and lets the next one run. Yours carries on by itself when a slot is free. You don't need to click anything.
+						p
+							| If a compile reaches its time limit, the PDF shows the pages finished so far. See
+							|
+							a(href='#compile-time') Long documents and compile time
+							| .
+					if settings.editorPlaces && settings.editorPlaces.limit > 0
+						details#faq-waiting-room
+							summary Why am I in a waiting room?
+							p
+								| Only a limited number of people can have the editor open at once, so that editing stays fast. Keep the tab open. Your project opens by itself when a place is free. See
+								|
+								a(href='#editor-waiting-room') When the editor is full
+								| .
+					if settings.storageQuota && settings.storageQuota.defaultMB > 0
+						details#faq-storage-full
+							summary My storage is full. What can I do?
+							ol
+								li Open your account settings and look at the list of your largest projects.
+								li Delete files you no longer need, or delete old projects and empty the trash.
+								li If you still need more space, write to the address under Contact.
+							p
+								| See
+								|
+								a(href='#storage') Storage space
+								| .
+					details#faq-share-link
+						summary Why does a share link open the project read-only?
+						p
+							if settings.shareLinksCanEdit === false
+								| A share link only lets people view a project. To let someone edit, open
+								|
+								strong Share
+								|
+								| in the editor and invite them by their IIT Mandi email address as an editor.
+							else
+								| A link set to view-only lets people read the project but not change it. To let someone edit, open
+								|
+								strong Share
+								|
+								| in the editor and invite them by their IIT Mandi email address as an editor, or turn on the edit link.
+					details#faq-restore-version
+						summary How do I go back to an earlier version?
+						ol
+							li Open the project, then choose <strong>History</strong>.
+							li Click a version in the list to see what the project looked like then.
+							li To bring back one file, choose it on the left and click <strong>Restore this version</strong>.
+							li To bring back the whole project, open the menu (⋮) next to the version and choose <strong>Restore project to this version</strong>.
+					details#faq-tex-live-year
+						summary Which TeX Live year should I choose?
+						p
+							| Each project compiles with one TeX Live release, and new projects use the newest. To change it, open the project, click <strong>Settings</strong>, open the <strong>Compiler</strong> tab, and choose a TeX Live version. Choose an older year only if a document written earlier fails to compile on the newest one. Packages differ between years, so changing the year can change the PDF. Compile again and check the result.
+					details#faq-one-chapter
+						summary How do I compile only one chapter?
+						ol
+							li Put each chapter in its own file and load it in the main file with <code>\include{chapter3}</code>. If the main file uses <code>\input{chapter3}</code>, change it to <code>\include</code>: only chapters loaded with <code>\include</code> can be skipped, and each one starts on a new page.
+							li Compile the whole document once. This saves the page numbers and references of every chapter.
+							li Add <code>\includeonly{chapter3}</code> to the preamble, the part of the main file before <code>\begin{document}</code>.
+							li Compile again. Only that chapter is typeset. The line changes the PDF for everyone working on the project, so remove it when you want the whole document.
+					details#faq-errors
+						summary How do I read a compile error?
+						ol
+							li Open the logs next to the PDF.
+							li Find the first error. Later errors often follow from it.
+							li Read the line number it gives and look at that line in your file.
+							if settings.askAi && settings.askAi.url
+								li Click the sparkle button on the error to ask #{settings.askAi.name} what it means. See <a href="#ask-ai">Ask AI</a>.
+							else
+								li Search the message on <a href="https://tex.stackexchange.com/" target="_blank" rel="noopener noreferrer">TeX Stack Exchange</a>.
+					details#faq-report-problem
+						summary How do I report a problem?
+						p
+							| Write to
+							|
+							a(href='mailto:' + settings.adminEmail) #{settings.adminEmail}
+							| . Include the address of the page, what you did, and what you expected. Copy the error text if there is one. There is no guaranteed reply time.
+
 					h2.h3#visual-editor Editing without knowing LaTeX
 					ul
 						li
@@ -128,6 +259,47 @@ block content
 							|
 							| shows every change to a project and can restore earlier versions.
 
+					h2.h3#review Comments and suggested changes
+					p
+						| Use these when a supervisor or a teammate reads your work: they can leave comments and suggest changes without overwriting your text.
+					ul
+						li
+							| To comment, select some text in the editor and click
+							|
+							strong Add comment
+							| . Comments show beside the text in the
+							|
+							strong Review
+							|
+							| panel, where anyone on the project can reply. Click the tick on a comment to mark it resolved; resolved comments stay under
+							|
+							strong Resolved comments
+							| .
+						li
+							| To suggest changes instead of making them, click the pencil button in the editor toolbar, next to
+							|
+							strong Code
+							|
+							| and
+							|
+							strong Visual
+							| , and choose
+							|
+							strong Reviewing
+							| . What you type and delete is then shown as a suggestion, marked in colour, until someone accepts or rejects it.
+						li
+							| In the
+							|
+							strong Review
+							|
+							| panel, click the tick on a suggestion to accept it, or the cross to reject it.
+						li
+							| When you share a project, you can give someone the
+							|
+							strong Reviewer
+							|
+							| role. A reviewer can comment and suggest changes, but cannot change the text directly. Give it to a supervisor who should mark up a draft without editing it.
+
 					h2.h3 Projects
 					ul
 						li
@@ -181,9 +353,45 @@ block content
 							li
 								| After #{settings.editorPlaces.idleMinutes} minutes without typing, clicking or scrolling, your place goes to the next person waiting. When you come back, you get a free place again, or a place in the queue.
 
-					h2.h3 Git
-					p
-						| You can clone, pull and push projects with git. Create an authentication token in your account settings, and use it as the password when git asks for one.
+					if settings.enableGitBridge
+						h2.h3#git Git
+						p
+							| You can clone, pull and push projects with git, and work on them on your own computer.
+						ol
+							li
+								| Open your
+								|
+								a(href='/user/settings') account settings
+								| , find
+								|
+								strong Git integration
+								|
+								| and click
+								|
+								strong Generate token
+								| . Copy the token and keep it safe: it is shown only once.
+							li
+								| Open the project, click
+								|
+								strong Integrations
+								|
+								| on the left edge of the editor, then
+								|
+								strong Git
+								| . Copy the
+								|
+								code git clone
+								|
+								| command it shows and run it in a terminal.
+							li
+								| When git asks for a password, paste the token. Your Google password does not work here.
+							li
+								| Work as with any git repository. After
+								|
+								code git push
+								| , the changes appear in the editor. Pull before you start, so that you have the changes made in the editor.
+						p
+							| If you can only view or review a project, you can pull from it but not push.
 
 					h2.h3 Browsers
 					p
