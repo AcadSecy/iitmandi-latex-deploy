@@ -560,6 +560,11 @@ export const LocalCompileProvider: FC<React.PropsWithChildren> = ({
         )
       }
 
+      if (data.status !== 'success') {
+        // a partial PDF belongs to the compile that stopped making it
+        setPdfFile(pdfFile => (pdfFile?.partial ? undefined : pdfFile))
+      }
+
       if (data.outputFiles) {
         const outputFiles = new Map()
 
@@ -580,6 +585,7 @@ export const LocalCompileProvider: FC<React.PropsWithChildren> = ({
           const partialPdf = handleOutputFiles(outputFiles, projectId, data)
           if (partialPdf) {
             setPdfFile({ ...partialPdf, partial: data.status })
+            setShowLogs(false)
           }
         }
 

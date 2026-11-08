@@ -8,8 +8,14 @@ import OLButton from '@/shared/components/ol/ol-button'
 import OLBadge from '@/shared/components/ol/ol-badge'
 
 const PdfHybridLogsButton = forwardRef<HTMLButtonElement>((_, ref) => {
-  const { error, logEntries, toggleLogs, showLogs, stoppedOnFirstError } =
-    useCompileContext()
+  const {
+    error,
+    logEntries,
+    toggleLogs,
+    showLogs,
+    stoppedOnFirstError,
+    pdfFile,
+  } = useCompileContext()
 
   const { t } = useTranslation()
 
@@ -31,7 +37,14 @@ const PdfHybridLogsButton = forwardRef<HTMLButtonElement>((_, ref) => {
         ref={ref}
         variant="secondary"
         size="sm"
-        disabled={Boolean(error || stoppedOnFirstError)}
+        // after a failed compile the last good PDF stays viewable, as does a
+        // partial PDF from the current stopped or timed-out compile
+        disabled={Boolean(
+          (error &&
+            !(error === 'failure' && pdfFile) &&
+            pdfFile?.partial !== error) ||
+            stoppedOnFirstError
+        )}
         onClick={handleClick}
       >
         {t('back_to_pdf')}
@@ -48,7 +61,9 @@ const PdfHybridLogsButton = forwardRef<HTMLButtonElement>((_, ref) => {
       <OLButton
         ref={ref}
         variant="link"
-        disabled={Boolean(error || stoppedOnFirstError)}
+        disabled={Boolean(
+          (error && pdfFile?.partial !== error) || stoppedOnFirstError
+        )}
         className="pdf-toolbar-btn toolbar-item log-btn"
         onClick={handleClick}
         style={{ position: 'relative' }}
