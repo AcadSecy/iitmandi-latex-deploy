@@ -580,6 +580,7 @@ export const LocalCompileProvider: FC<React.PropsWithChildren> = ({
           const partialPdf = handleOutputFiles(outputFiles, projectId, data)
           if (partialPdf) {
             setPdfFile({ ...partialPdf, partial: data.status })
+            setShowLogs(false)
           }
         }
 

@@ -694,6 +694,216 @@ describe('<PdfPreview/>', function () {
     })
   })
 
+  describe('partial PDFs', function () {
+    const banners = {
+      terminated:
+        'You stopped this compile. The PDF has the pages typeset before it stopped.',
+      timedout:
+        'This compile reached its time limit. The PDF has the pages typeset before it stopped.',
+    }
+
+    const mountPreview = function () {
+      const scope = mockScope()
+      scope.settings.pdfViewer = 'native'
+
+      cy.intercept(
+        { pathname: '/project/*/output/cached/output.overleaf.json' },
+        { statusCode: 404 }
+      ).as('cached-compile')
+
+      cy.mount(
+        <EditorProviders
+          scope={scope}
+          projectId={projectId}
+          userSettings={scope.settings}
+        >
+          <PdfViewer>
+            <PdfPreview />
+          </PdfViewer>
+        </EditorProviders>
+      )
+    }
+
+    const showInitialPdf = function () {
+      cy.interceptCompile()
+      mountPreview()
+      cy.findByRole('button', { name: 'Recompile' }).click()
+      cy.waitForCompile({ pdf: true })
+      cy.findByTitle('PDF Preview').should('be.visible')
+      cy.get('.new-logs-pane').should('not.be.visible')
+    }
+
+    const runPartialCompile = function (
+      status: 'terminated' | 'timedout',
+      { hasPdf = true, stop = false } = {}
+    ) {
+      const build = `partial-${status}-build`
+      let compilePending = false
+
+      const response = {
+        // Keep the compile pending for Stop without a request callback Promise.
+        delay: stop ? 5000 : 0,
+        body: {
+          status,
+          clsiServerId: 'foo',
+          compileGroup: 'priority',
+          pdfDownloadDomain: 'https://clsi.test-overleaf.com',
+          outputFiles: hasPdf
+            ? [
+                {
+                  path: 'output.pdf',
+                  build,
+                  url: `/build/${build}/output.pdf`,
+                  type: 'pdf',
+                },
+                {
+                  path: 'output.log',
+                  build,
+                  url: `/build/${build}/output.log`,
+                  type: 'log',
+                },
+              ]
+            : [],
+        },
+      }
+
+      cy.intercept(
+        { method: 'POST', pathname: '/project/*/compile', times: 1 },
+        req => {
+          compilePending = true
+          req.on('after:response', () => {
+            compilePending = false
+          })
+          req.reply(response)
+        }
+      ).as('partial-compile')
+
+      if (hasPdf) {
+        cy.intercept(
+          { pathname: `/build/${build}/output.pdf` },
+          { fixture: 'build/output-2.pdf,null' }
+        ).as('partial-compile-pdf')
+        cy.intercept(
+          { pathname: `/build/${build}/output.log` },
+          { fixture: 'build/output.log' }
+        ).as('partial-compile-log')
+      }
+
+      if (stop) {
+        cy.intercept(
+          { method: 'GET', pathname: '/project/*/compile/queue' },
+          {
+            body: {
+              state: 'running',
+              position: null,
+              isAutoCompile: false,
+              slots: 0,
+            },
+          }
+        ).as('compile-queue')
+        cy.intercept(
+          { method: 'POST', pathname: '/project/*/compile/stop', times: 1 },
+          req => {
+            expect(compilePending, 'compile is pending at Stop').to.be.true
+            req.reply({ statusCode: 200, body: {} })
+          }
+        ).as('stop-compile')
+      }
+
+      cy.findByRole('button', { name: 'Recompile' }).click()
+
+      if (stop) {
+        cy.wrap(null).should(() => {
+          expect(compilePending, 'original compile POST is pending').to.be.true
+        })
+        // The loading button's accessible name includes the elapsed seconds.
+        cy.findByRole('button', { name: /^Compiling… \d+ s$/ }).should(
+          'be.disabled'
+        )
+        cy.findByRole('button', { name: 'Toggle compile options menu' }).click()
+        cy.findByRole('menuitem', { name: 'Stop compilation' }).should(
+          'be.enabled'
+        )
+        cy.findByRole('menuitem', { name: 'Stop compilation' }).trigger('click')
+        cy.wait('@stop-compile').its('response.statusCode').should('eq', 200)
+        // Stop finishes before the original compile POST returns its output.
+        cy.findByRole('button', { name: 'Recompile' }).should('be.enabled')
+      }
+
+      cy.wait('@partial-compile')
+        .its('response.body.status')
+        .should('eq', status)
+      if (hasPdf) {
+        cy.wait('@partial-compile-log')
+        cy.wait('@partial-compile-pdf')
+      }
+    }
+
+    const expectPartialPdf = function (status: 'terminated' | 'timedout') {
+      cy.findByTitle('PDF Preview')
+        .should('be.visible')
+        .and('have.attr', 'src')
+        .and('include', `/build/partial-${status}-build/output.pdf?`)
+      cy.findByRole('status')
+        .should('be.visible')
+        .and('contain.text', banners[status])
+      cy.get('.new-logs-pane').should('not.be.visible')
+    }
+
+    it('shows the new partial PDF after Stop compilation with logs closed', function () {
+      showInitialPdf()
+      runPartialCompile('terminated', { stop: true })
+      expectPartialPdf('terminated')
+    })
+
+    it('shows the new partial PDF after Stop compilation with logs open', function () {
+      showInitialPdf()
+      cy.findByRole('button', { name: 'View logs' }).click()
+      cy.get('.new-logs-pane').should('be.visible')
+
+      runPartialCompile('terminated', { stop: true })
+      expectPartialPdf('terminated')
+    })
+
+    it('shows the new partial PDF after a time limit with logs closed', function () {
+      showInitialPdf()
+      runPartialCompile('timedout')
+      expectPartialPdf('timedout')
+    })
+
+    for (const status of ['terminated', 'timedout'] as const) {
+      it(`returns to the partial PDF from the banner's logs for '${status}'`, function () {
+        showInitialPdf()
+        runPartialCompile(status)
+        expectPartialPdf(status)
+
+        cy.findByRole('status').within(() => {
+          cy.findByRole('button', { name: 'View logs' }).click()
+        })
+        cy.get('.new-logs-pane').should('be.visible')
+        cy.findByRole('button', { name: 'Back to PDF' })
+          .should('be.enabled')
+          .click()
+        expectPartialPdf(status)
+      })
+    }
+
+    it('shows cancellation logs and disables Back to PDF when stopped without output files', function () {
+      mountPreview()
+      cy.get('.new-logs-pane').should('not.be.visible')
+      runPartialCompile('terminated', { hasPdf: false })
+
+      cy.get('.new-logs-pane')
+        .should('be.visible')
+        .within(() => {
+          cy.findByText('Compilation cancelled').should('be.visible')
+        })
+      cy.findByTitle('PDF Preview').should('not.exist')
+      cy.get('.pdf-partial-banner').should('not.exist')
+      cy.findByRole('button', { name: 'Back to PDF' }).should('be.disabled')
+    })
+  })
+
   it('displays expandable raw logs', function () {
     cy.interceptCompile()
 

@@ -37,9 +37,13 @@ const PdfHybridLogsButton = forwardRef<HTMLButtonElement>((_, ref) => {
         ref={ref}
         variant="secondary"
         size="sm"
-        // after a failed compile the PDF of the last good compile stays viewable
+        // after a failed compile the last good PDF stays viewable, as does a
+        // partial PDF from the current stopped or timed-out compile
         disabled={Boolean(
-          (error && !(error === 'failure' && pdfFile)) || stoppedOnFirstError
+          (error &&
+            !(error === 'failure' && pdfFile) &&
+            pdfFile?.partial !== error) ||
+            stoppedOnFirstError
         )}
         onClick={handleClick}
       >
@@ -57,7 +61,9 @@ const PdfHybridLogsButton = forwardRef<HTMLButtonElement>((_, ref) => {
       <OLButton
         ref={ref}
         variant="link"
-        disabled={Boolean(error || stoppedOnFirstError)}
+        disabled={Boolean(
+          (error && pdfFile?.partial !== error) || stoppedOnFirstError
+        )}
         className="pdf-toolbar-btn toolbar-item log-btn"
         onClick={handleClick}
         style={{ position: 'relative' }}
