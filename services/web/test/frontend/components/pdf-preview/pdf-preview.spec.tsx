@@ -702,9 +702,9 @@ describe('<PdfPreview/>', function () {
         'This compile reached its time limit. The PDF has the pages typeset before it stopped.',
     }
 
-    const mountPreview = function () {
+    const mountPreview = function (viewer: 'native' | 'pdfjs' = 'native') {
       const scope = mockScope()
-      scope.settings.pdfViewer = 'native'
+      scope.settings.pdfViewer = viewer
 
       cy.intercept(
         { pathname: '/project/*/output/cached/output.overleaf.json' },
@@ -876,6 +876,7 @@ describe('<PdfPreview/>', function () {
         showInitialPdf()
         runPartialCompile(status)
         expectPartialPdf(status)
+        cy.get('.log-btn').should('be.enabled')
 
         cy.findByRole('status').within(() => {
           cy.findByRole('button', { name: 'View logs' }).click()
@@ -888,10 +889,77 @@ describe('<PdfPreview/>', function () {
       })
     }
 
+    it('shows cancellation logs and disables Back to PDF after a partial PDF when stopped without output files', function () {
+      mountPreview('pdfjs')
+      runPartialCompile('terminated', { stop: true })
+      cy.findByTestId('pdfjs-viewer-inner')
+        .should('be.visible')
+        .find('.page')
+        .should('exist')
+      cy.findByText(banners.terminated).should('be.visible')
+      cy.get('.new-logs-pane').should('not.be.visible')
+
+      runPartialCompile('terminated', { hasPdf: false, stop: true })
+
+      cy.get('.new-logs-pane')
+        .should('be.visible')
+        .within(() => {
+          cy.findByText('Compilation cancelled').should('be.visible')
+        })
+      cy.get('.pdf-partial-banner').should('not.exist')
+      cy.findByRole('button', { name: 'Back to PDF' }).should('be.disabled')
+      cy.findByTestId('pdfjs-viewer-inner').should('not.exist')
+    })
+
+    it('shows logs and disables Back to PDF after a partial PDF when a compile fails', function () {
+      mountPreview('pdfjs')
+      runPartialCompile('timedout')
+      cy.findByTestId('pdfjs-viewer-inner')
+        .should('be.visible')
+        .find('.page')
+        .should('exist')
+      cy.findByText(banners.timedout).should('be.visible')
+      cy.get('.new-logs-pane').should('not.be.visible')
+
+      cy.intercept(
+        { method: 'POST', pathname: '/project/*/compile', times: 1 },
+        {
+          body: {
+            status: 'failure',
+            clsiServerId: 'foo',
+            compileGroup: 'priority',
+            outputFiles: [
+              {
+                path: 'output.log',
+                build: 'failed-build',
+                url: '/build/failed-build/output.log',
+                type: 'log',
+              },
+            ],
+          },
+        }
+      ).as('failed-compile')
+      cy.intercept(
+        { pathname: '/build/failed-build/output.log', times: 1 },
+        { fixture: 'build/output.log' }
+      ).as('failed-compile-log')
+
+      cy.findByRole('button', { name: 'Recompile' }).click()
+      cy.wait('@failed-compile')
+      cy.wait('@failed-compile-log')
+      cy.get('.new-logs-pane').should('be.visible')
+      cy.findByRole('button', { name: 'Back to PDF' }).should('be.disabled')
+      cy.get('.pdf-partial-banner').should('not.exist')
+      cy.findByText(
+        'The latest compile failed. This is the PDF from your last successful compile.'
+      ).should('not.exist')
+      cy.findByTestId('pdfjs-viewer-inner').should('not.exist')
+    })
+
     it('shows cancellation logs and disables Back to PDF when stopped without output files', function () {
       mountPreview()
       cy.get('.new-logs-pane').should('not.be.visible')
-      runPartialCompile('terminated', { hasPdf: false })
+      runPartialCompile('terminated', { hasPdf: false, stop: true })
 
       cy.get('.new-logs-pane')
         .should('be.visible')
