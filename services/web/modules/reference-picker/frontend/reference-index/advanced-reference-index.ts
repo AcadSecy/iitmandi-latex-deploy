@@ -21,8 +21,12 @@ const FIELDS = [
 // an accented i (\'i, \'{i}) to \"{u} / \'{\i} so they convert as well.
 function normalizeAccents(content: string): string {
   return content
+    // These formatting commands otherwise become literal text in the parser.
+    // The lookbehind leaves \\ (a line break) followed by the word alone.
+    .replace(/(?<!\\)\\relax(?![A-Za-z])\s*/g, '')
+    .replace(/(?<!\\)\\textsc(?=\s*\{)/g, '')
     .replace(/\{(\\["'`^~=.])([A-Za-z])\}/g, '$1{$2}')
-    .replace(/(\\["'`^~=.])([A-Za-z])(?![A-Za-z])/g, '$1{$2}')
+    .replace(/(\\["'`^~=.])([A-Za-z])/g, '$1{$2}')
     .replace(/(\\["'`^~=.])\{i\}/g, '$1{\\i}')
 }
 

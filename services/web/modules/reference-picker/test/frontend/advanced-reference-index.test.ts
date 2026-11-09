@@ -102,6 +102,61 @@ describe('AdvancedReferenceIndex', function () {
     expect(keys(await this.index.search('linked'))).to.deep.equal([])
   })
 
+  for (const [name, content] of [
+    ['empty', ''],
+    ['whitespace-only', ' \n\t\r '],
+  ]) {
+    it(`forgets old entries when a file becomes ${name}`, async function () {
+      expect(() =>
+        this.index.updateIndex({
+          updates: [{ path: 'refs.bib', content }],
+          deletes: [],
+        })
+      ).not.to.throw()
+      expect([...this.index.getKeys()]).to.deep.equal(['linked2021'])
+      expect(keys(await this.index.search(''))).to.deep.equal(['linked2021'])
+      expect(keys(await this.index.search('muller'))).to.deep.equal([])
+    })
+  }
+
+  for (const [name, content, expected] of [
+    ['an unclosed brace', '@misc{broken, title = {Unclosed', ['before']],
+    ['garbage between entries', 'this is not BibTeX', ['before', 'after']],
+    ['an entry with no key', '@misc{, title = {No key}}', ['before', 'after']],
+  ] as const) {
+    it(`keeps good entries and forgets old ones with ${name}`, async function () {
+      const contentWithGoodEntries = `@misc{before, title = {Before}}
+${content}
+@misc{after, title = {After}}`
+      expect(() =>
+        this.index.updateIndex({
+          updates: [{ path: 'refs.bib', content: contentWithGoodEntries }],
+          deletes: [],
+        })
+      ).not.to.throw()
+      // The parser cannot recover entries after an unclosed field. A keyless
+      // entry may produce a synthetic key; check the valid entries separately.
+      const stored = [...this.index.getKeys()]
+      expect(stored).to.include.members([...expected, 'linked2021'])
+      if (name !== 'an entry with no key') {
+        expect(stored).to.deep.equal([...expected, 'linked2021'])
+      }
+      for (const key of ['mueller2020', 'kumar2024', 'knuth1984', 'rao2019']) {
+        expect(stored).not.to.include(key)
+        expect(keys(await this.index.search(key))).to.deep.equal([])
+      }
+      for (const key of expected) {
+        const { hits } = await this.index.search(key)
+        expect(keys({ hits })).to.deep.equal([key])
+        expect(hits[0]._source.Fields.title).to.equal(
+          key === 'before' ? 'Before' : 'After'
+        )
+      }
+      expect(keys(await this.index.search('muller'))).to.deep.equal([])
+      expect(keys(await this.index.search('linked'))).to.deep.equal(['linked2021'])
+    })
+  }
+
   it('keeps the first definition of a key that two .bib files share', async function () {
     const index = new AdvancedReferenceIndex()
     const fileA = { path: 'a.bib', content: '@misc{shared, title = {From A}}' }
@@ -172,6 +227,153 @@ describe('AdvancedReferenceIndex', function () {
     const { hits } = await index.search('twice')
     expect(hits).to.have.lengthOf(1)
     expect(hits[0]).not.to.have.property('files')
+  })
+
+  it('finds a name however its accent is written', async function () {
+    const index = new AdvancedReferenceIndex()
+    const forms = [
+      'M{\\"u}ller',
+      'M\\"uller',
+      'M\\"{u}ller',
+      'Müller',
+      '{M\\"{u}ller}',
+    ]
+    index.updateIndex({
+      updates: [
+        {
+          path: 'a.bib',
+          content: forms
+            .map((name, i) => `@misc{form${i}, author = {${name}, Ann}}`)
+            .join('\n'),
+        },
+        {
+          path: 'b.bib',
+          content: `@misc{emile, author = {\\'{E}mile Zola}}
+@misc{cech, author = {\\v{C}ech, Eduard}}
+@misc{erdos, author = {Erd\\H{o}s, Paul}}
+@misc{garcia, author = {Garc\\'{\\i}a, Lu\\'is}}`,
+        },
+      ],
+      deletes: [],
+    })
+    const all = forms.map((_, i) => `form${i}`)
+    expect(keys(await index.search('muller'))).to.deep.equal(all)
+    expect(keys(await index.search('müller'))).to.deep.equal(all)
+    expect(keys(await index.search('emile'))).to.deep.equal(['emile'])
+    expect(keys(await index.search('cech'))).to.deep.equal(['cech'])
+    expect(keys(await index.search('erdos'))).to.deep.equal(['erdos'])
+    expect(keys(await index.search('garcia luis'))).to.deep.equal(['garcia'])
+    const { hits } = await index.search('garcia luis')
+    expect(hits[0]._source.Fields.author).to.equal('García, Luís')
+  })
+
+  it('finds protected and macro-heavy names without corrupting displayed fields', async function () {
+    const index = new AdvancedReferenceIndex()
+    const names = [
+      [String.raw`{{M\"uller}}`, 'Müller', 'muller'],
+      [String.raw`{\relax Ch}ristoph`, 'Christoph', 'christoph'],
+      [String.raw`{\"{U}}ber`, 'Über', 'uber'],
+      [String.raw`\textsc{Smith}`, 'Smith', 'smith'],
+      [String.raw`{\'E}cole`, 'École', 'ecole'],
+      ['Müller', 'Müller', 'muller'],
+      ['Søren', 'Søren', 'soren'],
+    ]
+    index.updateIndex({
+      updates: [
+        {
+          path: 'names.bib',
+          content: names
+            .map(([name], i) => `@misc{name${i},
+  author = {${name}}, title = {${name}}, journal = {${name}}
+}`)
+            .join('\n'),
+        },
+      ],
+      deletes: [],
+    })
+    for (const [i, [, displayed, query]] of names.entries()) {
+      const { hits } = await index.search(query)
+      const hit = hits.find(hit => hit._source.EntryKey === `name${i}`)
+      expect(hit, query).not.to.equal(undefined)
+      for (const field of ['author', 'title', 'journal']) {
+        expect(hit!._source.Fields[field], field).to.equal(displayed)
+      }
+    }
+  })
+
+  it('converts bare dot and macron accents without changing escaped punctuation', async function () {
+    const index = new AdvancedReferenceIndex()
+    index.updateIndex({
+      updates: [
+        {
+          path: 'punctuation.bib',
+          content: String.raw`@misc{accents,
+  title = {\.Zolc and \=Anand}
+}
+@misc{punctuation,
+  title = {Quoted \" words \" and \' punctuation \' with \. and \= plus \& 50\%}
+}`,
+        },
+      ],
+      deletes: [],
+    })
+    expect(keys(await index.search('zolc anand'))).to.deep.equal(['accents'])
+    expect(titles(await index.search('zolc anand'))).to.deep.equal([
+      'Żolc and Ānand',
+    ])
+    expect(keys(await index.search('words punctuation & 50%'))).to.deep.equal([
+      'punctuation',
+    ])
+    expect(titles(await index.search('words punctuation'))).to.deep.equal([
+      `Quoted " words " and ' punctuation ' with . and = plus & 50%`,
+    ])
+  })
+
+  it('leaves a line break before the words relax and textsc alone', async function () {
+    const index = new AdvancedReferenceIndex()
+    index.updateIndex({
+      updates: [
+        {
+          path: 'breaks.bib',
+          content: String.raw`@misc{relax, title = {Stay\\relax}}
+@misc{textsc, title = {Line\\textsc{Two}}}
+@misc{after, title = {After}}`,
+        },
+      ],
+      deletes: [],
+    })
+    expect([...index.getKeys()]).to.deep.equal(['relax', 'textsc', 'after'])
+    expect(titles(await index.search('after'))).to.deep.equal(['After'])
+  })
+
+  it('keeps keys with punctuation exactly as written', async function () {
+    const index = new AdvancedReferenceIndex()
+    const written = [
+      'smith:2020a',
+      'doe-2019_v2',
+      'van.der.berg/2018',
+      'Lee+Kim2021',
+      "o'brien2017",
+    ]
+    index.updateIndex({
+      updates: [
+        {
+          path: 'p.bib',
+          content: written
+            .map(key => `@misc{${key}, author = {M\\"uller, X}, title = {T}}`)
+            .join('\n'),
+        },
+      ],
+      deletes: [],
+    })
+    expect([...index.getKeys()]).to.deep.equal(written)
+    expect(keys(await index.search('muller'))).to.deep.equal(written)
+    expect(keys(await index.search('smith:2020a'))).to.deep.equal([
+      'smith:2020a',
+    ])
+    expect(keys(await index.search('van.der'))).to.deep.equal([
+      'van.der.berg/2018',
+    ])
   })
 
   it('finds by keyword', async function () {
