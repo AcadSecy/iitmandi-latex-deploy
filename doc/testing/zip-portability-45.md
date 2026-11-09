@@ -3,11 +3,11 @@
 ## 1. Purpose and scope
 
 I tested ZIP export/import, compilation, and error handling with a disposable
-project on IIT Mandi LaTeX on 31 October 2026. This report records my results for
-Issue #45 and PR #59 on branch `test/zip-portability-45`, together with subsequent
-local artifact checks and verifier regression tests. It changes only testing
-documentation, helpers, and lightweight CI integration; maintainer acceptance
-remains pending.
+project on IIT Mandi LaTeX on 31 October 2026. Merged PR #59 added this report,
+the local artifact checks, and verifier regression tests. This documentation-only
+follow-up on `docs/issue45-final-verification` records my additional manual
+verification on 7 November 2026 for Issue #45. Maintainer acceptance remains
+pending.
 
 ZIP integrity and portability checks passed for this fixture. Remaining coverage
 and acceptance status are listed under
@@ -15,23 +15,16 @@ and acceptance status are listed under
 These results do not establish that all projects, compilers, or deployment
 configurations behave identically.
 
-### Independent merge scope
+### Follow-up scope
 
-I am submitting PR #59 for portability documentation, verification scripts,
-regression tests, and sanitized evidence under `doc/testing/`, plus a lightweight
-CI integration in `.github/workflows/ci.yml`. It does not modify application
-authorization, sharing, ZIP endpoints, or deployment functionality. This limited
-scope allows the PR to be considered for independent merge, subject to maintainer
-review and approval, without waiting for the separate security fix.
-
-I have now submitted the access-control vulnerability through GitHub's private
-vulnerability reporting workflow. Merging this PR does not fix that vulnerability
-or satisfy all Issue #45 acceptance criteria. Permission-related remediation and
-retesting require private coordination with the maintainers. Collaborator-specific
-permissions, verification of active-upload cancellation, and deployment verification
-remain pending; the deployed release/image commit must be captured on the next
-authorized verification run. Issue #45 should remain open until the remaining
-acceptance criteria are met.
+PR #59 is already merged. This follow-up changes only this report; it does not
+change its verification scripts, regression tests, evidence files, CI workflow,
+application authorization, sharing, ZIP endpoints, or deployment functionality.
+The original results and their evidence limitations remain below. The new
+collaboration, ordinary-user authorization, and cancellation results are manual
+observations, not automated integration-test results. Security-specific discussion
+remains in the existing private advisory; this report makes no claim about its
+resolution. Issue #45 remains open for maintainer acceptance.
 
 ## 2. Test environment
 
@@ -40,6 +33,7 @@ acceptance criteria are met.
 | Application | Institute self-hosted IIT Mandi LaTeX platform, based on Overleaf Community Edition |
 | Test data | Disposable 10-file project; no production project content |
 | Initial test date | 31 October 2026; my browser test session |
+| Additional functional verification | 7 November 2026; manual checks with ordinary non-administrator accounts and disposable projects; Firefox/GPRS throttling for cancellation |
 | Local OS | Ubuntu 24.04, as used for testing; `/etc/os-release` during the final local review reports Ubuntu 24.04.4 LTS. This is not the server OS. |
 | Browser | Firefox; version **Not independently recorded** |
 | Observed import settings | Root `chapters/main.tex`, compiler pdfLaTeX; automatic selection is my browser observation |
@@ -207,9 +201,10 @@ future run; the completed run's results are recorded in sections 5 and 6.
   PDF hashes: generated metadata can differ.
 
 - [ ] Repeat the error-handling cases in section 6, recording each outcome.
-- [ ] Coordinate permission acceptance privately with the maintainer. Authorized
-  collaborator-specific behavior remains a separate unvalidated criterion; do
-  not mark it passed based on owner-only portability tests.
+- [ ] Coordinate any further permission testing privately with the maintainer,
+  using authorized disposable accounts and projects. The 7 November manual
+  checks are recorded in section 7; owner-only portability tests and the Python
+  verifier tests do not establish application authorization behavior.
 
 ## 5. Verification results
 
@@ -255,7 +250,7 @@ settings.
 | PDF extracted text | PASS, verified | Fresh `pdftotext -layout` output is identical for both PDFs and matches the saved text files |
 | Bibliography and custom-style marker | PASS, verified | Resolved `[1]` citation, bibliography entry, and `CUSTOM-STYLE-LOADED` occur in both PDF text extracts |
 | PNG and included PDF graphic rendered | PASS, observed | I saw both graphics in the output. Later logs also support inclusion; neither text extraction nor log entries prove visual correctness. |
-| Permissions | DID NOT PASS | See [Remaining Acceptance Tests](#remaining-acceptance-tests) for status and required scope |
+| Original permission check | DID NOT PASS, historical | Preserved from the earlier testing; see section 7 for the separate 7 November ordinary-user results and their limits |
 
 I observed the same two warnings in the original compilations, related to custom
 class/style loading. Original-session logs remain unavailable. The later retained
@@ -316,8 +311,32 @@ Firefox's Network tab subsequently showed a POST upload request with HTTP 200.
 **Result: NOT VERIFIED (INCONCLUSIVE).** I could not establish whether the server
 had already accepted the request before I clicked Cancel. I also did not
 independently confirm whether an unintended new project was created. The observed response
-does not establish that cancellation succeeded or that it is broken. This
-attempt leaves active-upload cancellation unverified.
+does not establish that cancellation succeeded or that it is broken. At that
+stage, active-upload cancellation remained unverified. The later controlled
+checks below used the explicit Cancel Upload control.
+
+### Controlled upload cancellation — 7 November 2026
+
+During the follow-up, I identified that some attempts which appeared to continue
+after cancellation had used a different Cancel control rather than the explicit
+**Cancel Upload** button. I then used Firefox Developer Tools with GPRS network
+throttling and disposable ZIP files for the following controlled checks.
+
+| Approximate upload progress | Manual observation |
+| --- | --- |
+| 5–6% | The browser upload request aborted; no project opened |
+| 9% | The upload request aborted; no new project creation was observed |
+| 76% | Explicit Cancel Upload aborted the request; no new project creation was observed |
+| 89% | Explicit Cancel Upload aborted the request; no new project creation was observed |
+
+Firefox showed red/aborted POST upload requests, including `NS_BINDING_ABORTED`
+where observed. **Result: PASS in the tested scenarios — manually verified.**
+No unintended project creation was observed in these controlled attempts. Exact
+request-start, Cancel-click, and request-completion timestamps were not
+independently captured. A browser-side abort does not independently prove that
+all server-side processing stopped, and these checks do not cover every possible
+cancellation timing. They supplement, rather than erase, the inconclusive
+4 November observation.
 
 ### Verification-script regression tests
 
@@ -357,6 +376,10 @@ python3 -m py_compile \
 git diff --check
 git status --short
 ```
+
+The CI setup instructions and 3 November validation record below are retained
+from PR #59's preparation. They are historical; this follow-up does not modify
+workflows or trigger a new CI run.
 
 The manual `CI` workflow includes a **ZIP portability verification** job that
 runs the unittest command above on `ubuntu-24.04`, using the runner's Python 3
@@ -413,16 +436,31 @@ that temporary workspace. Both batches must pass, and result JSON stays in the
 temporary workspaces. The separate four-archive procedure checks each original
 by its retained filename and records its whole-archive digest.
 
-## 7. Permissions finding and limitation
+## 7. Permission observations and follow-up verification
 
-ZIP integrity results do not establish correct access control. The permission
-acceptance status and follow-up requirements are recorded under
-[Remaining Acceptance Tests](#remaining-acceptance-tests).
+The original permission result above remains a historical observation. The
+7 November checks below separately document ordinary-user behavior using two
+ordinary, non-administrator test accounts and disposable projects. Account A and
+Account B are anonymous labels only. Link sharing was disabled for both projects.
+
+| Scenario | Manual observations on 7 November 2026 | Result |
+| --- | --- | --- |
+| Authorized collaborator | Account A created a disposable project and invited Account B with editing permissions. B opened it, edited `main.tex`, and compiled successfully. A could see B's edits. B's Source ZIP download returned HTTP `200 OK`, and the downloaded ZIP contained the updated `main.tex`. | **PASS — manually verified** |
+| Collaborator revocation | A removed B. B was redirected out of the project and subsequently received a Restricted/access-denied page. | **PASS — manually verified** |
+| Source ZIP denial after revocation | The same Source ZIP request returned HTTP `200 OK` before removal and HTTP `403 Forbidden` afterward. No Source ZIP was downloaded after removal. | **PASS — manually verified** |
+| Never-invited ordinary user | B owned a second disposable project and never invited A. B's own Source ZIP download returned HTTP `200 OK`. A was denied access to the project page, and A's Source ZIP request returned HTTP `403 Forbidden`; no Source ZIP was downloaded. | **PASS — manually verified** |
+
+These are my manual test observations. Independent HTTP trace files were not
+retained as evidence for these checks, and this report does not claim screenshot
+coverage for every scenario. The nine regression tests and GitHub Actions test
+the Python ZIP verification utilities, not application authorization. These
+specific passes do not prove the absence of all possible authorization issues.
+They do not establish that the private advisory is resolved.
 
 Security details must remain private. This report does not include project URLs,
 account identifiers, affected endpoints, reproduction instructions, or screenshots
-of the access-control concern. Further permission-related testing requires
-maintainer-approved scope.
+of the earlier concern. Further permission-related testing requires private
+maintainer coordination and approved scope.
 
 ## 8. Evidence inventory
 
@@ -501,18 +539,30 @@ the contribution.
   graphic rendering, and the error-handling interactions described above.
 - **Verifier regression checks:** all nine local tests passed. These test the
   verification script, not the web application's import/export behavior.
+- **Additional manual verification on 7 November:** authorized collaboration,
+  edit visibility and compilation, collaborator Source ZIP export, revocation,
+  Source ZIP denial for a removed collaborator and a never-invited ordinary user,
+  and the four controlled Cancel Upload scenarios passed as observed above.
 
 ### Remaining Acceptance Tests
 
+The table includes the completed manual follow-up checks and the requirements
+that remain open. A manual pass is not an independently retained HTTP trace or
+an automated end-to-end result.
+
 | Acceptance test | Status | Coverage and required follow-up |
 | --- | --- | --- |
-| Authorized collaborator access | **NOT VERIFIED** | I did not separately test the owner-to-invited-collaborator workflow. This requires coordinated testing with authorized disposable accounts and projects under privately approved scope. |
-| Unauthorized source ZIP download denial | **DID NOT PASS** | I have submitted the concern through GitHub's private vulnerability reporting workflow. Submission does not resolve the failed criterion; remediation and retesting require private coordination with the maintainers and approved scope. |
-| Cancellation during an active ZIP upload | **NOT VERIFIED (INCONCLUSIVE)** | Pre-upload dialog cancellation succeeded. The 4 November attempt with Firefox GPRS throttling showed a loading screen and a subsequent HTTP 200 upload response, but request acceptance timing and unintended project creation were not independently established. Active-upload cancellation remains unverified. |
-| Deployment environment and acceptance | **INCOMPLETE** | The deployed server release/image commit and complete environment metadata have not been independently recorded. The later compiler logs do not establish the full deployment environment. Missing metadata must be recorded during an authorized rerun. Maintainer review and final acceptance remain pending. |
+| Authorized collaborator access and Source ZIP export | **PASS — manually verified** | 7 November: invited editor opened, edited, compiled, and downloaded the updated source; the owner saw the edits. |
+| Collaborator revocation | **PASS — manually verified** | 7 November: removed collaborator was redirected out and subsequently denied project access. |
+| Source ZIP denial after revocation | **PASS — manually verified** | 7 November: HTTP `200 OK` before removal, then `403 Forbidden`; no Source ZIP downloaded after removal. |
+| Never-invited ordinary-user ZIP denial | **PASS — manually verified** | 7 November: owner download returned HTTP `200 OK`; the never-invited ordinary user was denied project access and received `403 Forbidden` for Source ZIP, with no download. |
+| Active-upload cancellation | **PASS in tested scenarios — manually verified** | 7 November: explicit Cancel Upload checks at approximately 5–6%, 9%, 76%, and 89% aborted browser requests. No unintended project creation was observed; exact timing and full server-side cancellation are not independently established. The earlier 4 November result remains inconclusive. |
+| Historical deployed revision | **UNKNOWN / NOT RECORDED** | No verified deployment record identifies the revision running during the historical tests. Local Git HEAD, current staging, and unverified image identifiers are not substitutes. |
+| Maintainer acceptance | **PENDING** | Maintainer review of the manual results and documented limitations is still required. No issue closure or private-advisory resolution is claimed. |
 
-I am submitting the portability results for review. Maintainer acceptance and the
-remaining checks in this table are still outstanding. The original-session logs
-and independently retained application settings evidence also remain unavailable;
-the later recompilation logs do not replace them. I am not marking Issue #45 as
-fully accepted or ready to close.
+I am submitting these additional manual results for maintainer acceptance in a
+new documentation-only follow-up; PR #59 remains merged. Historical deployment
+metadata, the original-session logs, independently retained application settings,
+and precise cancellation timing evidence remain unavailable. The later logs and
+manual observations do not replace those records. Issue #45 remains open until
+the maintainer accepts the verification and any remaining requirements.
