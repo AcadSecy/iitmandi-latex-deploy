@@ -48,6 +48,10 @@ export function fold(text: string): string {
     .replace(/[øłđðþßæœı]/g, letter => LETTERS[letter])
 }
 
+// A search hit, with every .bib file that defines its key when there is more
+// than one, so the picker can warn that BibTeX may print a different copy
+export type ReferenceHit = { _source: Bib2JsonEntry; files?: string[] }
+
 export default class AdvancedReferenceIndex extends ReferenceIndex {
   // Each .bib file's entries with their search text, in the order the files
   // were first indexed
@@ -56,6 +60,7 @@ export default class AdvancedReferenceIndex extends ReferenceIndex {
 
   entryIndex: Map<string, Bib2JsonEntry> = new Map()
   searchText: Map<string, string> = new Map()
+  keyFiles: Map<string, string[]> = new Map()
 
   parseEntries(content: string): Bib2JsonEntry[] {
     // @ts-expect-error Bib2Json works as both a constructor and a function
@@ -89,12 +94,18 @@ export default class AdvancedReferenceIndex extends ReferenceIndex {
 
     // Rebuilt from every file, so a key that two files share survives a change
     // to either of them. The copy from the file indexed first is shown; the
-    // key inserted into \cite is the same either way.
+    // key inserted into \cite is the same either way, and keyFiles lets the
+    // picker warn that BibTeX may print the other copy.
     this.entryIndex.clear()
     this.searchText.clear()
-    for (const entries of this.fileEntries.values()) {
+    this.keyFiles.clear()
+    for (const [path, entries] of this.fileEntries) {
       for (const { entry, text } of entries) {
-        if (!this.entryIndex.has(entry.EntryKey)) {
+        const files = this.keyFiles.get(entry.EntryKey)
+        if (files) {
+          if (!files.includes(path)) files.push(path)
+        } else {
+          this.keyFiles.set(entry.EntryKey, [path])
           this.entryIndex.set(entry.EntryKey, entry)
           this.searchText.set(entry.EntryKey, text)
         }
@@ -115,23 +126,28 @@ export default class AdvancedReferenceIndex extends ReferenceIndex {
 
     const tokens = q.split(/\s+/).filter(Boolean)
 
-    const hits: { _source: Bib2JsonEntry }[] = []
+    const hits: ReferenceHit[] = []
 
     for (const entry of this.entryIndex.values()) {
       const text = this.searchText.get(entry.EntryKey) ?? ''
       if (tokens.every(token => text.includes(token))) {
-        hits.push({ _source: entry })
+        hits.push(this.hit(entry))
       }
     }
 
     return { hits }
   }
 
+  private hit(entry: Bib2JsonEntry): ReferenceHit {
+    const files = this.keyFiles.get(entry.EntryKey) ?? []
+    return files.length > 1 ? { _source: entry, files } : { _source: entry }
+  }
+
   private list(limit: number = 0): AdvancedReferenceSearchResult {
-    const results: { _source: Bib2JsonEntry }[] = []
+    const results: ReferenceHit[] = []
     for (const entry of this.entryIndex.values()) {
       if (limit && results.length >= limit) break
-      results.push({ _source: entry })
+      results.push(this.hit(entry))
     }
     return { hits: results }
   }

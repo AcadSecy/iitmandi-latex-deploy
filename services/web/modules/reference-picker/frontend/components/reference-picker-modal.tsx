@@ -16,8 +16,10 @@ import OLTag from '@/shared/components/ol/ol-tag'
 import MaterialIcon from '@/shared/components/material-icon'
 import { useReferencesContext } from '@/features/ide-react/context/references-context'
 import { useTranslation } from 'react-i18next'
-import type { Bib2JsonEntry } from '@/features/ide-react/references/types'
-import { fold } from '../reference-index/advanced-reference-index'
+import {
+  fold,
+  type ReferenceHit,
+} from '../reference-index/advanced-reference-index'
 
 type FocusArea = 'search' | 'list' | 'footer'
 
@@ -94,7 +96,7 @@ export default function ReferencePickerModal({
 
   const [query, setQuery] = useState('')
   const [selectedKeys, setSelectedKeys] = useState<string[]>([])
-  const [results, setResults] = useState<{ _source: Bib2JsonEntry }[]>([])
+  const [results, setResults] = useState<ReferenceHit[]>([])
   const [knownKeys, setKnownKeys] = useState<Set<string>>(() => new Set())
 
   const pendingInitialKeysRef = useRef<string[]>([])
@@ -412,6 +414,18 @@ const scrollToReference = useCallback((key: string) => {
                               [])}
                           </OLCol>
                         </OLRow>
+
+                        {hit.files && (
+                          <OLRow>
+                            <OLCol md={12} className="duplicate-key-warning">
+                              <MaterialIcon type="warning" />{' '}
+                              {t('reference_key_in_several_files', {
+                                files: hit.files.join(', '),
+                                shown: hit.files[0],
+                              })}
+                            </OLCol>
+                          </OLRow>
+                        )}
                       </li>
                     )
                   })}

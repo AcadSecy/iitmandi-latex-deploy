@@ -1,7 +1,9 @@
 import { expect } from 'chai'
 import { createElement, Fragment } from 'react'
 import { render } from '@testing-library/react'
-import AdvancedReferenceIndex from '../../frontend/reference-index/advanced-reference-index'
+import AdvancedReferenceIndex, {
+  type ReferenceHit,
+} from '../../frontend/reference-index/advanced-reference-index'
 import { highlight } from '../../frontend/components/reference-picker-modal'
 
 function keys(result: { hits: { _source: { EntryKey: string } }[] }) {
@@ -116,6 +118,60 @@ describe('AdvancedReferenceIndex', function () {
     index.updateIndex({ updates: [], deletes: ['a.bib'] })
     expect(titles(await index.search('shared'))).to.deep.equal(['From B'])
     expect([...index.getKeys()]).to.deep.equal(['shared'])
+  })
+
+  it('names every file that defines a shared key', async function () {
+    const index = new AdvancedReferenceIndex()
+    const fileA = { path: 'a.bib', content: '@misc{shared, title = {From A}}' }
+    const fileB = { path: 'b.bib', content: '@misc{shared, title = {From B}}' }
+    const fileC = { path: 'c.bib', content: '@misc{alone, title = {Only C}}' }
+    index.updateIndex({ updates: [fileA, fileB, fileC], deletes: [] })
+    const hits = async (query: string) =>
+      (await index.search(query)).hits as ReferenceHit[]
+
+    expect((await hits('shared'))[0].files).to.deep.equal(['a.bib', 'b.bib'])
+    expect((await hits('alone'))[0]).not.to.have.property('files')
+    // the empty query lists the same warning
+    const listed = (await hits('')).find(h => h._source.EntryKey === 'shared')
+    expect(listed?.files).to.deep.equal(['a.bib', 'b.bib'])
+
+    // delete one copy: the warning goes
+    index.updateIndex({ updates: [], deletes: ['a.bib'] })
+    expect((await hits('shared'))[0]).not.to.have.property('files')
+    expect(titles(await index.search('shared'))).to.deep.equal(['From B'])
+
+    // add it back: indexed after b.bib now, so b.bib's copy is shown first
+    index.updateIndex({ updates: [fileA], deletes: [] })
+    expect((await hits('shared'))[0].files).to.deep.equal(['b.bib', 'a.bib'])
+    expect(titles(await index.search('shared'))).to.deep.equal(['From B'])
+
+    // moving the key between files keeps one entry and the right files
+    index.updateIndex({
+      updates: [
+        { path: 'b.bib', content: '@misc{other, title = {Other}}' },
+        { path: 'c.bib', content: '@misc{shared, title = {From C}}' },
+      ],
+      deletes: [],
+    })
+    expect(keys(await index.search('shared'))).to.deep.equal(['shared'])
+    expect((await hits('shared'))[0].files).to.deep.equal(['c.bib', 'a.bib'])
+    expect([...index.getKeys()].sort()).to.deep.equal(['other', 'shared'])
+  })
+
+  it('counts a key repeated inside one file once', async function () {
+    const index = new AdvancedReferenceIndex()
+    index.updateIndex({
+      updates: [
+        {
+          path: 'a.bib',
+          content: '@misc{twice, title = {One}}\n@misc{twice, title = {Two}}',
+        },
+      ],
+      deletes: [],
+    })
+    const { hits } = await index.search('twice')
+    expect(hits).to.have.lengthOf(1)
+    expect(hits[0]).not.to.have.property('files')
   })
 
   it('finds by keyword', async function () {
