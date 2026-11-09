@@ -69,5 +69,14 @@
       color: var(--ds-color-red-600);
       font-weight: bold;
     }
+    .duplicate-key-warning {
+      font-size: 0.875em;
+      overflow-wrap: anywhere;
+
+      .material-symbols {
+        color: var(--content-warning);
+        vertical-align: text-bottom;
+      }
+    }
   }
 }
