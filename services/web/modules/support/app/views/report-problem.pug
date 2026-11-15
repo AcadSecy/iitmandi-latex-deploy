@@ -10,8 +10,12 @@ block content
 			.row
 				.col-lg-8.offset-lg-2
 					h1 Report a problem
-					p
-						| Your email app opens a message to #{settings.adminEmail} with the details below filled in. Nothing from your files is included. Add what went wrong and what you were doing, change anything you like, then send it.
+					if email
+						p
+							| Your email app opens a message to #{email} with the details below filled in. Nothing from your files is included. Add what went wrong and what you were doing, change anything you like, then send it.
+					else
+						p.alert.alert-warning(role='alert')
+							| Support email is not available yet. Contact the Institute's IT support team to report the problem. The details below can help you describe it.
 					form(method='get' action='/report-problem/email')
 						dl
 							if details.page
@@ -29,9 +33,10 @@ block content
 							.form-check.mb-3
 								input.form-check-input#include-page(type='checkbox' name='include_page' value='1' checked)
 								label.form-check-label(for='include-page') Include the link to this page. Leave it out if the page is a project you would rather not share.
-						button.btn.btn-primary(type='submit') Write an email
-					p.mt-3
-						| If no email app opens, write to
-						|
-						a(href='mailto:' + settings.adminEmail) #{settings.adminEmail}
-						| .
+						button.btn.btn-primary(type='submit' disabled=!email) Write an email
+					if email
+						p.mt-3
+							| If no email app opens, write to
+							|
+							a(href='mailto:' + encodeURIComponent(email).replace('%40', '@')) #{email}
+							| .

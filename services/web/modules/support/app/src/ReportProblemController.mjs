@@ -2,6 +2,7 @@ import Path from 'node:path'
 import Settings from '@overleaf/settings'
 import { expressify } from '@overleaf/promise-utils'
 import SourceCode from '../../../source-code/app/src/SourceCode.mjs'
+import EmailHelper from '../../../../app/src/Features/Helpers/EmailHelper.mjs'
 
 // "Report a problem" first shows the student what the report will hold: the
 // page they were on, the version of the platform and their browser. They can
@@ -32,6 +33,11 @@ function cleanPage(page) {
   return cleanText(page.split(/[?#]/)[0], 200)
 }
 
+function supportAddress() {
+  const address = EmailHelper.parseEmail(Settings.adminEmail)
+  return address === 'placeholder@example.com' ? null : address
+}
+
 // The page a footer or error-page link was clicked on, if it is on this site.
 // Links that know their page pass ?page= instead.
 function refererPath(referer) {
@@ -56,6 +62,7 @@ async function reportDetails(req, page) {
 
 // Open to logged-out users: someone who cannot log in needs it most
 async function showReport(req, res) {
+  res.setHeader('Cache-Control', 'no-store')
   const page = cleanPage(
     typeof req.query.page === 'string'
       ? req.query.page
@@ -63,11 +70,18 @@ async function showReport(req, res) {
   )
   res.render(Path.resolve(import.meta.dirname, '../views/report-problem'), {
     page,
+    email: supportAddress(),
     details: await reportDetails(req, page),
   })
 }
 
 async function sendReport(req, res) {
+  res.setHeader('Cache-Control', 'no-store')
+  const email = supportAddress()
+  if (!email) {
+    res.status(503)
+    return showReport(req, res)
+  }
   const page = req.query.include_page ? cleanPage(req.query.page) : ''
   const details = await reportDetails(req, page)
   const body = [
@@ -85,7 +99,7 @@ async function sendReport(req, res) {
   })
   // mail clients read "+" literally, so spaces must be %20
   res.redirect(
-    `mailto:${Settings.adminEmail}?${query.toString().replace(/\+/g, '%20')}`
+    `mailto:${encodeURIComponent(email).replace('%40', '@')}?${query.toString().replace(/\+/g, '%20')}`
   )
 }
 

@@ -48,6 +48,8 @@ describe('ReportProblemController', function () {
 
       expect(ctx.res.renderedTemplate).toMatch(/views\/report-problem$/)
       expect(page).toBe('/project/abc123')
+      expect(ctx.res.renderedVariables.email).toBe('admin@example.com')
+      expect(ctx.res.headers['Cache-Control']).toBe('no-store')
       expect(details).toEqual({
         page: 'https://latex.example.com/project/abc123',
         version: '0123456789ab',
@@ -101,11 +103,45 @@ describe('ReportProblemController', function () {
       const { page, details } = await ctx.preview()
 
       expect(page).toBe('')
-      expect(details).toEqual({ page: '', version: 'unknown', browser: 'unknown' })
+      expect(details).toEqual({
+        page: '',
+        version: 'unknown',
+        browser: 'unknown',
+      })
     })
   })
 
   describe('sendReport', function () {
+    for (const address of [
+      undefined,
+      '',
+      'not-an-email',
+      'placeholder@example.com',
+      'a@example.com,b@example.com',
+      'a@example.com?bcc=b@example.com',
+      'a@example.com\r\nBcc: b@example.com',
+    ]) {
+      it(`does not open a composer with an unavailable support address (${JSON.stringify(address)})`, async function (ctx) {
+        ctx.Settings.adminEmail = address
+        ctx.req.query = { page: '/project/abc123', include_page: '1' }
+        expect((await ctx.preview()).email).toBeNull()
+        await ctx.Controller.sendReport(ctx.req, ctx.res)
+        expect(ctx.res.statusCode).toBe(503)
+        expect(ctx.res.redirected).toBe(false)
+        expect(ctx.res.renderedVariables.email).toBeNull()
+        expect(ctx.res.headers['Cache-Control']).toBe('no-store')
+      })
+    }
+
+    it('encodes URI delimiters in a valid mailbox without adding recipients or headers', async function (ctx) {
+      ctx.Settings.adminEmail = 'help?desk+latex@example.com'
+      const url = await ctx.send()
+      expect(decodeURIComponent(url.pathname)).toBe(
+        'help?desk+latex@example.com'
+      )
+      expect([...url.searchParams.keys()]).toEqual(['subject', 'body'])
+    })
+
     it('opens an email to the admin address with the details filled in', async function (ctx) {
       ctx.req.query = { page: '/project/abc123', include_page: '1' }
       const url = await ctx.send()
