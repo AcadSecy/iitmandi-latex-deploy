@@ -42,9 +42,12 @@ messages, user IDs, project IDs, filenames, credentials or research text.
 
 ## Verification on 16 November 2026
 
-- **80 targeted tests passed**, including existing compile-manager/queue and
+- **81 targeted tests passed**, including existing compile-manager/queue and
   editor-limit regressions, server-side HTML/JSON authorization, source caching,
   failure/stale states, coalescing/timeouts, storage arithmetic and window input.
+- The image-entrypoint regression compiles all admin page entrypoints, checks
+  unique application metadata, and ensures `_capacity-content.pug` is treated as
+  an include rather than a standalone page.
 - The real isolated Redis source test seeded live/expired holders and
   live/abandoned waiting heartbeats. Counts reconciled to one holder and one
   waiter, and all queue keys/scores remained unchanged after reading.
