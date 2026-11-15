@@ -41,7 +41,8 @@ On 16 November 2026:
 
 - **15 Mocha tests passed:** adjacent and already-escaped punctuation, even/odd
   backslashes and row separators, idempotence, math/macros/underscores, Hindi,
-  selection mapping and UTF-16 caret offsets. The suite is on the PR CI list.
+  selection mapping and UTF-16 caret offsets. The suite is on the manual CI
+  frontend list; the required PR image workflow runs the three-engine fixture.
 - **8 new Cypress editor tests passed**, retries disabled, in headless Chrome.
   They inspect the actual CodeMirror source, including typing/paste paths, middle
   caret and replacement typing, tab-separated CRLF paste, undo/redo, a 390 px
