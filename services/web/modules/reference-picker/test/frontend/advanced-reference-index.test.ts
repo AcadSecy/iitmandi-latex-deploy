@@ -213,6 +213,32 @@ ${content}
     expect([...index.getKeys()].sort()).to.deep.equal(['other', 'shared'])
   })
 
+  it('updates the displayed copy and removes the warning when the other file is deleted', async function () {
+    const index = new AdvancedReferenceIndex()
+    index.updateIndex({
+      updates: [
+        { path: 'a.bib', content: '@misc{shared, title = {From A}}' },
+        { path: 'b.bib', content: '@misc{shared, title = {From B}}' },
+      ],
+      deletes: [],
+    })
+    index.updateIndex({
+      updates: [{ path: 'a.bib', content: '@misc{shared, title = {Edited A}}' }],
+      deletes: [],
+    })
+    const { hits } = await index.search('edited')
+    expect(hits).to.have.lengthOf(1)
+    expect(hits[0]._source.EntryKey).to.equal('shared')
+    expect(hits[0]._source.Fields.title).to.equal('Edited A')
+    expect((hits[0] as ReferenceHit).files).to.deep.equal(['a.bib', 'b.bib'])
+
+    index.updateIndex({ updates: [], deletes: ['b.bib'] })
+    const remaining = (await index.search('shared')).hits
+    expect(remaining).to.have.lengthOf(1)
+    expect(remaining[0]._source.Fields.title).to.equal('Edited A')
+    expect(remaining[0]).not.to.have.property('files')
+  })
+
   it('counts a key repeated inside one file once', async function () {
     const index = new AdvancedReferenceIndex()
     index.updateIndex({
