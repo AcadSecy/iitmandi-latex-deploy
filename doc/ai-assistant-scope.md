@@ -3,7 +3,9 @@
 Issue: [#47](https://github.com/AcadSecy/iitmandi-latex-deploy/issues/47).
 Owner: TayalAditya. Audit date: 16 November 2026.
 Baseline: `staging` at `1ff3043ca34eaa2c24767fe8c42658acfdc25d09`.
-Status: design for review; the controls below are proposed, not implemented.
+Status: original design baseline. The accompanying implementation and its tighter
+context bounds are documented in [the module README](../services/web/modules/ask-ai/README.md).
+Managed inference remains disabled until explicitly configured and reviewed.
 
 ## Decision requested
 
