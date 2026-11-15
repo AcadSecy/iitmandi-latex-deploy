@@ -61,18 +61,16 @@ block content
 						| The thesis, project report and resume templates follow the best sources available, not an official circular. Check the current guidelines of the Academic Section or the Career and Placement Cell before you submit.
 
 					h2.h3#faq Common questions
-					details#faq-compile-paused
-						summary Why did my compile pause?
-						p
-							if settings.compileQueue && settings.compileQueue.turnMs
+					if settings.compileQueue && settings.compileQueue.slots > 0 && settings.compileQueue.turnMs > 0
+						details#faq-compile-paused
+							summary Why did my compile pause?
+							p
 								| When other people are waiting for a compile slot, a long compile pauses after #{Math.round(settings.compileQueue.turnMs / 1000)} seconds and lets the next one run. Yours carries on by itself when a slot is free. You don't need to click anything.
-							else
-								| When other people are waiting for a compile slot, a long compile pauses and lets the next one run. Yours carries on by itself when a slot is free. You don't need to click anything.
-						p
-							| If a compile reaches its time limit, the PDF shows the pages finished so far. See
-							|
-							a(href='#compile-time') Long documents and compile time
-							| .
+							p
+								| If a compile reaches its time limit, a readable partial PDF may contain the pages finished so far. If no page was completed, there may be no PDF. See
+								|
+								a(href='#compile-time') Long documents and compile time
+								| .
 					if settings.editorPlaces && settings.editorPlaces.limit > 0
 						details#faq-waiting-room
 							summary Why am I in a waiting room?
@@ -113,8 +111,8 @@ block content
 						ol
 							li Open the project, then choose <strong>History</strong>.
 							li Click a version in the list to see what the project looked like then.
-							li To bring back one file, choose it on the left and click <strong>Restore this version</strong>.
-							li To bring back the whole project, open the menu (⋮) next to the version and choose <strong>Restore project to this version</strong>.
+							li If you have edit access, to bring back one file, choose it on the left and click <strong>Restore this version</strong>.
+							li With edit access, to bring back the whole project, open the menu (⋮) next to the version and choose <strong>Restore project to this version</strong>.
 					details#faq-tex-live-year
 						summary Which TeX Live year should I choose?
 						p
@@ -124,8 +122,8 @@ block content
 						ol
 							li Put each chapter in its own file and load it in the main file with <code>\include{chapter3}</code>. If the main file uses <code>\input{chapter3}</code>, change it to <code>\include</code>: only chapters loaded with <code>\include</code> can be skipped, and each one starts on a new page.
 							li Compile the whole document once. This saves the page numbers and references of every chapter.
-							li Add <code>\includeonly{chapter3}</code> to the preamble, the part of the main file before <code>\begin{document}</code>.
-							li Compile again. Only that chapter is typeset. The line changes the PDF for everyone working on the project, so remove it when you want the whole document.
+							li Open the menu next to <strong>Recompile</strong>. Under <strong>Compile one chapter</strong>, choose the chapter you are working on.
+							li The choice applies in this browser for this project and does not edit the shared source. Choose <strong>Whole document</strong> in the same menu when you want every chapter again.
 					details#faq-errors
 						summary How do I read a compile error?
 						ol
@@ -138,11 +136,18 @@ block content
 								li Search the message on <a href="https://tex.stackexchange.com/" target="_blank" rel="noopener noreferrer">TeX Stack Exchange</a>.
 					details#faq-report-problem
 						summary How do I report a problem?
-						p
-							| Write to
-							|
-							a(href='mailto:' + settings.adminEmail) #{settings.adminEmail}
-							| . Include the address of the page, what you did, and what you expected. Copy the error text if there is one. There is no guaranteed reply time.
+						if settings.nav && (settings.nav.left_footer || []).some(link => link.url === '/report-problem')
+							p
+								| Open
+								|
+								a(href='/report-problem') Report a problem
+								| . Review the details, leave out the page link if you prefer, then open your email app. Add what happened and send the message. The preview also shows the support address if no email app opens.
+						else
+							p
+								| Write to
+								|
+								a(href='mailto:' + settings.adminEmail) #{settings.adminEmail}
+								| . Include the address of the page, what you did, and what you expected. Copy the error text if there is one. There is no guaranteed reply time.
 
 					h2.h3#visual-editor Editing without knowing LaTeX
 					ul
@@ -206,11 +211,11 @@ block content
 					ul
 						li
 							| Every compile has a time limit.
-							if settings.compileQueue && settings.compileQueue.turnMs
+							if settings.compileQueue && settings.compileQueue.slots > 0 && settings.compileQueue.turnMs > 0
 								|
 								| While others are waiting, a long compile pauses every #{Math.round(settings.compileQueue.turnMs / 1000)} seconds and carries on when a slot is free, so a thesis still compiles when the server is busy. Time spent paused does not count towards the limit.
 						li
-							| When a compile reaches its limit, or you stop it, the PDF shows the pages typeset up to that point. The next compile reuses the files it left behind, so it is usually faster.
+							| When a compile reaches its limit, or you stop it, it may leave a readable partial PDF of the pages finished so far. If it stopped before completing a page, there may be no PDF. The next compile can reuse intermediate files it left behind.
 						li
 							| LaTeX typesets the whole document in every compile, but it does not have to draw every picture again. Load
 							|
@@ -227,7 +232,7 @@ block content
 							| For a thesis, put each chapter in its own file and load it with
 							|
 							code \include{chapter3}
-							| . While you work on one chapter, add
+							| . After one full compile, open the Recompile menu and choose the chapter under Compile one chapter. Choose Whole document to compile everything again. This leaves the shared source unchanged. You can also use
 							|
 							code \includeonly{chapter3}
 							|
@@ -276,7 +281,7 @@ block content
 							strong Resolved comments
 							| .
 						li
-							| To suggest changes instead of making them, click the pencil button in the editor toolbar, next to
+							| If Reviewing is available for your project, you can suggest changes instead of making them. Click the pencil button in the editor toolbar, next to
 							|
 							strong Code
 							|
@@ -294,7 +299,7 @@ block content
 							|
 							| panel, click the tick on a suggestion to accept it, or the cross to reject it.
 						li
-							| When you share a project, you can give someone the
+							| If the role is available for your project, you can give someone the
 							|
 							strong Reviewer
 							|
