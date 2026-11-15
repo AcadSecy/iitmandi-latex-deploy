@@ -2171,6 +2171,7 @@
   "sso_user_explanation_enabled_with_group_name": "",
   "sso_user_explanation_ready_with_admin_email": "",
   "sso_user_explanation_ready_with_group_name": "",
+  "stale_pdf_after_failed_compile": "",
   "standard": "",
   "start_by_adding_your_email": "",
   "start_by_fixing_the_first_error_in_your_document": "",

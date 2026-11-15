@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       cypress_only:
-        description: "Run only PR #54 mobile Cypress component tests"
+        description: "Run only the Cypress component tests (mobile layout and PDF preview)"
         type: boolean
         default: false
       zip_only:
@@ -460,8 +460,8 @@ jobs:
         run: docker rm -f git-bridge || true
 
   mobile-cypress:
-    if: github.event_name == 'workflow_dispatch' && inputs.cypress_only && github.ref == 'refs/heads/m/mobile-history'
-    name: Mobile Cypress (PR 54)
+    if: github.event_name == 'workflow_dispatch' && inputs.cypress_only
+    name: Cypress component tests
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     defaults:
@@ -505,7 +505,7 @@ jobs:
           path: |
             .yarn/cache
             ~/.cache/Cypress
-          key: pr54-mobile-ct-${{ runner.os }}-x64-${{ hashFiles('yarn.lock', '.yarnrc.yml') }}
+          key: cypress-ct-${{ runner.os }}-x64-${{ hashFiles('yarn.lock', '.yarnrc.yml') }}
 
       - name: Install browser prerequisites
         run: |
@@ -535,7 +535,7 @@ jobs:
           yarn --version >> artifacts/versions.txt
           yarn exec cypress version >> artifacts/versions.txt
 
-      - name: Run the 16 mobile component tests
+      - name: Run the mobile layout and PDF preview component tests
         working-directory: services/web
         env:
           CYPRESS_RESULTS: cypress/results
@@ -546,7 +546,7 @@ jobs:
             yarn run cypress:run-ct \
               --browser electron \
               --reporter spec \
-              --spec test/frontend/features/ide-react/components/layout/mobile-history-layout.spec.tsx,test/frontend/features/ide-react/components/layout/mobile-pdf-state.spec.tsx,test/frontend/features/ide-react/components/layout/mobile-pane-switcher.spec.tsx \
+              --spec test/frontend/features/ide-react/components/layout/mobile-history-layout.spec.tsx,test/frontend/features/ide-react/components/layout/mobile-pdf-state.spec.tsx,test/frontend/features/ide-react/components/layout/mobile-pane-switcher.spec.tsx,test/frontend/components/pdf-preview/pdf-preview.spec.tsx,test/frontend/components/pdf-preview/pdf-preview-hybrid-toolbar.spec.tsx \
               --config retries=0 \
               2>&1 | tee artifacts/cypress.log
           status=${PIPESTATUS[0]}
@@ -557,7 +557,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pr54-mobile-cypress-${{ github.sha }}-${{ github.run_attempt }}
+          name: cypress-component-tests-${{ github.sha }}-${{ github.run_attempt }}
           retention-days: 7
           if-no-files-found: warn
           path: |
