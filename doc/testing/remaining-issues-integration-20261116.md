@@ -36,9 +36,12 @@ branch; staging and the individual issue PR bases remain unchanged.
   test files. The complete upstream graph reports 240 diagnostics, so this is
   not a claim that the complete graph type-checks.
 - PR #65 required [Build and check run](https://github.com/AcadSecy/iitmandi-latex-deploy/actions/runs/43770138667)
-  passed for `4b4f414803`. Its log confirms the saved editor-output fixture
-  compiles with pdfLaTeX, XeLaTeX and LuaLaTeX, followed by the server settings,
-  login/compile and sandbox smoke checks. This is an ephemeral CI stack.
+  passed for `4b4f414803`. The checked workflow adds the saved editor-output
+  fixture for pdfLaTeX, XeLaTeX and LuaLaTeX to the template step, which passed,
+  followed by server settings, login/compile and sandbox smoke checks. This is
+  an ephemeral CI stack. Raw job-log download was unavailable through the blob
+  host from this session; engine coverage follows the workflow and successful
+  step outcomes rather than separately retrieved engine log lines.
 - Required checks for the corrected #56, #57 and #58 heads and updated #61
   evidence head also passed. Details and screenshots remain in their issue
   verification files.
