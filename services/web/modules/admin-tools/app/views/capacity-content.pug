@@ -1,0 +1,125 @@
+- const number = value => value == null ? 'Not measured' : new Intl.NumberFormat('en-IN').format(value)
+- const time = value => value == null ? 'Not available' : new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'medium', hourCycle: 'h23' }).format(new Date(value)) + ' IST'
+- const size = value => value == null ? 'Not measured' : new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(value / (1024 ** 3)) + ' GiB'
+
+mixin status(source)
+	p.small
+		strong #{source.state === 'fresh' ? 'Fresh reading.' : source.state === 'stale' ? 'Stale: last successful reading.' : 'Measurement unavailable.'}
+		|  Measured #{time(source.measuredAt)}.
+		if source.durationMs != null
+			|  Collection took #{source.durationMs.toFixed(2)} ms.
+
+mixin row(label, value)
+	tr
+		th(scope='row')= label
+		td= value
+
+.page-header
+	h1 Capacity and usage
+p Read-only operational readings. Configured limits are not load-tested capacity.
+form.row.align-items-end.g-3.mb-4(method='get' action='/admin/capacity')
+	.col-sm-auto
+		label.form-label(for='capacity-window') Compile trend window
+		select#capacity-window.form-select(name='window')
+			each minutes in [5, 15, 60]
+				option(value=minutes selected=windowMinutes === minutes) #{minutes}-minute history
+	.col-sm-auto
+		button.btn.btn-primary(type='submit') Refresh readings
+	.col-sm-auto
+		a.btn.btn-secondary(href='/admin') Admin panel
+p.small Snapshot requested #{time(snapshot.sampledAt)}. Readings are cached for #{snapshot.cacheSeconds} seconds; request collection took #{snapshot.collectionMs.toFixed(2)} ms.
+.row
+	section.col-lg-6.mb-4(aria-labelledby='capacity-editors')
+		h2.h3#capacity-editors Editor places
+		+status(snapshot.editors)
+		if snapshot.editors.data
+			- const editors = snapshot.editors.data
+			if !editors.enabled
+				p The editor place limit is disabled. Occupancy is not measured by this source.
+			.table-responsive
+				table.table
+					caption.visually-hidden Editor occupancy and configured limits
+					thead
+						tr
+							th(scope='col') Reading
+							th(scope='col') Count
+					tbody
+						+row('Held places', number(editors.holding))
+						+row('Waiting for a place', number(editors.waiting))
+						+row('Effective admission limit', editors.enabled ? number(editors.limit) : 'Disabled')
+						+row('Configured base limit', editors.enabled ? number(editors.baseLimit) : 'Disabled')
+						+row('Configured elastic maximum', editors.enabled ? number(editors.maxLimit) : 'Disabled')
+		p.small Held places follow recent renewal, rather than a count of browser tabs. Admin and anonymous share-link sessions are exempt and are not included.
+	section.col-lg-6.mb-4(aria-labelledby='capacity-compiles')
+		h2.h3#capacity-compiles Compile queue
+		+status(snapshot.compiles)
+		if snapshot.compiles.data
+			- const compiles = snapshot.compiles.data
+			if !compiles.enabled
+				p Queue limits are disabled. Active compiles are not measured by this source.
+			.table-responsive
+				table.table
+					caption.visually-hidden Compile occupancy and configured slots
+					thead
+						tr
+							th(scope='col') Reading
+							th(scope='col') Count
+					tbody
+						+row('Active', number(compiles.running))
+						+row('Queued, not yet running', number(compiles.queued))
+						+row('Paused between turns', number(compiles.paused))
+						+row('Configured parallel slots', compiles.enabled ? number(compiles.slots) : 'Disabled')
+		p.small Paused requests are shown separately from requests that have not started. Counts cover this web instance.
+section.mb-4(aria-labelledby='capacity-storage')
+	h2.h3#capacity-storage Storage and headroom
+	+status(snapshot.storage)
+	if snapshot.storage.data
+		- const storage = snapshot.storage.data
+		.table-responsive
+			table.table
+				caption.visually-hidden Project storage filesystem and configured per-account quotas
+				thead
+					tr
+						th(scope='col') Reading
+						th(scope='col') Amount
+				tbody
+					+row('Filesystem used', size(storage.usedBytes))
+					+row('Filesystem total', size(storage.totalBytes))
+					+row('Available to the service', size(storage.availableBytes))
+					+row('Configured disk reserve', size(storage.reserveBytes))
+					+row('Available above reserve', size(storage.headroomBytes))
+					+row('Configured base quota per account', storage.quotaBaseMB > 0 ? number(storage.quotaBaseMB) + ' MiB' : 'Not enforced')
+					+row('Configured flexible maximum per account', storage.quotaBaseMB > 0 ? number(storage.quotaMaxMB) + ' MiB' : 'Not enforced')
+	p.small Filesystem usage includes other data on the same mount. It is different from logical account quota usage. Separate database or history volumes are not included; no project names or individual account usage are shown.
+section.mb-4(aria-labelledby='capacity-trends')
+	h2.h3#capacity-trends Compile outcomes
+	p Window: #{time(snapshot.trends.start)} to #{time(snapshot.trends.end)}. Recording began #{time(snapshot.trends.recordedSince)} for this process; restarts reset these counters.
+	p.small Counts cover completed requests admitted to a compile slot, in minute buckets. Queue-wait rejections and requests rejected before admission are excluded.
+	.table-responsive
+		table.table
+			caption.visually-hidden Completed compile outcomes in the selected window
+			thead
+				tr
+					th(scope='col') Outcome
+					th(scope='col') Count
+			tbody
+				each label, key in { success: 'Successful', failure: 'Failed', timeout: 'Timed out', stopped: 'Stopped', other: 'Other' }
+					+row(label, number(snapshot.trends.totals[key]))
+	if Object.values(snapshot.trends.totals).every(value => value === 0)
+		p No admitted requests completed in this recorded window.
+	details
+		summary Minute-by-minute counts
+		.table-responsive(tabindex='0' role='region' aria-label='Scrollable minute-by-minute compile outcomes')
+			table.table
+				caption.visually-hidden Compile outcomes by minute
+				thead
+					tr
+						th(scope='col') Minute beginning
+						each label in ['Successful', 'Failed', 'Timed out', 'Stopped', 'Other']
+							th(scope='col')= label
+				tbody
+					each bucket in snapshot.trends.buckets
+						tr
+							th(scope='row')= time(bucket.time)
+							each key in ['success', 'failure', 'timeout', 'stopped', 'other']
+								td= number(bucket[key])

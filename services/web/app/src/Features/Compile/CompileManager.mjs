@@ -7,6 +7,7 @@ import UserGetter from '../User/UserGetter.mjs'
 import ClsiManager from './ClsiManager.mjs'
 import { CompileQueue, CompileQueueError } from './CompileQueue.mjs'
 import Metrics from '@overleaf/metrics'
+import CompileTelemetry from './CompileTelemetry.mjs'
 import { RateLimiter } from '../../infrastructure/RateLimiter.mjs'
 import { callbackify, callbackifyMultiResult } from '@overleaf/promise-utils'
 import Errors from '../Errors/Errors.js'
@@ -72,7 +73,16 @@ async function compile(projectId, userId, options = {}, { signal } = {}) {
     return { status: slot.status, outputFiles: [] }
   }
   try {
-    return await _compileInSlot(projectId, userId, options)
+    const result = await _compileInSlot(projectId, userId, options)
+    Metrics.inc('capacity-compile-outcome', 1, {
+      outcome: CompileTelemetry.record(result.status),
+    })
+    return result
+  } catch (error) {
+    Metrics.inc('capacity-compile-outcome', 1, {
+      outcome: CompileTelemetry.record('error'),
+    })
+    throw error
   } finally {
     slot.release()
   }
@@ -327,6 +337,7 @@ async function deleteAuxFiles(projectId, userId, clsiserverid) {
 }
 
 export default CompileManager = {
+  getCapacitySummary: () => compileQueue.getSummary(),
   getCompileQueueStatus,
   promoteQueuedCompile,
   promises: {
