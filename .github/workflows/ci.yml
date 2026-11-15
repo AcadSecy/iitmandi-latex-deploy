@@ -318,7 +318,7 @@ jobs:
           test/unit/src/Compile/CompileController.test.mjs
           -t "chapter"
 
-      - name: Frontend tests (project list, welcome message, Ask AI, page setup, logo, chapter compile, report a problem)
+      - name: Frontend tests (project list, welcome message, Ask AI, page setup, logo, chapter compile, support, reference search)
         working-directory: services/web
         env:
           NODE_ENV: test
@@ -334,6 +334,7 @@ jobs:
           modules/iitmandi-logo/test/frontend/logo-insertion.test.ts
           modules/chapter-compile/test/frontend/chapter-compile-menu-items.test.tsx
           modules/support/test/frontend/report-problem-modal.test.tsx
+          modules/reference-picker/test/frontend/advanced-reference-index.test.ts
 
   clsi:
     name: Compile service

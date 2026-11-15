@@ -1,53 +1,127 @@
 import { ReferenceIndex } from '@/features/ide-react/references/reference-index'
+import Bib2Json from '@/features/ide-react/references/bib2json'
 import type {
   Changes,
   Bib2JsonEntry,
   AdvancedReferenceSearchResult,
 } from '@/features/ide-react/references/types'
 
+const FIELDS = [
+  'author',
+  'journal',
+  'title',
+  'year',
+  'date',
+  'booktitle',
+  'publisher',
+  'keywords',
+]
+
+// Upstream's parser only converts the braced form \"{u}. Rewrite {\"u}, \"u and
+// an accented i (\'i, \'{i}) to \"{u} / \'{\i} so they convert as well.
+function normalizeAccents(content: string): string {
+  return content
+    // These formatting commands otherwise become literal text in the parser.
+    // The lookbehind leaves \\ (a line break) followed by the word alone.
+    .replace(/(?<!\\)\\relax(?![A-Za-z])\s*/g, '')
+    .replace(/(?<!\\)\\textsc(?=\s*\{)/g, '')
+    .replace(/\{(\\["'`^~=.])([A-Za-z])\}/g, '$1{$2}')
+    .replace(/(\\["'`^~=.])([A-Za-z])/g, '$1{$2}')
+    .replace(/(\\["'`^~=.])\{i\}/g, '$1{\\i}')
+}
+
+// Letters that Unicode does not split into a base letter and an accent
+const LETTERS: Record<string, string> = {
+  ø: 'o',
+  ł: 'l',
+  đ: 'd',
+  ð: 'd',
+  þ: 'th',
+  ß: 'ss',
+  æ: 'ae',
+  œ: 'oe',
+  ı: 'i',
+}
+
+// Lower-case and drop accents, so "muller" finds "Müller" and the reverse.
+export function fold(text: string): string {
+  return text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[øłđðþßæœı]/g, letter => LETTERS[letter])
+}
+
+// A search hit, with every .bib file that defines its key when there is more
+// than one, so the picker can warn that BibTeX may print a different copy
+export type ReferenceHit = { _source: Bib2JsonEntry; files?: string[] }
+
 export default class AdvancedReferenceIndex extends ReferenceIndex {
-  fileIndex: Map<string, Set<string>> = new Map()
+  // Each .bib file's entries with their search text, in the order the files
+  // were first indexed
+  fileEntries: Map<string, { entry: Bib2JsonEntry; text: string }[]> =
+    new Map()
+
   entryIndex: Map<string, Bib2JsonEntry> = new Map()
+  searchText: Map<string, string> = new Map()
+  keyFiles: Map<string, string[]> = new Map()
+
+  parseEntries(content: string): Bib2JsonEntry[] {
+    // @ts-expect-error Bib2Json works as both a constructor and a function
+    const { entries } = Bib2Json(normalizeAccents(content), FIELDS)
+    for (const entry of entries) {
+      const f = entry.Fields
+      // biblatex entries may carry only a date such as 2024-03-15
+      const year = parseInt(f.year || f.date)
+      f.year = Number.isNaN(year) ? '' : year.toString()
+      for (const name of [...FIELDS, 'date']) {
+        f[name] = f[name] || ''
+      }
+    }
+    return entries
+  }
 
   updateIndex({ updates, deletes }: Changes): Set<string> {
     for (const path of deletes) {
-      const keys = this.fileIndex.get(path)
-      if (keys) {
-        for (const k of keys) {
-          this.entryIndex.delete(k)
-        }
-      }
-      this.fileIndex.delete(path)
+      this.fileEntries.delete(path)
     }
 
     for (const { path, content } of updates) {
-      const previous = this.fileIndex.get(path)
-      if (previous) {
-        for (const k of previous) {
-          this.entryIndex.delete(k)
-        }
-      }
-
-      const fileReferences = new Set<string>()
-      const entries = this.parseEntries(content)
-
-      for (const entry of entries) {
-        fileReferences.add(entry.EntryKey)
-        this.entryIndex.set(entry.EntryKey, entry)
-      }
-
-      this.fileIndex.set(path, fileReferences)
+      this.fileEntries.set(
+        path,
+        this.parseEntries(content).map(entry => {
+          const fields = FIELDS.map(name => entry.Fields[name])
+          return { entry, text: fold([entry.EntryKey, ...fields].join(' ')) }
+        })
+      )
     }
 
-    this.keys = new Set(
-      this.fileIndex.values().flatMap(entry => Array.from(entry))
-    )
+    // Rebuilt from every file, so a key that two files share survives a change
+    // to either of them. The copy from the file indexed first is shown; the
+    // key inserted into \cite is the same either way, and keyFiles lets the
+    // picker warn that BibTeX may print the other copy.
+    this.entryIndex.clear()
+    this.searchText.clear()
+    this.keyFiles.clear()
+    for (const [path, entries] of this.fileEntries) {
+      for (const { entry, text } of entries) {
+        const files = this.keyFiles.get(entry.EntryKey)
+        if (files) {
+          if (!files.includes(path)) files.push(path)
+        } else {
+          this.keyFiles.set(entry.EntryKey, [path])
+          this.entryIndex.set(entry.EntryKey, entry)
+          this.searchText.set(entry.EntryKey, text)
+        }
+      }
+    }
 
+    this.keys = new Set(this.entryIndex.keys())
     return this.keys
   }
 
   async search(query: string): Promise<AdvancedReferenceSearchResult> {
-    const q = (query || '').toLowerCase().trim()
+    const q = fold(query || '').trim()
 
     // Empty query: return all entries
     if (!q) {
@@ -56,42 +130,29 @@ export default class AdvancedReferenceIndex extends ReferenceIndex {
 
     const tokens = q.split(/\s+/).filter(Boolean)
 
-    const hits: { _source: Bib2JsonEntry }[] = []
+    const hits: ReferenceHit[] = []
 
     for (const entry of this.entryIndex.values()) {
-
-      const match = tokens.every(token =>
-        this.matchesAnyField(entry, token)
-      )
-
-      if (match) {
-        hits.push({ _source: entry })
+      const text = this.searchText.get(entry.EntryKey) ?? ''
+      if (tokens.every(token => text.includes(token))) {
+        hits.push(this.hit(entry))
       }
     }
 
     return { hits }
   }
 
-  private list(limit: number = 0): AdvancedReferenceSearchResult {
-    const results: { _source: Bib2JsonEntry }[] = []
-    for (const entry of this.entryIndex.values()) {
-      if (limit && results.length >= limit) break
-      results.push({ _source: entry })
-    }
-    return { hits: results }
+  private hit(entry: Bib2JsonEntry): ReferenceHit {
+    const files = this.keyFiles.get(entry.EntryKey) ?? []
+    return files.length > 1 ? { _source: entry, files } : { _source: entry }
   }
 
-  private matchesAnyField(entry: Bib2JsonEntry, token: string): boolean {
-    const t = token.toLowerCase()
-    const f = entry.Fields
-
-    return (
-      entry.EntryKey.toLowerCase().includes(t) ||
-      f.author.toLowerCase().includes(t) ||
-      f.journal.toLowerCase().includes(t) ||
-      f.title.toLowerCase().includes(t) ||
-      f.date.toLowerCase().includes(t) ||
-      f.year.toLowerCase().includes(t)
-    )
+  private list(limit: number = 0): AdvancedReferenceSearchResult {
+    const results: ReferenceHit[] = []
+    for (const entry of this.entryIndex.values()) {
+      if (limit && results.length >= limit) break
+      results.push(this.hit(entry))
+    }
+    return { hits: results }
   }
 }
