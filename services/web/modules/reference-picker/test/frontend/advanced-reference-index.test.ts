@@ -372,6 +372,22 @@ ${content}
     expect(titles(await index.search('after'))).to.deep.equal(['After'])
   })
 
+  it('leaves a line break before a quote and letter alone', async function () {
+    const index = new AdvancedReferenceIndex()
+    index.updateIndex({
+      updates: [
+        {
+          path: 'quote.bib',
+          content: String.raw`@misc{quote, title = {Line\\"u and {\"o}}}`,
+        },
+      ],
+      deletes: [],
+    })
+    expect(titles(await index.search('quote'))).to.deep.equal([
+      String.raw`Line\"u and ö`,
+    ])
+  })
+
   it('keeps keys with punctuation exactly as written', async function () {
     const index = new AdvancedReferenceIndex()
     const written = [

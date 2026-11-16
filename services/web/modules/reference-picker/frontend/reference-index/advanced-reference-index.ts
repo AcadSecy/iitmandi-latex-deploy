@@ -25,9 +25,10 @@ function normalizeAccents(content: string): string {
     // The lookbehind leaves \\ (a line break) followed by the word alone.
     .replace(/(?<!\\)\\relax(?![A-Za-z])\s*/g, '')
     .replace(/(?<!\\)\\textsc(?=\s*\{)/g, '')
-    .replace(/\{(\\["'`^~=.])([A-Za-z])\}/g, '$1{$2}')
-    .replace(/(\\["'`^~=.])([A-Za-z])/g, '$1{$2}')
-    .replace(/(\\["'`^~=.])\{i\}/g, '$1{\\i}')
+    // (?<!\\) keeps \\ (a line break) followed by a quote and letter alone
+    .replace(/\{((?<!\\)\\["'`^~=.])([A-Za-z])\}/g, '$1{$2}')
+    .replace(/((?<!\\)\\["'`^~=.])([A-Za-z])/g, '$1{$2}')
+    .replace(/((?<!\\)\\["'`^~=.])\{i\}/g, '$1{\\i}')
 }
 
 // Letters that Unicode does not split into a base letter and an accent
@@ -107,7 +108,8 @@ export default class AdvancedReferenceIndex extends ReferenceIndex {
       for (const { entry, text } of entries) {
         const files = this.keyFiles.get(entry.EntryKey)
         if (files) {
-          if (!files.includes(path)) files.push(path)
+          // Files are visited one at a time, so a repeat can only be the last
+          if (files[files.length - 1] !== path) files.push(path)
         } else {
           this.keyFiles.set(entry.EntryKey, [path])
           this.entryIndex.set(entry.EntryKey, entry)
