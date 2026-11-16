@@ -180,15 +180,25 @@ describe('ReportProblemController', function () {
       expect(body).not.toMatch(/[^\r]\n/)
     })
 
-    it('leaves out the browser when the link would be too long', async function (ctx) {
+    it('shows the preview the same browser the long email will hold', async function (ctx) {
       ctx.req.headers['user-agent'] = 'é'.repeat(300)
       ctx.req.query = { page: '/' + 'é'.repeat(150), include_page: '1' }
-      const link = await ctx.send()
-      const body = link.searchParams.get('body')
+      const { details } = await ctx.preview()
+      const body = (await ctx.send()).searchParams.get('body')
 
+      expect(details.browser).toBe('unknown')
       expect(ctx.res.redirectedTo.length).toBeLessThanOrEqual(1900)
       expect(body).toContain('browser: unknown')
       expect(body).toContain('page: https://')
+    })
+
+    it('keeps the long browser out of the email when the page is unticked', async function (ctx) {
+      ctx.req.headers['user-agent'] = 'é'.repeat(300)
+      ctx.req.query = { page: '/' + 'é'.repeat(150) }
+      const body = (await ctx.send()).searchParams.get('body')
+
+      expect(body).toContain('browser: unknown')
+      expect(body).not.toContain('page:')
     })
 
     it('keeps a hostile User-Agent on one line', async function (ctx) {
