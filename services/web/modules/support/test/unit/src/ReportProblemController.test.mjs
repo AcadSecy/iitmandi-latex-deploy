@@ -151,8 +151,8 @@ describe('ReportProblemController', function () {
         'IIT Mandi LaTeX: problem report'
       )
       const body = url.searchParams.get('body')
-      expect(body).toContain('page: https://latex.example.com/project/abc123\n')
-      expect(body).toContain('version: 0123456789ab\n')
+      expect(body).toContain('page: https://latex.example.com/project/abc123\r\n')
+      expect(body).toContain('version: 0123456789ab\r\n')
       expect(body).toContain('browser: Mozilla/5.0 (X11; Linux) Firefox/130')
       // mail clients show a "+" as it is
       expect(ctx.res.redirectedTo).not.toContain('+')
@@ -164,7 +164,7 @@ describe('ReportProblemController', function () {
 
       expect(body).not.toContain('page:')
       expect(body).not.toContain('abc123')
-      expect(body).toContain('version: 0123456789ab\n')
+      expect(body).toContain('version: 0123456789ab\r\n')
     })
 
     it('ignores pages on other sites', async function (ctx) {
@@ -172,6 +172,23 @@ describe('ReportProblemController', function () {
       const body = (await ctx.send()).searchParams.get('body')
 
       expect(body).not.toContain('page:')
+    })
+
+    it('ends every line of the message with CRLF', async function (ctx) {
+      const body = (await ctx.send()).searchParams.get('body')
+
+      expect(body).not.toMatch(/[^\r]\n/)
+    })
+
+    it('leaves out the browser when the link would be too long', async function (ctx) {
+      ctx.req.headers['user-agent'] = 'é'.repeat(300)
+      ctx.req.query = { page: '/' + 'é'.repeat(150), include_page: '1' }
+      const link = await ctx.send()
+      const body = link.searchParams.get('body')
+
+      expect(ctx.res.redirectedTo.length).toBeLessThanOrEqual(1900)
+      expect(body).toContain('browser: unknown')
+      expect(body).toContain('page: https://')
     })
 
     it('keeps a hostile User-Agent on one line', async function (ctx) {

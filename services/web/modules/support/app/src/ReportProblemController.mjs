@@ -75,6 +75,8 @@ async function showReport(req, res) {
   })
 }
 
+const MAX_MAILTO_LENGTH = 1900
+
 async function sendReport(req, res) {
   res.setHeader('Cache-Control', 'no-store')
   const email = supportAddress()
@@ -84,22 +86,31 @@ async function sendReport(req, res) {
   }
   const page = req.query.include_page ? cleanPage(req.query.page) : ''
   const details = await reportDetails(req, page)
-  const body = [
-    'What went wrong, and what were you doing when it happened?',
-    '',
-    '',
-    '---',
-    ...(details.page ? [`page: ${details.page}`] : []),
-    `version: ${details.version}`,
-    `browser: ${details.browser}`,
-  ].join('\n')
-  const query = new URLSearchParams({
-    subject: `${Settings.appName}: problem report`,
-    body,
-  })
-  // mail clients read "+" literally, so spaces must be %20
+  // RFC 6068: line breaks in a mailto body are CRLF
+  const link = details => {
+    const body = [
+      'What went wrong, and what were you doing when it happened?',
+      '',
+      '',
+      '---',
+      ...(details.page ? [`page: ${details.page}`] : []),
+      `version: ${details.version}`,
+      `browser: ${details.browser}`,
+    ].join('\r\n')
+    const query = new URLSearchParams({
+      subject: `${Settings.appName}: problem report`,
+      body,
+    })
+    // mail clients read "+" literally, so spaces must be %20
+    return `mailto:${encodeURIComponent(email).replace('%40', '@')}?${query.toString().replace(/\+/g, '%20')}`
+  }
+  // Mail clients and phones refuse very long links, so an over-long one leaves
+  // out the browser, the longest part. The preview still shows everything.
+  const full = link(details)
   res.redirect(
-    `mailto:${encodeURIComponent(email).replace('%40', '@')}?${query.toString().replace(/\+/g, '%20')}`
+    full.length <= MAX_MAILTO_LENGTH
+      ? full
+      : link({ ...details, browser: 'unknown' })
   )
 }
 
