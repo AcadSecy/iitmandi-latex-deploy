@@ -1,4 +1,5 @@
 import { vi, expect, describe, beforeEach, it } from 'vitest'
+import fs from 'node:fs'
 import Path from 'node:path'
 import sinon from 'sinon'
 import Metrics from '../../../app/js/Metrics.js'
@@ -698,7 +699,7 @@ describe('CompileManager', () => {
       })
     })
 
-    describe('when a stopped compile left a PDF', () => {
+    describe('when a compile left a PDF', () => {
       function pdfEnding(ctx, text) {
         const tail = Buffer.from(text)
         ctx.fsPromises.open.resolves({
@@ -736,6 +737,142 @@ describe('CompileManager', () => {
           ctx.compileDir + '/output.pdf',
           { force: true }
         )
+      })
+
+      it('removes a stub PDF left by a compile that exited normally', async ctx => {
+        pdfEnding(ctx, '%PDF-1.7\n')
+        await ctx.CompileManager.promises.doCompileWithLock(ctx.request, {}, {})
+        expect(ctx.fsPromises.rm).to.have.been.calledWith(
+          ctx.compileDir + '/output.pdf',
+          { force: true }
+        )
+      })
+
+      it('keeps a finished PDF after a compile that exited normally', async ctx => {
+        pdfEnding(ctx, 'startxref\n12345\n%%EOF\n')
+        await ctx.CompileManager.promises.doCompileWithLock(ctx.request, {}, {})
+        expect(ctx.fsPromises.rm).not.to.have.been.calledWith(
+          ctx.compileDir + '/output.pdf'
+        )
+      })
+
+      it('keeps a PDF it could not read', async ctx => {
+        ctx.fsPromises.open.rejects(
+          Object.assign(new Error('EACCES'), { code: 'EACCES' })
+        )
+        await ctx.CompileManager.promises.doCompileWithLock(ctx.request, {}, {})
+        expect(ctx.fsPromises.rm).not.to.have.been.calledWith(
+          ctx.compileDir + '/output.pdf'
+        )
+      })
+
+      it('removes an empty PDF', async ctx => {
+        ctx.fsPromises.open.resolves({
+          stat: sinon.stub().resolves({ size: 0 }),
+          read: sinon.stub().callsFake(({ buffer }) => ({ buffer })),
+          close: sinon.stub().resolves(),
+        })
+        await ctx.CompileManager.promises.doCompileWithLock(ctx.request, {}, {})
+        expect(ctx.fsPromises.rm).to.have.been.calledWith(
+          ctx.compileDir + '/output.pdf',
+          { force: true }
+        )
+      })
+
+      it('removes nothing when the compile wrote no PDF', async ctx => {
+        // fsPromises.open rejects with ENOENT unless a test gives it a PDF
+        await ctx.CompileManager.promises.doCompileWithLock(ctx.request, {}, {})
+        expect(ctx.fsPromises.rm).not.to.have.been.calledWith(
+          ctx.compileDir + '/output.pdf'
+        )
+        expect(ctx.OutputFileFinder.promises.findOutputFiles).to.have.been
+          .called
+      })
+
+      it('removes an unfinished PDF before it collects the output files', async ctx => {
+        const removePdf = ctx.fsPromises.rm.withArgs(
+          ctx.compileDir + '/output.pdf',
+          { force: true }
+        )
+        pdfEnding(ctx, '%PDF-1.7\n')
+        await ctx.CompileManager.promises.doCompileWithLock(ctx.request, {}, {})
+        expect(removePdf).to.have.been.calledBefore(
+          ctx.OutputFileFinder.promises.findOutputFiles
+        )
+      })
+
+      it('removes an unfinished PDF of a stopped compile before it collects the output files', async ctx => {
+        const removePdf = ctx.fsPromises.rm.withArgs(
+          ctx.compileDir + '/output.pdf',
+          { force: true }
+        )
+        pdfEnding(ctx, '/Length 42 >>\nstream\n')
+        await stopCompile(ctx)
+        expect(removePdf).to.have.been.calledBefore(
+          ctx.OutputFileFinder.promises.findOutputFiles
+        )
+      })
+
+      describe('with the bytes of a real four-page PDF', () => {
+        const pdf = fs.readFileSync(
+          Path.join(
+            import.meta.dirname,
+            '../../acceptance/fixtures/examples/multibib_bibliography/output.pdf'
+          )
+        )
+
+        function pdfBytes(ctx, bytes) {
+          ctx.fsPromises.open.resolves({
+            stat: sinon.stub().resolves({ size: bytes.length }),
+            read: sinon.stub().callsFake(({ buffer, position }) => {
+              bytes.copy(buffer, 0, position, position + buffer.length)
+              return { buffer }
+            }),
+            close: sinon.stub().resolves(),
+          })
+        }
+
+        async function compile(ctx) {
+          await ctx.CompileManager.promises.doCompileWithLock(
+            ctx.request,
+            {},
+            {}
+          )
+        }
+
+        it('keeps the whole PDF', async ctx => {
+          pdfBytes(ctx, pdf)
+          await compile(ctx)
+          expect(ctx.fsPromises.rm).not.to.have.been.calledWith(
+            ctx.compileDir + '/output.pdf'
+          )
+        })
+
+        it('removes the PDF cut off halfway', async ctx => {
+          pdfBytes(ctx, pdf.subarray(0, pdf.length / 2))
+          await compile(ctx)
+          expect(ctx.fsPromises.rm).to.have.been.calledWith(
+            ctx.compileDir + '/output.pdf',
+            { force: true }
+          )
+        })
+
+        it('removes the PDF cut off just before its end marker', async ctx => {
+          pdfBytes(ctx, pdf.subarray(0, pdf.lastIndexOf('%%EOF')))
+          await compile(ctx)
+          expect(ctx.fsPromises.rm).to.have.been.calledWith(
+            ctx.compileDir + '/output.pdf',
+            { force: true }
+          )
+        })
+
+        it('keeps the PDF of a stopped compile that TeX finished', async ctx => {
+          pdfBytes(ctx, pdf)
+          await stopCompile(ctx)
+          expect(ctx.fsPromises.rm).not.to.have.been.calledWith(
+            ctx.compileDir + '/output.pdf'
+          )
+        })
       })
     })
 
