@@ -156,17 +156,17 @@ block content
 								a(href='mailto:' + settings.adminEmail) #{settings.adminEmail}
 								| .
 
-					if settings.askAi && settings.askAi.url
+					if settings.askAi && (settings.askAi.url || (settings.askAi.managed && settings.askAi.managed.mode !== 'off'))
 						h2.h3#ask-ai Ask AI
 						ul
 							li
 								strong Ask AI
 								|
-								| in the editor toolbar opens #{settings.askAi.name} in a window beside the editor, with the text you selected. The sparkle button on a compile error asks it what causes the error and how to fix it.
+								| in the editor toolbar reviews the text you selected. The sparkle button on a compile error reviews that error. Check the exact request and destination, remove confidential material, and confirm each request before sending.
 							li
-								| #{settings.askAi.name} is an outside service, not part of #{settings.appName}. You use it with your own account, and what you send goes to its provider, so leave out anything confidential.
+								| The review shows the configured service and its data notice. Credential detection cannot find every secret. No project files are uploaded automatically. Editing and compilation work without assistance.
 							li
-								| To see both at once, move the editor window to the left half of your screen.
+								| With managed assistance, review any suggested replacement before choosing Apply. Undo restores the original text. If the document changes while waiting, select it again for a fresh suggestion.
 
 					if settings.editorPlaces && settings.editorPlaces.limit > 0
 						h2.h3#editor-waiting-room When the editor is full
