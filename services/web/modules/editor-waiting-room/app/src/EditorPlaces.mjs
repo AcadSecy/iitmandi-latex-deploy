@@ -86,9 +86,12 @@ async function acquire(userId) {
 
 async function stats() {
   const client = getClient()
+  const now = Date.now()
   const [holding, waiting] = await Promise.all([
-    client.zcount(KEYS[0], Date.now(), '+inf'),
-    client.zcard(KEYS[1]),
+    client.zcount(KEYS[0], `(${now}`, '+inf'),
+    // A waiting ticket's creation time does not tell us if its tab is alive.
+    // Count recent heartbeats without mutating the queue from a read-only view.
+    client.zcount(KEYS[2], `(${now - GIVE_UP_MS}`, '+inf'),
   ])
   return {
     limit: currentLimit(),
