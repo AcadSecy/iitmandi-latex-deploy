@@ -335,6 +335,7 @@ jobs:
           modules/reference-picker/test/frontend/advanced-reference-index.test.ts
           test/frontend/ide/log-parser/logParserTests.js
           test/frontend/ide/human-readable-logs/human-readable-logs.test.js
+          modules/slash-insert/test/frontend/slash-insert.test.ts
 
   clsi:
     name: Compile service
