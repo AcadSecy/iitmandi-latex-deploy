@@ -10,20 +10,20 @@ Only use disposable projects containing the baseline below. Do not test against 
 
 ## Test environment and revision
 
-| Field | Value before execution |
+| Field | Recorded value / verification limit |
 | --- | --- |
-| Run ID and tester | NOT RECORDED |
-| Start/end time and timezone | NOT RECORDED; use explicit timezone, e.g. Asia/Kolkata |
-| Authorized environment | Institute test server; documented address http://172.19.17.79:8080; confirm authorization and current address before testing |
-| Deployed revision | UNKNOWN — not queried during preparation |
-| Revision discovery method and time | NOT RECORDED |
+| Run ID and tester | UNKNOWN — no contemporaneous run record supplied; account labels are A/B/C |
+| Start/end time and timezone | UNKNOWN — manual run dates/times were not recorded; file timestamps and PR dates are not substitutes |
+| Authorized environment | Tester-reported authorized institute test server; repository documentation identifies http://172.19.17.79:8080 and an amd64 Docker Compose deployment (`deploy/server/README.md`). Historical running configuration was not independently verified |
+| Deployed revision | UNKNOWN — no deployment record tied to the manual test interval was supplied; neither checkout nor PR CI SHA identifies that deployment |
+| Revision discovery method and time | UNKNOWN — requires a maintainer deployment record or authorized revision display correlated with the manual test time |
 | Checklist branch | `c/collaboration-review-tests` |
 | Checklist staging base | `1ff3043ca34eaa2c24767fe8c42658acfdc25d09` |
-| Network conditions | NOT RECORDED |
+| Network conditions | UNKNOWN — no contemporaneous network observations recorded |
 | Document-operation type | UNKNOWN — record per disposable project/document |
-| Operation-type discovery method | NOT RECORDED |
+| Operation-type discovery method | UNKNOWN — no sanitized document join metadata or declared OT type was recorded |
 | Track Changes feature availability | VERIFIED (manual UI): Track Changes was available and functional during the executed tests. Backend entitlement and authorization enforcement were not independently verified. |
-| Maintainer go-ahead / plan reference | NOT RECORDED; confirm before acceptance execution |
+| Maintainer go-ahead / plan reference | Expanded 30-case plan supplied by the issue owner; original authorization timestamp UNKNOWN |
 
 The checklist base SHA is **not evidence of the deployed revision**. If revision information is available through an authorized application UI, a public build/source artifact, or a maintainer-provided deployment record, record the full SHA and provenance. Do not infer it from current staging, file timestamps, or a server address. If unavailable, leave UNKNOWN and record the limitation; ask the maintainer without accessing deployment services yourself.
 
@@ -33,11 +33,28 @@ Record document-operation type as `legacy ShareJS (sharejs-text-ot)`, `history-O
 
 | Label | Initial role | Role during Reviewer tests | Browser/version | OS/version | Session/profile label |
 | --- | --- | --- | --- | --- | --- |
-| A | Owner | Owner | NOT RECORDED | NOT RECORDED | A |
-| B | Editor | Editor | NOT RECORDED | NOT RECORDED | B |
-| C | Editor | Reviewer for TC-17–TC-24 and TC-30; Editor for TC-25–TC-29 | NOT RECORDED | NOT RECORDED | C |
+| A | Owner | Owner | UNKNOWN | UNKNOWN | A |
+| B | Editor | Editor | UNKNOWN | UNKNOWN | B |
+| C | Editor | Reviewer for TC-17–TC-24 and TC-30; Editor for TC-25–TC-29 | UNKNOWN | UNKNOWN | C |
 
 Record full browser versions using the browser's About page before the run. Use only A/B/C in shared evidence and notes. Do not record account emails, real names, passwords, tokens, cookies, share links, or confidential project URLs. If the UI exposes identity or project URLs in a capture, crop/redact before saving it to the evidence directory. Use browser-local credentials; never export authenticated session state.
+
+## Environment metadata provenance and recovery limits
+
+The following separates repository configuration from observations of the historical manual run. No browser profiles, credentials, media, running containers, or deployment services were accessed for this recovery.
+
+| Metadata | Verified information | Remaining evidence needed |
+| --- | --- | --- |
+| Accounts and roles | Tester-reported three independent authenticated sessions: A Owner; B Editor; C Editor/Reviewer as listed above, including the active-session changes in TC-24 | No personal identities are needed |
+| Browser names and full versions, per A/B/C | UNKNOWN; no browser/version record was found in the available written test records | A contemporaneous About/version record or sanitized browser metadata linked to each test session; current installed versions alone would not prove historical versions |
+| Client OS and version | UNKNOWN; the automation host or CI runner OS does not identify the manual browser client's OS | Tester-confirmed OS/version for the machine(s) used during the manual run |
+| Manual testing dates and timezone | UNKNOWN; preserved Vitest start-clock fields concern automated tests and do not establish manual dates | A dated tester run record with timezone and case/session association |
+| Test server environment | Tester identifies the institute test server. [Server documentation](../../deploy/server/README.md) describes amd64, Docker Compose, MongoDB, Redis, LDAP and sandboxed compilation | Actual image digest/revision and effective configuration during the manual interval; checked-in Compose/resource settings alone do not prove historical runtime settings |
+| Deployed manual-test revision | UNKNOWN; the checklist base and PR CI commit are separately known source revisions | Maintainer-provided successful deployment/image revision record correlated with the recovered manual test interval, including any rollback |
+| Editor/document operations | Source architecture uses operational transformation (OT). The frontend selects `HistoryOTAdapter` for `shareDoc.otType === 'history-ot'`, otherwise `ShareLatexOTAdapter` ([realtime.ts](../../services/web/frontend/js/features/source-editor/extensions/realtime.ts)); backend managers validate `sharejs-text-ot` or `history-ot` ([UpdateManager.js](../../services/document-updater/app/js/UpdateManager.js), [HistoryOTUpdateManager.js](../../services/document-updater/app/js/HistoryOTUpdateManager.js)) | Actual per-document OT type and deployed implementation remain UNKNOWN; require sanitized declared join/document metadata or maintainer confirmation tied to the tested document/revision |
+| Historical runtime validation mode | UNKNOWN; the checked-in server image sets `enforce-log`, while the parser fallback is `log` (see policy below) | A maintainer-provided effective non-secret setting from the test interval; private environment files were not inspected |
+
+The known isolated local unit-test tools were Node 24.22.1, Corepack 0.36.0 and Yarn 4.18.0. The successful PR CI job used its own environment; neither supplies missing manual-browser or historical deployment metadata. No installed browser/OS version, media modification time, staging SHA, or CI build was substituted for missing historical evidence.
 
 ## Disposable project setup and baseline
 
@@ -883,17 +900,36 @@ The existing focused runs used isolated Node 24.22.1, bundled Corepack 0.36.0, Y
 | **Initial total** | **799** | **7** | **806 executed; not all PASS** |
 | Additional CollaboratorsController enforce diagnostic | 60 | 0 | PASS with invocation-only `REQ_VALIDATION_MODE=enforce`; repeats existing tests |
 
-All seven failures are malformed-ID / unexpected-field rejection assertions in CollaboratorsController. In default `log` mode, `logOnly` permits raw input and fallback schemas can accept otherwise invalid bodies: four promise-rejection checks instead fulfill, one callback-waiting test times out, another body check fulfills, and one malformed ID reaches BSON conversion instead of producing InvalidParamsError. With `enforce`, primary validation rejects before handlers run, and all 60 controller tests pass. The test file, its bootstrap/config, and the inspected CI workflows do not set the mode; the assertions implicitly expect enforcement. CI's selected Web suites do not currently include this controller test file.
+All seven failures are malformed-ID / unexpected-field rejection assertions in CollaboratorsController. In default `log` mode, `logOnly` permits raw input and fallback schemas can accept otherwise invalid bodies: four promise-rejection checks instead fulfill, one callback-waiting test times out, another body check fulfills, and one malformed ID reaches BSON conversion instead of producing InvalidParamsError. With `enforce`, primary validation rejects before handlers run, and all 60 controller tests pass. The controller test file and its bootstrap/config do not set the mode; the assertions implicitly expect enforcement. Workflow YAML has no explicit mode assignment, but the server Dockerfile sets `enforce-log`, which the Server image smoke-test runtime inherits unless overridden. CI's selected Web units do not include this controller test file; successful image smoke checks do not establish that these seven assertions passed.
 
-**Classification remains provisional:** seven configuration-dependent failures, pending final maintainer classification. Evidence supports an existing test-versus-rollout-policy mismatch, not an Issue #16 code regression. The tested HEAD equals the original staging base `1ff3043ca34eaa2c24767fe8c42658acfdc25d09`. Live staging is now `ef2bb8a2640fd293fc07c4828300d623b3c70519`; read-only blob comparisons found identical controller, test, parseReq, and lockfile content, while CI differs. This is not a live-staging runtime rerun; no baseline checkout/dependency tree was created. See local `failure-investigation.md` and `current-staging-comparison.json` for exact assertions, explanations, and comparison limits.
+**Classification remains provisional:** seven configuration-dependent failures, pending final maintainer classification. Evidence supports an existing test-versus-rollout-policy mismatch, not an Issue #16 code regression. The tested HEAD equals the original staging base `1ff3043ca34eaa2c24767fe8c42658acfdc25d09`. Previously inspected staging at `ef2bb8a2640fd293fc07c4828300d623b3c70519` was compared; read-only blob comparisons found identical controller, test, parseReq, and lockfile content, while CI differs. This is not a live-staging runtime rerun; no baseline checkout/dependency tree was created. See local `failure-investigation.md` and `current-staging-comparison.json` for exact assertions, explanations, and comparison limits.
 
 Frontend logs contain `TypeError: textRange(...).getClientRects is not a function` from JSDOM/CodeMirror despite 42 passing assertions and exit 0. Browser geometry is not established. Existing peer-version and deprecation warnings remain in the logs; no dependency changes were made to suppress them.
 
-Cypress component tests, database-backed acceptance tests, and GitHub **Build and check** have **not executed**. Mocked units do not establish complete backend authorization, real multi-service synchronization, or deterministic race safety. All **30 tester-reported manual PASS statuses remain unchanged** and are separate from the automated counts.
+Cypress component tests and database-backed acceptance tests have **not executed locally**. GitHub **Build and check** subsequently **passed** for PR #72 ([job](https://github.com/AcadSecy/iitmandi-latex-deploy/actions/runs/44165641056/job/134330812127)); this is separate from the original local results. Mocked units and image smoke tests do not establish complete backend authorization, real multi-service synchronization, or deterministic race safety. All **30 tester-reported manual PASS statuses remain unchanged** and are separate from the automated counts.
+
+### Validation-mode policy and the seven failures
+
+| Layer | Source/configuration finding | What it establishes |
+| --- | --- | --- |
+| Parser default | [`parseReq.js`](../../libraries/validation-tools/parseReq.js), `mode()`: unset or invalid `REQ_VALIDATION_MODE` becomes cached `log`, independently of `NODE_ENV` | Deliberate code-documented fallback, applicable to unconfigured development/test processes as well as other processes; not a universal deployment setting |
+| Rollout behavior | The same file documents `log`, `enforce-log`, and `enforce`; [rollout tests](../../libraries/validation-tools/test/unit/src/parseReqLogOnlyRollout.test.ts) explicitly describe the unset/invalid `log` safety policy | `logOnly`/fallback options can permit primary-schema failures in `log`. Call sites without such options still enforce. `enforce-log` rejects like `enforce` while retaining instrumented failure logging |
+| Server image | [`server-ce/Dockerfile`](../../server-ce/Dockerfile) sets `ENV REQ_VALIDATION_MODE=enforce-log` | Checked-in image runtime default is strict validation with logging; it differs from the parser fallback |
+| Compose, env examples and startup | Repository searches found no additional explicit assignment in checked-in Compose files, deployment env examples, startup scripts or server config. [Server Compose](../../deploy/server/docker-compose.yml) reads private/optional env files as well as the image | No checked-in override was found. Private env files/external runner settings were not inspected; historical deployed mode remains UNKNOWN |
+| CI | [`pi-image.yml`](../../.github/workflows/pi-image.yml) builds the server Dockerfile and boots it with server Compose. [`ci.yml`](../../.github/workflows/ci.yml) runs selected Web units without an explicit mode setting and omits CollaboratorsController | Server image smoke runtime is configured by the image's `enforce-log` unless overridden. No evidence establishes a global CI unit-test policy of `enforce` or a successful CI execution of the seven tests |
+| Controller suite | [`CollaboratorsController.test.mjs`](../../services/web/test/unit/src/Collaborators/CollaboratorsController.test.mjs) imports the real parser and does not pin the mode; bootstrap/Vitest config do not pin it either | Its strict assertions conflict with the unconfigured parser fallback; deciding whether to pin tests or change rollout expectations requires maintainer policy confirmation |
+
+**Observed failure mapping:** malformed `Project_id` rejection tests for `removeUserFromProject`, `removeSelfFromProject`, `getAllMembers`, and `getAccessRequests` fulfilled under `logOnly`; `setCollaboratorInfo`'s unexpected-field test timed out awaiting an error callback after fallback parsing; `transferOwnership`'s unexpected-field test fulfilled; `getShareTokens` received BSONError rather than InvalidParamsError. These outcomes and the separate 60/60 `enforce` diagnostic are preserved in the existing logs. No repeat run was needed to establish the already observed default-mode failure; no `enforce-log` controller diagnostic was executed, so equivalent strict rejection is a source-based expectation, not a recorded test result.
+
+**Baseline limit:** the initial tests exercised the unchanged original staging-base application source (`1ff3043ca34eaa2c24767fe8c42658acfdc25d09`), so the seven failures existed on that baseline under the recorded default-mode environment. Previously preserved comparisons against staging `ef2bb8a2640fd293fc07c4828300d623b3c70519` found identical controller/test/parser/lockfile blobs. This supports a baseline/configuration-dependent mismatch, not a regression introduced by this documentation-only PR. It does not claim a separate runtime run on newer staging or prove every environment would fail. No default, tests or application configuration were changed.
+
+**Maintainer intent still needed:** confirm which mode controller unit CI should explicitly exercise, whether rollout-mode behavior should have separate coverage, and the final disposition of the seven strict assertions. Source establishes a deliberate `log` parser fallback and an `enforce-log` server image setting; it does not establish a maintainer decision to use plain `enforce` universally.
+
+**PR CI result:** `Server image`, run 116, `Build and check` completed successfully for PR #72. [Run](https://github.com/AcadSecy/iitmandi-latex-deploy/actions/runs/44165641056) / [job](https://github.com/AcadSecy/iitmandi-latex-deploy/actions/runs/44165641056/job/134330812127). PR head: `5c1257512e7426db593775accd40f910b2df8d0d`. Verified read-only on 2026-11-18 (Asia/Kolkata); no workflow was triggered during this correction. This result covers the submitted revision, not the present uncommitted documentation corrections, and does not replace the local 799 PASS / 7 FAIL result.
 
 ## Minimum regression checks before submission
 
-The table distinguishes manual coverage, recorded local unit results, and outstanding checks. No new tests, deployment checks, or GitHub workflows ran during this documentation update; the existing local results are preserved above.
+The table distinguishes manual coverage, recorded local unit results, and outstanding checks. No new tests, deployment checks, or GitHub workflows were triggered during this documentation update; the existing local results and subsequent PR CI result are recorded above.
 
 | Check | Procedure / coverage | Current coverage | Evidence / issue |
 | --- | --- | --- | --- |
@@ -905,7 +941,7 @@ The table distinguishes manual coverage, recorded local unit results, and outsta
 | Reviewer permissions | TC-17–TC-24 and TC-30, UI scope only; backend authorization remains a separate unexecuted check | UI PASS only | TC-17–TC-24/TC-30; backend NOT RUN |
 | Simultaneous editing | TC-25–TC-30; identical source/ranges after synchronization and refresh | Manual PASS, sampled | TC-25–TC-30; minor lag TC-25; no deterministic schedule coverage |
 | Relevant automated tests | Existing focused local units; exact commands in preserved report | Initial 799 PASS / 7 FAIL; diagnostic 60 PASS | `~/issue16-evidence/test-results/local-focused-unit-run/`; classification pending |
-| GitHub required workflow | `Server image` workflow, `.github/workflows/pi-image.yml`, job `Build and check`, on the exact PR revision | NOT RUN | Not recorded |
+| GitHub required workflow | `Server image` workflow, `.github/workflows/pi-image.yml`, job `Build and check` | PASS for submitted PR #72 head `5c1257512e7426db593775accd40f910b2df8d0d`; current corrections not submitted | [Successful job](https://github.com/AcadSecy/iitmandi-latex-deploy/actions/runs/44165641056/job/134330812127) |
 | Post-merge institute verification | Rerun affected cases on the confirmed deployed revision and attach sanitized evidence | NOT RUN | Not recorded |
 
 ### Relevant automated commands and remaining coverage
@@ -1002,7 +1038,7 @@ TC-25 and TC-27 recordings were located as `.webm`, rather than the anticipated 
 
 **Privacy classification: all 20 originals need privacy review and redaction before public sharing.** Visible account identifiers require neutral A/B/C labels; a transient service hostname is visible in TC-14. No sensitive values are reproduced here. No email addresses, tokens, cookies, or session identifiers were observed in the reviewed images/frames, but sampled review cannot certify their absence between samples. The document content appears to be a testing fixture. Retain originals unchanged; no redaction, renaming, upload, or replacement was performed. A final review of approved redacted copies is still needed before publication. No further TC-25 capture is requested.
 
-Other outstanding items: actual execution dates/times, browser/OS versions, deployed SHA and provenance, document-operation type, unexecuted expanded procedure variants, resolved-comment history, backend request/socket authorization checks, deterministic concurrency tests, remaining automated regressions and classification of the seven default-mode failures, `Build and check` on the eventual PR revision, and post-merge verification. No bug issue links were supplied or created; untested safeguards remain investigation targets, not reproduced defects. The manual passes alone do not close Issue #16 or establish parent Issue #15 completion.
+Other outstanding items: actual execution dates/times, browser/OS versions, deployed SHA and provenance, document-operation type, unexecuted expanded procedure variants, resolved-comment history, backend request/socket authorization checks, deterministic concurrency tests, remaining automated regressions and classification of the seven default-mode failures, `Build and check` on any subsequently submitted revision (the current PR head passed), and post-merge verification. No bug issue links were supplied or created; untested safeguards remain investigation targets, not reproduced defects. The manual passes alone do not close Issue #16 or establish parent Issue #15 completion.
 
 ## Final acceptance summary
 
@@ -1018,7 +1054,8 @@ Other outstanding items: actual execution dates/times, browser/OS versions, depl
 | Side-by-side recording | TC-08 includes two sessions side by side; TC-25/TC-27 show one editor view. Final public-evidence approval awaits privacy review/redaction; no additional TC-25 recording required |
 | Manual failure screenshots and linked issues | No manual failure or bug issue reported; seven automated failures are documented separately above |
 | Focused local automated units | Initial 799 PASS / 7 FAIL; additional enforce-mode diagnostic 60 PASS; classification pending |
-| Cypress / database-backed acceptance / Build and check | NOT RUN |
+| Cypress / database-backed acceptance | NOT RUN locally |
+| Build and check | PASS on submitted PR #72 head; present corrections remain unsubmitted |
 | Acceptance decision | READY FOR DOCUMENTATION REVIEW; issue acceptance remains pending privacy review/redaction, environment metadata, and required checks; no additional TC-25 recording required |
 | Reviewer / date | Not recorded |
 
