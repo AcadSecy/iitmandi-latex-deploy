@@ -1,6 +1,6 @@
 # Reconnect and unsaved-change baseline
 
-The editor retains pending and in-flight operations in the browser. `UnsavedDocsProvider` checks pending state, warns on unload and locks the editor after a configured stall. The default threshold in the code depends on the connection rollout and account tier. There is no durable default offline draft store. The warning alone cannot recover the browser buffer after a forced close. The test below uses a disposable document and two signed-in accounts to establish what survives a temporary transport interruption.
+The editor retains pending and in-flight operations in the browser. `UnsavedDocsProvider` checks pending state, warns on unload and locks the editor after a configured stall. The default threshold in the code depends on the connection rollout and account tier. The existing `intermittent-connection-improvements` rollout can store the original document and queued operations in tab-scoped session storage. It keys the records by account, project and document, clears them when acknowledged, and clears the active tab's records on sign-out. The test below uses a disposable document and two signed-in accounts to establish what survives a temporary transport interruption.
 
 ## Observed behavior
 
@@ -33,4 +33,6 @@ Set `PLAYWRIGHT_MODULE` to the installed Playwright package path if it is outsid
 
 ## Remaining work
 
-Use the existing pending/in-flight state for explicit saved, saving, disconnected and unsaved indicators. Clear the pending signal only after the server's acknowledgement. Add an explicit download action for pending text already in memory and keep persistent browser drafts out of the first design. Then test long outages, discarded reloads, overlapping replacements and access removal. Record the two-editor result for each new behavior. Build on the release acceptance of #45 and #50. Budget two to three engineering days for the download and state work plus one day for the broader browser matrix.
+The draft adds a per-document download to the unsaved notification when the open document still has buffered operations. It rechecks the buffer on click and writes an `unsaved-` prefixed file using the existing local download helper. All seven headless browser component tests passed, including UTF-8 source, missing buffers and the enhanced connection mode. The focused action rendered at a 390 px viewport. The rollout and its existing tab-storage policy stay separate. Review expiry, size, shared-device behavior and recovery eligibility before expanding that rollout.
+
+Test the new action on the running editor, then cover long outages, discarded reloads, overlapping replacements and access removal. Add any missing explicit save acknowledgement state after the baseline matrix. Build on the release acceptance of #45 and #50. Budget two to three engineering days for the implementation and browser matrix.

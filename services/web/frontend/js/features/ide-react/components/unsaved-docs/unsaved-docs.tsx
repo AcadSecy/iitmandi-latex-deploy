@@ -7,7 +7,7 @@ import { useUnsavedDocsContext } from '@/features/ide-react/context/unsaved-docs
 import { useFeatureFlag } from '@/shared/context/split-test-context'
 
 export const UnsavedDocs: FC = () => {
-  const { unsavedDocs, isLocked } = useUnsavedDocsContext()
+  const { unsavedDocs, isLocked, isSavingStalled } = useUnsavedDocsContext()
   const globalAlertsContainer = useGlobalAlertsContainer()
   const improvedFlakyConnections = useFeatureFlag(
     'intermittent-connection-improvements'
@@ -22,7 +22,7 @@ export const UnsavedDocs: FC = () => {
       {isLocked &&
         createPortal(<UnsavedDocsLockedAlert />, globalAlertsContainer)}
 
-      {!improvedFlakyConnections &&
+      {(!improvedFlakyConnections || isSavingStalled) &&
         unsavedDocs.size > 0 &&
         createPortal(
           <UnsavedDocsAlert unsavedDocs={unsavedDocs} />,
