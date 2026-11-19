@@ -3,6 +3,7 @@ import OError from '@overleaf/o-error'
 import Mongo from '../../../../app/src/Features/Helpers/Mongo.mjs'
 import { GitHubSyncUserCredentials } from '../models/githubSyncUserCredentials.mjs'
 import { AccessTokenEncryptor } from './AccessTokenEncryptorHelper.mjs'
+import GitHubApiClient from './GitHubApiClient.mjs'
 import { InvalidTokenError } from './GitSyncErrors.mjs'
 
 const { normalizeQuery } = Mongo
@@ -39,22 +40,25 @@ async function saveUserToken(userId, accessToken) {
   )
 }
 
-// Try to revoke user's token, then remove it
+// Remove exactly the credential we revoke, even if the user reconnects concurrently.
 async function removeUserToken(userId) {
+  const credentials = await GitHubSyncUserCredentials.findOneAndDelete(
+    normalizeQuery({ userId })
+  )
+  if (!credentials) return
+
   let token
   try {
-    const token = await getUserToken(userId)
-  } catch (err) {
-    logger.warn({ err, userId }, 'failed to get user token')
+    token = await decryptAccessToken(credentials.github)
+  } catch {
+    logger.warn({ userId }, 'failed to decrypt removed GitHub token')
+    return
   }
-  // fire-and-forget, but still handle errors
-  if (token) {
-    GitHubApiClient.revokeToken(token).catch(err => {
-      logger.warn({ err, userId }, 'failed to revoke user token')
-    })
-  }
-  await GitHubSyncUserCredentials.deleteOne(normalizeQuery({ userId }))
-  return
+
+  // The local disconnect succeeds even when GitHub is unavailable.
+  GitHubApiClient.revokeToken(token).catch(() => {
+    logger.warn({ userId }, 'failed to revoke removed GitHub token')
+  })
 }
 
 export default {
