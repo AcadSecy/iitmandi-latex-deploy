@@ -334,6 +334,7 @@ jobs:
           modules/chapter-compile/test/frontend/chapter-compile-menu-items.test.tsx
           modules/reference-picker/test/frontend/advanced-reference-index.test.ts
           test/frontend/ide/log-parser/logParserTests.js
+          test/frontend/ide/human-readable-logs/human-readable-logs.test.js
 
   clsi:
     name: Compile service
