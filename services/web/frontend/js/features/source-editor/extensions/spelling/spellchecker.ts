@@ -1,7 +1,7 @@
 import { addMisspelledWords, misspelledWordsField } from './misspelled-words'
 import { addLearnedWordEffect, removeLearnedWordEffect } from './learned-words'
 import { cacheField, addWordToCache } from './cache'
-import { WORD_REGEX } from './helpers'
+import { BARE_URL_REGEX, WORD_REGEX } from './helpers'
 import OError from '@overleaf/o-error'
 import { EditorView, ViewUpdate } from '@codemirror/view'
 import { ChangeSet, Line, Range, RangeValue } from '@codemirror/state'
@@ -386,12 +386,20 @@ export function* getWordsFromLine(
   lang: string,
   segmenter?: Intl.Segmenter
 ) {
+  const urlRanges = Array.from(line.text.matchAll(BARE_URL_REGEX), match => ({
+    from: line.from + match.index,
+    to: line.from + match.index + match[0].length,
+  }))
+  const overlapsUrl = (from: number, to: number) =>
+    urlRanges.some(range => from < range.to && to > range.from)
+
   for (const span of getNormalTextSpansFromLine(view, line)) {
     if (segmenter) {
       for (const value of segmenter.segment(span.text)) {
         if (value.isWordLike) {
           const word = value.segment
           const from = span.from + value.index
+          if (overlapsUrl(from, from + word.length)) continue
           yield new Word({
             text: word,
             from,
@@ -409,6 +417,7 @@ export function* getWordsFromLine(
           word = word.slice(1)
           from++
         }
+        if (overlapsUrl(from, from + word.length)) continue
         yield new Word({
           text: word,
           from,
