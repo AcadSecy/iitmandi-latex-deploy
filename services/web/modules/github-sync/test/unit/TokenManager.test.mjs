@@ -1,22 +1,47 @@
+import assert from 'node:assert/strict'
 import { describe, expect, it, vi } from 'vitest'
 import logger from '@overleaf/logger'
 import { GitHubSyncUserCredentials } from '../../app/models/githubSyncUserCredentials.mjs'
 import { AccessTokenEncryptor } from '../../app/src/AccessTokenEncryptorHelper.mjs'
 import api from '../../app/src/GitHubApiClient.mjs'
+import { NotFoundError, PermissionDeniedError } from '../../app/src/GitSyncErrors.mjs'
 import TokenManager from '../../app/src/TokenManager.mjs'
 
 vi.mock('../../../../app/src/Features/Helpers/Mongo.mjs', () => ({
   default: { normalizeQuery: query => query },
 }))
 vi.mock('../../app/models/githubSyncUserCredentials.mjs', () => ({
-  GitHubSyncUserCredentials: { findOneAndDelete: vi.fn() },
+  GitHubSyncUserCredentials: { findOne: vi.fn(), findOneAndDelete: vi.fn() },
 }))
 vi.mock('../../app/src/AccessTokenEncryptorHelper.mjs', () => ({
   AccessTokenEncryptor: { decryptToJson: vi.fn() },
 }))
 vi.mock('../../app/src/GitHubApiClient.mjs', () => ({
-  default: { revokeToken: vi.fn() },
+  default: { getPushPermission: vi.fn(), revokeToken: vi.fn() },
 }))
+
+describe('TokenManager.getProjectToken', function () {
+  it('uses the requesting user’s credential when GitHub allows writing', async function () {
+    GitHubSyncUserCredentials.findOne.mockResolvedValue({ github: 'encrypted-token' })
+    AccessTokenEncryptor.decryptToJson.mockResolvedValue('student-token')
+    api.getPushPermission.mockResolvedValue(true)
+
+    expect(await TokenManager.getProjectToken('student', 'fixture/repo')).to.equal('student-token')
+    expect(GitHubSyncUserCredentials.findOne).toHaveBeenCalledExactlyOnceWith({ userId: 'student' })
+    expect(api.getPushPermission).toHaveBeenCalledExactlyOnceWith('student-token', 'fixture/repo')
+  })
+
+  it('treats GitHub’s private-repository response as a generic denial', async function () {
+    GitHubSyncUserCredentials.findOne.mockResolvedValue({ github: 'encrypted-token' })
+    AccessTokenEncryptor.decryptToJson.mockResolvedValue('student-token')
+    api.getPushPermission.mockRejectedValue(new NotFoundError('private repository response'))
+
+    await assert.rejects(
+      TokenManager.getProjectToken('student', 'fixture/repo'),
+      { name: PermissionDeniedError.name, message: 'GitHub repository write access is required' }
+    )
+  })
+})
 
 describe('TokenManager.removeUserToken', function () {
   it('revokes the token returned by the atomic removal', async function () {

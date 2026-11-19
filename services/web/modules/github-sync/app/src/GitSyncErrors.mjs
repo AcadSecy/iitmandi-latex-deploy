@@ -2,7 +2,7 @@ import OError from '@overleaf/o-error'
 
 class GitNotLinkedError extends OError {
   constructor(projectId) {
-    super('git server is not linked to project', { projectId })
+    super('git server is not linked to project', { projectId, status: 404 })
   }
 }
 

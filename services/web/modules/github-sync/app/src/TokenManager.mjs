@@ -4,7 +4,7 @@ import Mongo from '../../../../app/src/Features/Helpers/Mongo.mjs'
 import { GitHubSyncUserCredentials } from '../models/githubSyncUserCredentials.mjs'
 import { AccessTokenEncryptor } from './AccessTokenEncryptorHelper.mjs'
 import GitHubApiClient from './GitHubApiClient.mjs'
-import { InvalidTokenError } from './GitSyncErrors.mjs'
+import { InvalidTokenError, NotFoundError, PermissionDeniedError } from './GitSyncErrors.mjs'
 
 const { normalizeQuery } = Mongo
 
@@ -29,6 +29,16 @@ async function getUserToken(userId) {
   const credentials = await GitHubSyncUserCredentials.findOne(normalizeQuery({ userId }))
   if (!credentials) throw new InvalidTokenError('no user token', { userId, status: 400 })
   return await decryptAccessToken(credentials.github)
+}
+
+async function getProjectToken(userId, repoFullName) {
+  const token = await getUserToken(userId)
+  try {
+    if (await GitHubApiClient.getPushPermission(token, repoFullName)) return token
+  } catch (err) {
+    if (!(err instanceof NotFoundError || err instanceof PermissionDeniedError)) throw err
+  }
+  throw new PermissionDeniedError('GitHub repository write access is required', { status: 403 })
 }
 
 async function saveUserToken(userId, accessToken) {
@@ -64,5 +74,6 @@ async function removeUserToken(userId) {
 export default {
   saveUserToken,
   getUserToken,
+  getProjectToken,
   removeUserToken
 }

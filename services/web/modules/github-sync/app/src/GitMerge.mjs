@@ -6,7 +6,7 @@ import Settings from '@overleaf/settings'
 import SyncStateManager from './SyncStateManager.mjs'
 import api from './GitHubApiClient.mjs'
 import HistoryManager from './HistoryManager.mjs'
-import { GitConflictError } from './GitSyncErrors.mjs'
+import { GitConflictError, GitNotLinkedError } from './GitSyncErrors.mjs'
 import TokenManager from './TokenManager.mjs'
 import { ObjectId } from '../../../../app/src/infrastructure/mongodb.mjs'
 import LockManager from '../../../../app/src/infrastructure/LockManager.mjs'
@@ -34,14 +34,13 @@ async function doGitMergeWithoutLock(userId, projectId, message, claimConflictIs
     unmergedBranchName
   } = projectSyncState
 
+  const token = await TokenManager.getProjectToken(userId, repoFullName)
   // do nothing if conflict is not yet resolved and 'Sync' button is pushed
   // do nothing if conflict is already resolved and 'I have manually merged' button is pushed
   if (
     !claimConflictIsResolved && mergeStatus === 'conflict' ||
     claimConflictIsResolved && mergeStatus !== 'conflict'
   ) return { mergeStatus, repoFullName, unmergedBranchName }
-
-  const token = await TokenManager.getUserToken(userId)
 
   await DocumentUpdaterHandler.promises.flushProjectToMongo(projectId)
 

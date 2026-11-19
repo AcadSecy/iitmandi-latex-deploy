@@ -2,8 +2,14 @@ import Settings from '@overleaf/settings'
 import Modules from '../../app/src/infrastructure/Modules.mjs'
 import logger from '@overleaf/logger'
 
+const clientID = process.env.GITHUB_SYNC_CLIENT_ID?.trim()
+const clientSecret = process.env.GITHUB_SYNC_CLIENT_SECRET?.trim()
+Settings.enableGithubSync =
+  process.env.GITHUB_SYNC_ENABLED?.toLowerCase() === 'true' &&
+  Boolean(clientID && clientSecret)
+
 let GitHubSyncModule = {}
-if (process.env.GITHUB_SYNC_ENABLED?.toLowerCase() === 'true') {
+if (Settings.enableGithubSync) {
   logger.debug({}, 'Enabling GitHub Sync module')
 
   const [{ default: GitHubSyncRouter },
@@ -18,8 +24,8 @@ if (process.env.GITHUB_SYNC_ENABLED?.toLowerCase() === 'true') {
 
   const siteUrl = Settings.siteUrl.replace(/\/+$/, '') || 'http://localhost'
   Settings.githubSync = {
-    clientID: process.env.GITHUB_SYNC_CLIENT_ID,
-    clientSecret: process.env.GITHUB_SYNC_CLIENT_SECRET,
+    clientID,
+    clientSecret,
     callbackURL: `${siteUrl}/user/github-sync/oauth2/callback`,
   },
 
