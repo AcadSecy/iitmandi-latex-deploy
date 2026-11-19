@@ -1,0 +1,364 @@
+This is XeTeX, Version 3.141592653-2.6-0.999998 (TeX Live 2026) (preloaded format=xelatex 2026.10.29)  19 NOV 2026 21:33
+entering extended mode
+ \write18 enabled.
+ %&-line parsing enabled.
+**main.tex
+(./main.tex
+LaTeX2e <2026-06-01>
+L3 programming layer <2026-09-09>
+(/usr/local/texlive/2026/texmf-dist/tex/latex/base/article.cls
+Document Class: article 2025/01/22 v1.4n Standard LaTeX document class
+(/usr/local/texlive/2026/texmf-dist/tex/latex/base/size10.clo
+File: size10.clo 2025/01/22 v1.4n Standard LaTeX file (size option)
+)
+\c@part=\count273
+\c@section=\count274
+\c@subsection=\count275
+\c@subsubsection=\count276
+\c@paragraph=\count277
+\c@subparagraph=\count278
+\c@figure=\count279
+\c@table=\count280
+\abovecaptionskip=\skip49
+\belowcaptionskip=\skip50
+\bibindent=\dimen150
+) (/usr/local/texlive/2026/texmf-dist/tex/latex/polyglossia/polyglossia.sty
+Package: polyglossia 2026/09/11 v2.13 Modern multilingual typesetting with XeLa
+TeX and LuaLaTeX
+(/usr/local/texlive/2026/texmf-dist/tex/latex/etoolbox/etoolbox.sty
+Package: etoolbox 2025/10/02 v2.5m e-TeX tools for LaTeX (JAW)
+\etb@tempcnta=\count281
+) (/usr/local/texlive/2026/texmf-dist/tex/latex/fontspec/fontspec.sty
+Package: fontspec 2026/08/11 v2.9h Font selection for XeLaTeX and LuaLaTeX
+(/usr/local/texlive/2026/texmf-dist/tex/latex/fontspec/fontspec-xetex.sty
+Package: fontspec-xetex 2026/08/11 v2.9h Font selection for XeLaTeX and LuaLaTe
+X
+\l__fontspec_script_int=\count282
+\l__fontspec_language_int=\count283
+\l__fontspec_strnum_int=\count284
+\l__fontspec_tmp_int=\count285
+\l__fontspec_tmpa_int=\count286
+\l__fontspec_tmpb_int=\count287
+\l__fontspec_tmpc_int=\count288
+\l__fontspec_em_int=\count289
+\l__fontspec_emdef_int=\count290
+\l__fontspec_strong_int=\count291
+\l__fontspec_strongdef_int=\count292
+\l__fontspec_tmpa_dim=\dimen151
+\l__fontspec_tmpb_dim=\dimen152
+\l__fontspec_tmpc_dim=\dimen153
+(/usr/local/texlive/2026/texmf-dist/tex/latex/base/fontenc.sty
+Package: fontenc 2025/07/18 v2.1d Standard LaTeX package
+) (/usr/local/texlive/texmf-local/tex/latex/iitmandi/fontspec.cfg))) (/usr/loca
+l/texlive/2026/texmf-dist/tex/generic/iftex/iftex.sty
+Package: iftex 2024/12/12 v1.0g TeX engine tests
+)
+\l_xpg_alias_keyvals_int=\count293
+(/usr/local/texlive/2026/texmf-dist/tex/latex/polyglossia/gloss-latex.ldf
+File: gloss-latex.ldf 2026/09/11 v2.13 polyglossia: module for default language
+
+)) (/usr/local/texlive/2026/texmf-dist/tex/latex/polyglossia/gloss-english.ldf
+File: gloss-english.ldf 2026/09/11 v2.13 polyglossia: module for English
+)
+
+Package polyglossia Info: Default language is english
+
+(/usr/local/texlive/2026/texmf-dist/tex/latex/polyglossia/gloss-hindi.ldf
+File: gloss-hindi.ldf 2026/09/11 v2.13 polyglossia: module for Hindi
+(/usr/local/texlive/2026/texmf-dist/tex/latex/polyglossia/devanagaridigits.sty
+Package: devanagaridigits 2010/04/01 v0.1 Formatting of Devanagari digits
+))
+
+Package fontspec Info: 
+(fontspec)             Could not resolve font "Noto Serif Devanagari Bold/I"
+(fontspec)             (it probably doesn't exist).
+
+
+Package fontspec Info: 
+(fontspec)             Could not resolve font "Noto Serif Devanagari/I" (it
+(fontspec)             probably doesn't exist).
+
+
+Package fontspec Info: 
+(fontspec)             Font family 'Kokila(0)' created for font 'Kokila' with
+(fontspec)             options [UprightFont=Noto Serif
+(fontspec)             Devanagari,BoldFont=Noto Serif Devanagari
+(fontspec)             Bold,Script=Devanagari].
+(fontspec)              
+(fontspec)              This font family consists of the following NFSS
+(fontspec)             series/shapes:
+(fontspec)              
+(fontspec)             - 'normal' (m/n) with NFSS spec.: <->"Noto Serif
+(fontspec)             Devanagari/OT:script=dev2;language=dflt;"
+(fontspec)             - 'bold' (b/n) with NFSS spec.: <->"Noto Serif
+(fontspec)             Devanagari Bold/OT:script=dev2;language=dflt;"
+(fontspec)             - 'bold italic' (b/it) with NFSS spec.: <->"Noto Serif
+(fontspec)             Devanagari/BI/OT:script=dev2;language=dflt;"
+
+(/usr/local/texlive/2026/texmf-dist/tex/latex/l3kernel/l3backend-xetex.def
+File: l3backend-xetex.def 2026-09-09 L3 backend support: XeTeX
+\g__graphics_track_int=\count294
+\g__pdfannot_backend_int=\count295
+\g__pdfannot_backend_link_int=\count296
+) (./main.aux)
+\openout1 = `main.aux'.
+
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 9.
+LaTeX Font Info:    ... okay on input line 9.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 9.
+LaTeX Font Info:    ... okay on input line 9.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 9.
+LaTeX Font Info:    ... okay on input line 9.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 9.
+LaTeX Font Info:    ... okay on input line 9.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 9.
+LaTeX Font Info:    ... okay on input line 9.
+LaTeX Font Info:    Checking defaults for TU/lmr/m/n on input line 9.
+LaTeX Font Info:    ... okay on input line 9.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 9.
+LaTeX Font Info:    ... okay on input line 9.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 9.
+LaTeX Font Info:    ... okay on input line 9.
+
+Package fontspec Info: 
+(fontspec)             Adjusting the maths setup (use [no-math] to avoid
+(fontspec)             this).
+
+\symlegacymaths=\mathgroup4
+LaTeX Font Info:    Overwriting symbol font `legacymaths' in version `bold'
+(Font)                  OT1/cmr/m/n --> OT1/cmr/bx/n on input line 9.
+LaTeX Font Info:    Redeclaring math accent \acute on input line 9.
+LaTeX Font Info:    Redeclaring math accent \grave on input line 9.
+LaTeX Font Info:    Redeclaring math accent \ddot on input line 9.
+LaTeX Font Info:    Redeclaring math accent \tilde on input line 9.
+LaTeX Font Info:    Redeclaring math accent \bar on input line 9.
+LaTeX Font Info:    Redeclaring math accent \breve on input line 9.
+LaTeX Font Info:    Redeclaring math accent \check on input line 9.
+LaTeX Font Info:    Redeclaring math accent \hat on input line 9.
+LaTeX Font Info:    Redeclaring math accent \dot on input line 9.
+LaTeX Font Info:    Redeclaring math accent \mathring on input line 9.
+LaTeX Font Info:    Redeclaring math symbol \colon on input line 9.
+LaTeX Font Info:    Redeclaring math symbol \Gamma on input line 9.
+LaTeX Font Info:    Redeclaring math symbol \Delta on input line 9.
+LaTeX Font Info:    Redeclaring math symbol \Theta on input line 9.
+LaTeX Font Info:    Redeclaring math symbol \Lambda on input line 9.
+LaTeX Font Info:    Redeclaring math symbol \Xi on input line 9.
+LaTeX Font Info:    Redeclaring math symbol \Pi on input line 9.
+LaTeX Font Info:    Redeclaring math symbol \Sigma on input line 9.
+LaTeX Font Info:    Redeclaring math symbol \Upsilon on input line 9.
+LaTeX Font Info:    Redeclaring math symbol \Phi on input line 9.
+LaTeX Font Info:    Redeclaring math symbol \Psi on input line 9.
+LaTeX Font Info:    Redeclaring math symbol \Omega on input line 9.
+LaTeX Font Info:    Redeclaring math symbol \mathdollar on input line 9.
+LaTeX Font Info:    Redeclaring symbol font `operators' on input line 9.
+LaTeX Font Info:    Encoding `OT1' has changed to `TU' for symbol font
+(Font)              `operators' in the math version `normal' on input line 9.
+LaTeX Font Info:    Overwriting symbol font `operators' in version `normal'
+(Font)                  OT1/cmr/m/n --> TU/lmr/m/n on input line 9.
+LaTeX Font Info:    Encoding `OT1' has changed to `TU' for symbol font
+(Font)              `operators' in the math version `bold' on input line 9.
+LaTeX Font Info:    Overwriting symbol font `operators' in version `bold'
+(Font)                  OT1/cmr/bx/n --> TU/lmr/m/n on input line 9.
+LaTeX Font Info:    Overwriting symbol font `operators' in version `normal'
+(Font)                  TU/lmr/m/n --> TU/lmr/m/n on input line 9.
+LaTeX Font Info:    Overwriting math alphabet `\mathit' in version `normal'
+(Font)                  OT1/cmr/m/it --> TU/lmr/m/it on input line 9.
+LaTeX Font Info:    Overwriting math alphabet `\mathbf' in version `normal'
+(Font)                  OT1/cmr/bx/n --> TU/lmr/b/n on input line 9.
+LaTeX Font Info:    Overwriting math alphabet `\mathsf' in version `normal'
+(Font)                  OT1/cmss/m/n --> TU/lmss/m/n on input line 9.
+LaTeX Font Info:    Overwriting math alphabet `\mathtt' in version `normal'
+(Font)                  OT1/cmtt/m/n --> TU/lmtt/m/n on input line 9.
+LaTeX Font Info:    Overwriting symbol font `operators' in version `bold'
+(Font)                  TU/lmr/m/n --> TU/lmr/b/n on input line 9.
+LaTeX Font Info:    Overwriting math alphabet `\mathit' in version `bold'
+(Font)                  OT1/cmr/bx/it --> TU/lmr/b/it on input line 9.
+LaTeX Font Info:    Overwriting math alphabet `\mathsf' in version `bold'
+(Font)                  OT1/cmss/bx/n --> TU/lmss/b/n on input line 9.
+LaTeX Font Info:    Overwriting math alphabet `\mathtt' in version `bold'
+(Font)                  OT1/cmtt/m/n --> TU/lmtt/b/n on input line 9.
+Missing character: There is no म (U+092E) in font [lmroman12-bold]:mapping=tex-
+text;!
+Missing character: There is no ि (U+093F) in font [lmroman12-bold]:mapping=tex-
+text;!
+Missing character: There is no श (U+0936) in font [lmroman12-bold]:mapping=tex-
+text;!
+Missing character: There is no ् (U+094D) in font [lmroman12-bold]:mapping=tex-
+text;!
+Missing character: There is no र (U+0930) in font [lmroman12-bold]:mapping=tex-
+text;!
+Missing character: There is no ि (U+093F) in font [lmroman12-bold]:mapping=tex-
+text;!
+Missing character: There is no त (U+0924) in font [lmroman12-bold]:mapping=tex-
+text;!
+Missing character: There is no प (U+092A) in font [lmroman12-bold]:mapping=tex-
+text;!
+Missing character: There is no ा (U+093E) in font [lmroman12-bold]:mapping=tex-
+text;!
+Missing character: There is no ठ (U+0920) in font [lmroman12-bold]:mapping=tex-
+text;!
+(./main.bbl
+Missing character: There is no ل (U+0644) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no ي (U+064A) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no ل (U+0644) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no ى (U+0649) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no ح (U+062D) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no د (U+062F) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no ا (U+0627) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no د (U+062F) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no ا (U+0627) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no ل (U+0644) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no ن (U+0646) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no ص (U+0635) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no ث (U+062B) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no ن (U+0646) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no ا (U+0627) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no ئ (U+0626) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no ي (U+064A) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no ا (U+0627) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no ل (U+0644) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no ا (U+0627) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no ت (U+062A) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no ج (U+062C) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no ا (U+0627) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no ه (U+0647) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no ف (U+0641) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no ي (U+064A) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no ا (U+0627) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no ل (U+0644) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no م (U+0645) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no س (U+0633) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no ت (U+062A) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no ن (U+0646) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no د (U+062F) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no ا (U+0627) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no ت (U+062A) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no ا (U+0627) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no ل (U+0644) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no ع (U+0639) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no ل (U+0644) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no م (U+0645) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no ي (U+064A) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no ة (U+0629) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no अ (U+0905) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no न (U+0928) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no ी (U+0940) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no त (U+0924) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no ा (U+093E) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no श (U+0936) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no र (U+0930) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no ् (U+094D) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no म (U+092E) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no ा (U+093E) in font [lmroman10-regular]:mapping=t
+ex-text;!
+Missing character: There is no ह (U+0939) in font [lmroman10-italic]:mapping=te
+x-text;!
+Missing character: There is no ि (U+093F) in font [lmroman10-italic]:mapping=te
+x-text;!
+Missing character: There is no ं (U+0902) in font [lmroman10-italic]:mapping=te
+x-text;!
+Missing character: There is no द (U+0926) in font [lmroman10-italic]:mapping=te
+x-text;!
+Missing character: There is no ी (U+0940) in font [lmroman10-italic]:mapping=te
+x-text;!
+Missing character: There is no म (U+092E) in font [lmroman10-italic]:mapping=te
+x-text;!
+Missing character: There is no े (U+0947) in font [lmroman10-italic]:mapping=te
+x-text;!
+Missing character: There is no ं (U+0902) in font [lmroman10-italic]:mapping=te
+x-text;!
+Missing character: There is no व (U+0935) in font [lmroman10-italic]:mapping=te
+x-text;!
+Missing character: There is no ै (U+0948) in font [lmroman10-italic]:mapping=te
+x-text;!
+Missing character: There is no ज (U+091C) in font [lmroman10-italic]:mapping=te
+x-text;!
+Missing character: There is no ् (U+094D) in font [lmroman10-italic]:mapping=te
+x-text;!
+Missing character: There is no ञ (U+091E) in font [lmroman10-italic]:mapping=te
+x-text;!
+Missing character: There is no ा (U+093E) in font [lmroman10-italic]:mapping=te
+x-text;!
+Missing character: There is no न (U+0928) in font [lmroman10-italic]:mapping=te
+x-text;!
+Missing character: There is no ि (U+093F) in font [lmroman10-italic]:mapping=te
+x-text;!
+Missing character: There is no क (U+0915) in font [lmroman10-italic]:mapping=te
+x-text;!
+Missing character: There is no ल (U+0932) in font [lmroman10-italic]:mapping=te
+x-text;!
+Missing character: There is no े (U+0947) in font [lmroman10-italic]:mapping=te
+x-text;!
+Missing character: There is no ख (U+0916) in font [lmroman10-italic]:mapping=te
+x-text;!
+Missing character: There is no न (U+0928) in font [lmroman10-italic]:mapping=te
+x-text;!
+) [1
+
+] (./main.aux)
+ ***********
+LaTeX2e <2026-06-01>
+L3 programming layer <2026-09-09>
+ ***********
+ ) 
+Here is how much of TeX's memory you used:
+ 4052 strings out of 467696
+ 119904 string characters out of 5420310
+ 580744 words of memory out of 5000000
+ 33266 multiletter control sequences out of 15000+600000
+ 628593 words of font info for 53 fonts, out of 8000000 for 9000
+ 1348 hyphenation exceptions out of 8191
+ 74i,5n,92p,298b,255s stack positions out of 10000i,1000n,20000p,200000b,200000s
+
+Output written on main.xdv (1 page, 8116 bytes).

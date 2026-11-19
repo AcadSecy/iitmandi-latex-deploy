@@ -196,6 +196,23 @@ describe('logParser', function () {
     ])
   })
 
+  it('should parse missing characters as warnings', function () {
+    // XeLaTeX log of a Hindi section title set in a font without Devanagari
+    const { warnings } = parseLatexLog('missing-character.log', {
+      ignoreDuplicates: true,
+    })
+    expect(warnings.length).to.equal(53)
+    expect([
+      warnings[0].line,
+      warnings[0].message,
+      warnings[0].file,
+    ]).to.deep.equal([
+      null,
+      'Missing character: There is no म (U+092E) in font [lmroman12-bold]:mapping=tex-text;!',
+      './main.tex',
+    ])
+  })
+
   it('should parse Runaway Arguments', function () {
     const { errors } = parseLatexLog('runaway-arguments.log')
     expect(errors.map(e => [e.line, e.message, e.file])).to.deep.equal([

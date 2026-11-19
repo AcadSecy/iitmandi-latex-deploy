@@ -2,6 +2,8 @@
 const LOG_WRAP_LIMIT = 79
 const LATEX_WARNING_REGEX = /^LaTeX(?:3| Font)? Warning: (.*)$/
 const HBOX_WARNING_REGEX = /^(Over|Under)full \\(v|h)box/
+// A glyph the font lacks; TeX leaves a gap in the PDF and does not stop
+const MISSING_CHARACTER_REGEX = /^(Missing character: .*)$/
 const PACKAGE_WARNING_REGEX = /^((?:Package|Class|Module) \b.+\b Warning:.*)$/
 // This is used to parse the line number from common latex warnings
 const LINES_REGEX = /lines? ([0-9]+)/
@@ -102,6 +104,8 @@ export default class LatexParser {
           this.parseHboxLine()
         } else if (this.currentLineIsPackageWarning()) {
           this.parseMultipleWarningLine()
+        } else if (MISSING_CHARACTER_REGEX.test(this.currentLine)) {
+          this.parseSingleWarningLine(MISSING_CHARACTER_REGEX)
         } else {
           this.parseParensForFilenames()
         }
