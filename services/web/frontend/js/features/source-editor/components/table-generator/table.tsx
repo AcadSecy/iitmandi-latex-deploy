@@ -22,6 +22,7 @@ import { startCompileKeypress } from '@/features/pdf-preview/hooks/use-compile-t
 import { useTabularContext } from './contexts/tabular-context'
 import { ColumnSizeIndicator } from './column-size-indicator'
 import { isMac } from '@/shared/utils/os'
+import { filterTableCellInput } from './utils'
 
 type NavigationKey =
   | 'ArrowRight'
@@ -239,7 +240,7 @@ export const Table: FC = () => {
           return
         }
         startEditing(selection.to.row, selection.to.cell)
-        updateCellData(event.key)
+        updateCellData(filterTableCellInput(event.key).content)
         setSelection(new TableSelection(selection.to, selection.to))
       } else if (
         !cellData &&
@@ -288,7 +289,7 @@ export const Table: FC = () => {
       const changes: ChangeSpec[] = []
       const data = event.clipboardData?.getData('text/plain')
       if (data) {
-        const cells = data.split('\n').map(row => row.split('\t'))
+        const cells = data.split(/\r\n?|\n/).map(row => row.split('\t'))
         const { minY, minX } = selection.normalized()
         for (let row = 0; row < cells.length; ++row) {
           const rowIndex = minY + row
@@ -307,7 +308,7 @@ export const Table: FC = () => {
             changes.push({
               from: cell.from,
               to: cell.to,
-              insert: cells[row][column],
+              insert: filterTableCellInput(cells[row][column]).content,
             })
           }
         }

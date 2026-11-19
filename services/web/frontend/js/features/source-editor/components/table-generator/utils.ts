@@ -12,6 +12,33 @@ import {
 
 const COMMIT_CHARACTERS = ['c', 'l', 'r', 'p', 'm', 'b', '>']
 
+// A cell accepts LaTeX, including macros and math. Escape only the characters
+// that would create another cell or comment out the row. Keep the existing
+// policy of removing pasted row separators, before escaping their neighbours.
+// Offsets map DOM selection positions through the inserted/removed characters.
+export function filterTableCellInput(input: string) {
+  let content = ''
+  const offsets = [0]
+  for (let i = 0; i < input.length; i++) {
+    const char = input[i]
+    const next = input[i + 1]
+    if (char === '\\' && next === '\\') {
+      offsets.push(content.length, content.length)
+      i++
+    } else if (char === '\\' && (next === '&' || next === '%')) {
+      content += char
+      offsets.push(content.length)
+      content += next
+      offsets.push(content.length)
+      i++
+    } else {
+      content += char === '&' || char === '%' ? `\\${char}` : char
+      offsets.push(content.length)
+    }
+  }
+  return { content, offsets }
+}
+
 export type CellPosition = { from: number; to: number }
 export type RowPosition = {
   from: number

@@ -173,6 +173,12 @@ jobs:
           node services/web/modules/iitmandi-templates/scripts/assemble.mjs "$dir" > "$RUNNER_TEMP/templates.txt"
           node services/web/modules/page-setup/scripts/page-setup-variants.mjs \
             "$dir" < "$RUNNER_TEMP/templates.txt" >> "$RUNNER_TEMP/templates.txt"
+          for compiler in pdflatex xelatex lualatex; do
+            id="table-cell-44-$compiler"
+            mkdir -p "$dir/$id"
+            cp doc/testing/fixtures/table-cell-output-44.tex "$dir/$id/main.tex"
+            printf '%s %s main.tex\n' "$id" "$compiler" >> "$RUNNER_TEMP/templates.txt"
+          done
           cp "$RUNNER_TEMP/templates.txt" "$dir/list.txt"
           docker run --rm --entrypoint bash -v "$dir:/var/lib/overleaf/data/compiles" \
             -v "$PWD/deploy/pi/check-tex.sh:/check-tex.sh:ro" "$BASE" \
