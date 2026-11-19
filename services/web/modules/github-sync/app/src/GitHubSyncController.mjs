@@ -122,11 +122,9 @@ async function oauth2Callback(req, res) {
       HttpErrorHandler.badRequest(req, res, 'Failed to obtain access token from Git server')
       return
     }
-  } catch (error) {
-    const info = OError.getFullInfo(err)
-    logger.error(OError.getFullStack(err))
-    logger.error({ info, userId }, 'Failed to obtain access token from Git server')
-    HttpErrorHandler.badRequest(req, res, error.message || 'Bad request')
+  } catch {
+    logger.error({ userId }, 'Failed to obtain access token from Git server')
+    HttpErrorHandler.badRequest(req, res, 'Failed to obtain access token from Git server')
     return
   }
 
@@ -152,12 +150,9 @@ async function unlink(req, res) {
   const userId = SessionManager.getLoggedInUserId(req.session)
   try {
     await TokenManager.removeUserToken(userId)
-  } catch (err) {
-    const info = OError.getFullInfo(err)
-    const errStatus  = info?.status || 500
-    logger.error(OError.getFullStack(err))
-    logger.error({ info, projectId }, 'Error removing user credentials')
-    return res.status(errStatus).json({ message: err.message })
+  } catch {
+    logger.error({ userId }, 'Error removing user credentials')
+    return res.status(500).json({ message: 'Failed to unlink GitHub account' })
   }
   res.sendStatus(200)
 }

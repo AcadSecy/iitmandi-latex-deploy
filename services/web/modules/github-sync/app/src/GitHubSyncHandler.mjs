@@ -14,7 +14,12 @@ import api from './GitHubApiClient.mjs'
 import SyncStateManager from './SyncStateManager.mjs'
 import HistoryManager from './HistoryManager.mjs'
 import TokenManager from './TokenManager.mjs'
-import { InvalidTokenError, NotFoundError } from './GitSyncErrors.mjs'
+import {
+  GitNotLinkedError,
+  InvalidTokenError,
+  NotFoundError,
+  PermissionDeniedError,
+} from './GitSyncErrors.mjs'
 
 async function getGitConnState(userId) {
   try {
@@ -47,18 +52,11 @@ async function getProjectState(userId, projectId) {
     }
     return pss
   }
-  let canPush
   try {
-    const token = await TokenManager.getUserToken(userId)
-    canPush = await api.getPushPermission(token, pss.repoFullName)
+    await TokenManager.getProjectToken(userId, pss.repoFullName)
   } catch (err) {
-    if ((err instanceof NotFoundError) ||
-        (err instanceof PermissionDeniedError)
-    ) canPush = false
-    else throw err
-  }
-  if (!canPush) {
-    pss.mergeStatus = 'need-permission'
+    if (!(err instanceof PermissionDeniedError)) throw err
+    pss = { mergeStatus: 'need-permission' }
     // send owner's email to collaborator
     // send nothing to the owner
     try {
@@ -106,9 +104,9 @@ async function getMergeOverview(userId, projectId) {
   if (!projectSyncState) throw new GitNotLinkedError(projectId)
   const { repoFullName, defaultBranchName, lastSyncCommit, lastSyncVersion, mergeStatus } = projectSyncState
 
+  const token = await TokenManager.getProjectToken(userId, repoFullName)
   if (mergeStatus === 'conflict') return null
 
-  const token = await TokenManager.getUserToken(userId)
   const currentVersion = await HistoryManager.latestVersion(projectId.toString())
   const isProjectUpdated = currentVersion !== lastSyncVersion
   try {
@@ -185,6 +183,11 @@ async function importRepo(userId, projectName, repoFullName, defaultBranchName) 
 }
 
 async function exportProject(userId, projectId, repoOptions) {
+  const project = await ProjectGetter.promises.getProject(projectId, { owner_ref: 1 })
+  if (project?.owner_ref?.toString() !== userId.toString()) {
+    throw new PermissionDeniedError('Only the project owner can export to GitHub', { status: 403 })
+  }
+
   const isLinked = await SyncStateManager.getProjectState(projectId)
   if (isLinked) {
     throw new OError('Project is already linked to Git server', { projectId })
@@ -194,6 +197,12 @@ async function exportProject(userId, projectId, repoOptions) {
 
   const { full_name: repoFullName, default_branch: defaultBranchName } =
     await api.createRepo(token, repoOptions)
+  const initialHead = await api.getBranchHead(token, repoFullName, defaultBranchName)
+  const initialCommit = await api.getCommit(token, repoFullName, initialHead)
+  const initialFiles = await api.listBlobsAtCommit(token, repoFullName, initialHead)
+  if (initialCommit.parents.length !== 0 || initialFiles.length !== 1 || initialFiles[0].path !== 'README.md') {
+    throw new OError('The new GitHub repository has changed. Review it before exporting.', { status: 409 })
+  }
 
   await DocumentUpdaterHandler.promises.flushProjectToMongo(projectId)
 
@@ -212,18 +221,18 @@ async function exportProject(userId, projectId, repoOptions) {
   )
 
   const tree = await api.createTree(token, repoFullName, blobData)
-  const initialCommit = await api.createCommit(token, repoFullName, {
+  const exportCommit = await api.createCommit(token, repoFullName, {
     tree,
+    parents: [initialHead],
     message: `Initial ${Settings.appName} import`,
   })
 
-  const force = true
-  await api.updateBranch(token, repoFullName, defaultBranchName, initialCommit, force)
+  await api.updateBranch(token, repoFullName, defaultBranchName, exportCommit)
 
   return SyncStateManager.createProjectState(projectId, {
     mergeStatus: 'clean',
     defaultBranchName,
-    lastSyncCommit: initialCommit,
+    lastSyncCommit: exportCommit,
     lastSyncVersion: currentVersion,
     repoFullName,
   })
