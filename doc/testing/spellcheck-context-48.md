@@ -8,7 +8,16 @@ A synthetic parser fixture tested ordinary and bold prose, LaTeX commands, citat
 
 The proposed change uses the parser's existing exclusion rule for the `\texttt` argument. It identifies common bare URL ranges on the source line and filters overlapping word candidates from both `Intl.Segmenter` and the regex fallback. Ordinary words before and after the URL keep their source offsets. The worker, dictionary routes, project setting and preference scope are unchanged.
 
-The 11 focused spelling/cache tests pass with regression coverage for both segmentation modes. The baseline language-selector fixtures and seven learned-word backend tests also passed. These tests exercise the candidate-word pipeline and preference operations. The running-editor sweep still needs suggestion usability, keyboard access, same-account reload and a separate account, light and dark themes, and input-to-highlight latency on a long manuscript.
+The 11 focused spelling/cache tests pass with regression coverage for both segmentation modes. The baseline language-selector fixtures and seven learned-word backend tests also passed. These tests exercise the candidate-word pipeline and preference operations.
+
+## Running editor
+
+The Institute amd64 test stack ran the cached `0cf789ca` server with synthetic accounts and a locally built frontend containing `def0f85f` and `2e63539d`. An initial run on the cached image reproduced the `\texttt` and bare URL highlights. The test bundle skipped those contexts along with command arguments, labels, citation keys, explicit URLs, math and verbatim. The published candidate image still needs validation.
+
+- A project using `en_US` loaded the Hunspell worker, WASM and dictionary assets. The editor listed 72 dictionaries. Right-clicking `adress` offered `address` on the light and dark themes.
+- Learning `hyperplasmotron` applied immediately, survived reload and carried over to a second project owned by the same account. A separate account still flagged it. Removing the entry through the editor dictionary took effect after reopening the project. The open editor did not re-underline the word in this run.
+- On a 2,416-line source fixture, three edits inside the visible document body took 1,297 ms, 1,295 ms and 1,291 ms from insertion to underline. These samples include the editor's one-second check delay.
+- The headless run opened the suggestions by right-click and dismissed them with Escape. Neither Ctrl+Space nor Alt+Space opened the menu in this run. Recheck the shortcuts and immediate rechecking after dictionary removal before promoting the draft.
 
 ## Local grammar option
 
