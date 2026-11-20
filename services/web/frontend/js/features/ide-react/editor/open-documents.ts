@@ -115,6 +115,11 @@ export class OpenDocuments {
     return false
   }
 
+  getUnsavedSnapshot(docId: string) {
+    const doc = this.openDocs.get(docId)
+    if (doc?.hasBufferedOps()) return doc.getSnapshot()
+  }
+
   flushAll() {
     for (const doc of this.openDocs.values()) {
       doc.flush()

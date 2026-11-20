@@ -6,6 +6,7 @@ import { ConnectionContext } from '@/features/ide-react/context/connection-conte
 import { SplitTestProvider } from '@/shared/context/split-test-context'
 import { EditorManagerContext } from '@/features/ide-react/context/editor-manager-context'
 import { IdeReactContext } from '@/features/ide-react/context/ide-react-context'
+import type { SinonStub } from 'sinon'
 
 const defaultUnsavedDocsContextValue = {
   unsavedDocs: new Map<string, number>([['doc1', 16]]),
@@ -42,24 +43,37 @@ const mockFileTreePathContextValue = {
 const mockEditorManagerContextValue = {
   openDocs: {
     getUnsavedOpsSize: () => ({ pendingOpsLength: 2, inflightOpsLength: 1 }),
+    getUnsavedSnapshot: () => undefined,
   },
 } as any
 
 const mount = ({
   unsavedDocsContextValue = defaultUnsavedDocsContextValue,
   reportError = cy.stub(),
+  isConnected = true,
+  getUnsavedSnapshot = () => undefined,
 }: {
   unsavedDocsContextValue?: typeof defaultUnsavedDocsContextValue
   reportError?: any
+  isConnected?: boolean
+  getUnsavedSnapshot?: (docId: string) => string | undefined
 } = {}) => {
   const ideReactContextValue = { reportError } as any
   cy.mount(
     <SplitTestProvider>
       <GlobalAlertsProvider>
-        <ConnectionContext.Provider value={mockConnectionContextValue}>
+        <ConnectionContext.Provider
+          value={{ ...mockConnectionContextValue, isConnected }}
+        >
           <IdeReactContext.Provider value={ideReactContextValue}>
             <EditorManagerContext.Provider
-              value={mockEditorManagerContextValue}
+              value={{
+                ...mockEditorManagerContextValue,
+                openDocs: {
+                  ...mockEditorManagerContextValue.openDocs,
+                  getUnsavedSnapshot,
+                },
+              }}
             >
               <FileTreePathContext.Provider
                 value={mockFileTreePathContextValue}
@@ -94,6 +108,61 @@ describe('<UnsavedDocs />', function () {
     enableFlag()
     mount()
     cy.findByRole('alert').should('not.exist')
+  })
+
+  it('downloads the current buffered source while disconnected', function () {
+    const source = '\\section{Unsaved नमस्ते}'
+    cy.viewport(390, 844)
+    mount({
+      isConnected: false,
+      getUnsavedSnapshot: docId => (docId === 'doc1' ? source : undefined),
+      unsavedDocsContextValue: {
+        ...defaultUnsavedDocsContextValue,
+        unsavedDocs: new Map([['doc1', 1]]),
+      },
+    })
+    cy.window().then(win => {
+      cy.stub(win.URL, 'createObjectURL').returns('blob:local').as('createObjectURL')
+      cy.stub(win.URL, 'revokeObjectURL')
+      cy.stub(win.HTMLAnchorElement.prototype, 'click').as('downloadFile')
+    })
+    cy.findByRole('alert').should('contain.text', 'Changes to main.tex are waiting to sync.')
+    cy.findByRole('button', { name: 'Download local copy of main.tex' }).focus()
+    cy.screenshot('unsaved-source-phone', { capture: 'viewport' })
+    cy.findByRole('button', { name: 'Download local copy of main.tex' }).click()
+    cy.get('@downloadFile')
+      .should('have.been.calledOnce')
+      .then(click => {
+        const link = (click as unknown as SinonStub).firstCall.thisValue
+        expect(link.download).to.equal('unsaved-main.tex')
+      })
+    cy.get('@createObjectURL')
+      .should('have.been.calledOnce')
+      .then(create => {
+        const blob: Blob = (create as unknown as SinonStub).firstCall.args[0]
+        return blob.text().then(text => {
+          expect(text).to.equal(source)
+        })
+      })
+  })
+
+  it('does not offer a download for a document with no buffered source', function () {
+    mount({ isConnected: false })
+    cy.findByRole('alert').should('exist')
+    cy.findByRole('button', { name: /download local copy/i }).should('not.exist')
+  })
+
+  it('offers recovery when the enhanced connection mode stalls', function () {
+    enableFlag()
+    mount({
+      isConnected: false,
+      getUnsavedSnapshot: () => 'waiting to sync',
+      unsavedDocsContextValue: {
+        ...defaultUnsavedDocsContextValue,
+        isSavingStalled: true,
+      },
+    })
+    cy.findByRole('button', { name: 'Download local copy of main.tex' }).should('be.visible')
   })
 
   describe('when locked', function () {
