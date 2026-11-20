@@ -906,7 +906,7 @@ All seven failures are malformed-ID / unexpected-field rejection assertions in C
 
 Frontend logs contain `TypeError: textRange(...).getClientRects is not a function` from JSDOM/CodeMirror despite 42 passing assertions and exit 0. Browser geometry is not established. Existing peer-version and deprecation warnings remain in the logs; no dependency changes were made to suppress them.
 
-Cypress component tests and database-backed acceptance tests have **not executed locally**. GitHub **Build and check** subsequently **passed** for PR #72 ([job](https://github.com/AcadSecy/iitmandi-latex-deploy/actions/runs/44360242189/job/134999291342)); this result is for the submitted documentation commit `ddb0d6742d44caa6c640c43b683967f01732795a` and is separate from the original local results. Mocked units and image smoke tests do not establish complete backend authorization, real multi-service synchronization, or deterministic race safety. All **30 tester-reported manual PASS statuses remain unchanged** and are separate from the automated counts.
+Cypress component tests and database-backed acceptance tests have **not executed locally**. GitHub **Build and check** subsequently **passed** for PR #72 ([job](https://github.com/AcadSecy/iitmandi-latex-deploy/actions/runs/44373041809/job/135044717798)); this result is for the submitted documentation commit `d27d4295fe4d34dfbc6dc4ee7698949aeff58240` and is separate from the original local results. Mocked units and image smoke tests do not establish complete backend authorization, real multi-service synchronization, or deterministic race safety. All **30 tester-reported manual PASS statuses remain unchanged** and are separate from the automated counts.
 
 ### Validation-mode policy and the seven failures
 
@@ -925,7 +925,9 @@ Cypress component tests and database-backed acceptance tests have **not executed
 
 **Maintainer intent still needed:** confirm which mode controller unit CI should explicitly exercise, whether rollout-mode behavior should have separate coverage, and the final disposition of the seven strict assertions. Source establishes a deliberate `log` parser fallback and an `enforce-log` server image setting; it does not establish a maintainer decision to use plain `enforce` universally.
 
-**Latest verified PR CI result:** Successful submitted documentation commit: `ddb0d6742d44caa6c640c43b683967f01732795a`. Workflow **Server image**, run **117**, job **Build and check: PASS**. [Run](https://github.com/AcadSecy/iitmandi-latex-deploy/actions/runs/44360242189) / [job](https://github.com/AcadSecy/iitmandi-latex-deploy/actions/runs/44360242189/job/134999291342). This result applies to the named submitted commit; any later submitted revision needs its own check. No workflow was manually dispatched for these corrections. Historical result: run 116 also passed for `5c1257512e7426db593775accd40f910b2df8d0d`; it is not the latest result.
+**Verified PR CI:** Verified successful CI for commit `d27d4295fe4d34dfbc6dc4ee7698949aeff58240`: workflow **Server image**, run **118**, job **Build and check: PASS**. [Run](https://github.com/AcadSecy/iitmandi-latex-deploy/actions/runs/44373041809) / [job](https://github.com/AcadSecy/iitmandi-latex-deploy/actions/runs/44373041809/job/135044717798). This result applies only to the named submitted commit; subsequent revisions require their own CI result. It does not resolve the seven local validation-test failures. No workflow was manually dispatched for this documentation review.
+
+Historical CI evidence: run 117 passed for `ddb0d6742d44caa6c640c43b683967f01732795a` ([job](https://github.com/AcadSecy/iitmandi-latex-deploy/actions/runs/44360242189/job/134999291342)); run 116 passed for `5c1257512e7426db593775accd40f910b2df8d0d` ([job](https://github.com/AcadSecy/iitmandi-latex-deploy/actions/runs/44165641056/job/134330812127)). These results apply to their respective revisions.
 
 ## Minimum regression checks before submission
 
@@ -941,7 +943,7 @@ The table distinguishes manual coverage, recorded local unit results, and outsta
 | Reviewer permissions | TC-17–TC-24 and TC-30, UI scope only; backend authorization remains a separate unexecuted check | UI PASS only | TC-17–TC-24/TC-30; backend NOT RUN |
 | Simultaneous editing | TC-25–TC-30; identical source/ranges after synchronization and refresh | Manual PASS, sampled | TC-25–TC-30; minor lag TC-25; no deterministic schedule coverage |
 | Relevant automated tests | Existing focused local units; exact commands in preserved report | Initial 799 PASS / 7 FAIL; diagnostic 60 PASS | `~/issue16-evidence/test-results/local-focused-unit-run/`; classification pending |
-| GitHub required workflow | `Server image` workflow, `.github/workflows/pi-image.yml`, job `Build and check` | PASS for submitted documentation commit `ddb0d6742d44caa6c640c43b683967f01732795a`, run 117 | [Successful job](https://github.com/AcadSecy/iitmandi-latex-deploy/actions/runs/44360242189/job/134999291342); later submitted revisions need their own check |
+| GitHub required workflow | `Server image` workflow, `.github/workflows/pi-image.yml`, job `Build and check` | PASS for submitted documentation commit `d27d4295fe4d34dfbc6dc4ee7698949aeff58240`, run 118 | [Successful job](https://github.com/AcadSecy/iitmandi-latex-deploy/actions/runs/44373041809/job/135044717798); later submitted revisions need their own check |
 | Post-merge institute verification | Rerun affected cases on the confirmed deployed revision and attach sanitized evidence | NOT RUN | Not recorded |
 
 ### Relevant automated commands and remaining coverage
@@ -1042,7 +1044,7 @@ Replacement evidence publication is pending sanitization and approval. The user 
 
 **Local package staging:** `~/issue16-evidence-share-staging/` is a separate unpublished, unredacted staging copy. Its four tab-prefixed screenshot basenames have portable copies with the leading tabs removed; original names and bytes remain unchanged. The staging `index.csv` maps portable paths to original filename displays and SHA-256 values. Checklist references continue to identify the original local evidence names (shown as `<TAB>` where applicable). Original, existing shareable, staging and archive documents are local artifacts, not public download links. The existing local ZIP is an earlier unredacted snapshot; it was not repacked, revoked or replaced by this task.
 
-Other outstanding items: actual execution dates/times, browser/OS versions, deployed SHA and provenance, document-operation type, unexecuted expanded procedure variants, resolved-comment history, backend request/socket authorization checks, deterministic concurrency tests, remaining automated regressions and classification of the seven default-mode failures, `Build and check` on later submitted revisions (the named latest verified documentation commit passed), and post-merge verification. No bug issue links were supplied or created; untested safeguards remain investigation targets, not reproduced defects. The manual passes alone do not close Issue #16 or establish parent Issue #15 completion.
+Other outstanding items: actual execution dates/times, browser/OS versions, deployed SHA and provenance, document-operation type, unexecuted expanded procedure variants, resolved-comment history, backend request/socket authorization checks, deterministic concurrency tests, remaining automated regressions and classification of the seven default-mode failures, `Build and check` on later submitted revisions (the named verified documentation commit passed), and post-merge verification. No bug issue links were supplied or created; untested safeguards remain investigation targets, not reproduced defects. The manual passes alone do not close Issue #16 or establish parent Issue #15 completion.
 
 ## Final acceptance summary
 
@@ -1059,7 +1061,7 @@ Other outstanding items: actual execution dates/times, browser/OS versions, depl
 | Manual failure screenshots and linked issues | No manual failure or bug issue reported; seven automated failures are documented separately above |
 | Focused local automated units | Initial 799 PASS / 7 FAIL; additional enforce-mode diagnostic 60 PASS; classification pending |
 | Cypress / database-backed acceptance | NOT RUN locally |
-| Build and check | PASS for submitted documentation commit `ddb0d6742d44caa6c640c43b683967f01732795a`, run 117; result applies to that revision |
+| Build and check | PASS for submitted documentation commit `d27d4295fe4d34dfbc6dc4ee7698949aeff58240`, run 118; result applies to that revision |
 | Acceptance decision | READY FOR DOCUMENTATION REVIEW; maintainer acceptance remains pending sanitized replacement approval, validation-test policy confirmation, and disposition of UNKNOWN metadata/unexecuted follow-ups; no additional TC-25 recording required |
 | Reviewer / date | Not recorded |
 
