@@ -68,6 +68,35 @@ describe('SpellChecker', function () {
         { text: 'ten', from: 15, to: 18, lineNumber: 1, lang: 'en' },
       ])
     })
+
+    for (const [mode, segmenter] of [
+      ['regex', undefined],
+      ['Intl.Segmenter', new Intl.Segmenter('en', { granularity: 'word' })],
+    ] as const) {
+      it(`checks prose and skips code, references, math and URLs with ${mode}`, function () {
+        const view = new EditorView({
+          doc: [
+            'First line.',
+            String.raw`\texttt{codezzword} \textbf{misspeling} \label{sec:techmarker} \ref{sec:techmarker}`,
+            String.raw`\cite{citezzword} \url{https://urlzzword.example.test/techmarker} \verb|verbzzword| $mathzzword=x$`,
+            'Before (https://urlzzword.example.test/nested_path?key=value) after www.example.test/techmarker.',
+          ].join('\n'),
+          extensions,
+        })
+        try {
+          const getWords = (line: number) =>
+            Array.from(
+              getWordsFromLine(view, view.state.doc.line(line), lang, segmenter),
+              word => word.text
+            )
+          expect(getWords(2)).to.deep.equal(['misspeling'])
+          expect(getWords(3)).to.deep.equal([])
+          expect(getWords(4)).to.deep.equal(['Before', 'after'])
+        } finally {
+          view.destroy()
+        }
+      })
+    }
   })
 
   describe('buildSpellCheckResult', function () {
