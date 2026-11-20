@@ -13,7 +13,15 @@ The fixture ran against a loopback-only test deployment on the Institute amd64 s
 
 [Headless recording](evidence/issue51-reconnect.webm) · [Repeatable browser fixture](fixtures/reconnect-51.mjs).
 
-The successful case covers one short interruption and concurrent single-line inserts. It does not establish long-outage, overlapping replacements, changed permissions, repeated disruptions, lost local buffers or an explicit Saved/Disconnected indicator. Earlier test iterations used too many ZIP downloads for polling and hit the existing rate limit. The fixture now polls the test stack's document service and uses ZIP at the proof points.
+Earlier test iterations hit the download rate limit while polling the ZIP endpoint. The fixture now polls the test stack's document service and downloads the ZIP at the proof points.
+
+## Running editor with local download
+
+A headless, two-account run on the Institute amd64 test stack used the cached `0cf789ca` server and a locally built frontend containing draft commits `2e63539d` and `def0f85f`. The published candidate images still need separate validation.
+
+- During a short interruption, the warning identified changes in `main.tex` waiting to sync. The server ZIP lacked the pending edit, and the editor offered a UTF-8 `unsaved-main.tex` containing it. The warning cleared after both users' inserts reached the server once and survived reload.
+- During a second interruption longer than 33 seconds, both users replaced the same line. The editor locked and the local download still contained the disconnected user's replacement. The unload warning fired. A forced reload after the outage kept the other user's replacement on the server. The local replacement was available in the download.
+- An earlier run verified the local download and timed out waiting for the first edit to sync after a synthetic unload event during the short outage. The revised fixture checks unload during the long-outage case and exercises the existing retry action when shown.
 
 ## Reproduce
 
@@ -33,6 +41,6 @@ Set `PLAYWRIGHT_MODULE` to the installed Playwright package path if it is outsid
 
 ## Remaining work
 
-The draft adds a per-document download to the unsaved notification when the open document still has buffered operations. It rechecks the buffer on click and writes an `unsaved-` prefixed file using the existing local download helper. All seven headless browser component tests passed, including UTF-8 source, missing buffers and the enhanced connection mode. The focused action rendered at a 390 px viewport. The rollout and its existing tab-storage policy stay separate. Review expiry, size, shared-device behavior and recovery eligibility before expanding that rollout.
+All seven headless browser component tests passed, including UTF-8 source, missing buffers and the enhanced connection mode. The download action rendered at a 390 px viewport. The rollout's existing tab-storage policy requires a review of expiry, size, shared-device behavior and recovery eligibility before expansion.
 
-Test the new action on the running editor, then cover long outages, discarded reloads, overlapping replacements and access removal. Add any missing explicit save acknowledgement state after the baseline matrix. Build on the release acceptance of #45 and #50. Budget two to three engineering days for the implementation and browser matrix.
+Outstanding acceptance covers the published image, access removal, overlapping replacements during reconnect without a reload, and a distinct server-acknowledged save state. The work follows release acceptance of #45 and #50. Budget two to three engineering days for the remaining implementation and browser matrix.
