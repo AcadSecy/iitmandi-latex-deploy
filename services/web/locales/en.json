@@ -2048,7 +2048,7 @@
   "page_setup_not_main_file": "The page setup is kept in the main file of the project, the one that starts with \\documentclass. Open it to change the page setup.",
   "page_setup_open_main_file": "Open the main file",
   "page_setup_paper_size": "Paper size",
-  "page_setup_slides": "Slides set their own page size and fonts, so there is nothing to change here.",
+  "page_setup_slides": "This template controls its own page layout; Page setup is unavailable here.",
   "page_setup_spacing_double": "Double",
   "page_setup_spacing_onehalf": "1.5 lines",
   "page_setup_spacing_single": "Single",
