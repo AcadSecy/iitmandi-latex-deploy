@@ -52,18 +52,37 @@ export function logoInsertion(
   return [...changes, { from: at, to: at, insert }]
 }
 
-/** Where the first \end{document} outside a comment starts, or -1 */
+/** Where the first \end{document} outside comments and literal text starts, or -1 */
 function documentEnd(doc: string, from: number) {
-  const pattern = /\\end\{document\}/g
+  const pattern =
+    /%|\\(?:begin\{(verbatim\*?|lstlisting|minted|comment)\}|verb\*?(?=[^a-zA-Z\s])|end\{document\})/g
   pattern.lastIndex = from
   for (let match; (match = pattern.exec(doc)); ) {
     const lineStart = doc.lastIndexOf('\n', match.index - 1) + 1
     const before = doc.slice(lineStart, match.index)
-    // a % or \end after an even run of backslashes is not escaped
-    if (
-      !/(^|[^\\])(\\\\)*%/.test(before) &&
-      !/(^|[^\\])\\(\\\\)*$/.test(before)
-    ) {
+    // A token after an odd run of backslashes is escaped.
+    if (/(^|[^\\])\\(\\\\)*$/.test(before)) {
+      continue
+    }
+    if (match[0] === '%') {
+      const newline = doc.indexOf('\n', pattern.lastIndex)
+      pattern.lastIndex = newline === -1 ? doc.length : newline + 1
+    } else if (match[1]) {
+      const closing = `\\end{${match[1]}}`
+      const end = doc.indexOf(closing, pattern.lastIndex)
+      if (end === -1) return -1
+      pattern.lastIndex = end + closing.length
+    } else if (match[0].startsWith('\\verb')) {
+      const delimiter = doc[pattern.lastIndex]
+      const end = doc.indexOf(delimiter, pattern.lastIndex + 1)
+      const newline = doc.indexOf('\n', pattern.lastIndex)
+      pattern.lastIndex =
+        end !== -1 && (newline === -1 || end < newline)
+          ? end + 1
+          : newline === -1
+            ? doc.length
+            : newline + 1
+    } else {
       return match.index
     }
   }
