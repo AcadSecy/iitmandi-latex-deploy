@@ -59,7 +59,7 @@ export default function slashInsert(
       () =>
         window.dispatchEvent(
           new CustomEvent('figure-modal:open', {
-            detail: { source: FigureModalSource.FILE_UPLOAD },
+            detail: { source: FigureModalSource.FILE_TREE },
           })
         ),
     ],

@@ -5,6 +5,16 @@ import { EditorView } from '@codemirror/view'
 import { LanguageSupport, ensureSyntaxTree } from '@codemirror/language'
 import { LaTeXLanguage } from '@/features/source-editor/languages/latex/latex-language'
 import { visual } from '@/features/source-editor/extensions/visual/visual'
+import {
+  FigureModalProvider,
+  FigureModalSource,
+  useFigureModalContext,
+} from '@/features/source-editor/components/figure-modal/figure-modal-context'
+import { FigureModalCurrentProjectSource } from '@/features/source-editor/components/figure-modal/file-sources/figure-modal-project-source'
+import { FileTreeDataContext } from '@/shared/context/file-tree-data-context'
+import { PermissionsContext } from '@/features/ide-react/context/permissions-context'
+import { createElement, Fragment, useEffect } from 'react'
+import { cleanup, fireEvent, render } from '@testing-library/react'
 import slashInsert from '../../frontend/completions/slash-insert'
 
 function cursorState(
@@ -27,7 +37,115 @@ function complete(state: EditorState) {
   )
 }
 
+function ProjectFiles() {
+  const { source, getPath, dispatch } = useFigureModalContext()
+  useEffect(() => {
+    dispatch({
+      source: FigureModalSource.FILE_TREE,
+      getPath: async () => 'old.png',
+    })
+  }, [dispatch])
+  return createElement(
+    Fragment,
+    null,
+    createElement(FigureModalCurrentProjectSource),
+    createElement('output', null, `${source}:${Boolean(getPath)}`)
+  )
+}
+
+describe('slash Figure project files', function () {
+  afterEach(cleanup)
+
+  function mount(write: boolean) {
+    return render(
+      createElement(
+        PermissionsContext.Provider,
+        {
+          value: {
+            read: true,
+            write,
+            admin: false,
+            comment: true,
+            resolveOwnComments: false,
+            resolveAllComments: false,
+            trackedWrite: write,
+            labelVersion: false,
+          },
+        },
+        createElement(
+          FileTreeDataContext.Provider,
+          {
+            value: {
+              fileTreeData: {
+                _id: 'root',
+                name: '',
+                docs: [],
+                folders: [],
+                fileRefs: [],
+              },
+              fileCount: 0,
+              fileTreeReadOnly: !write,
+              hasFolders: false,
+              selectedEntities: [],
+              setSelectedEntities() {},
+              dispatchRename() {},
+              dispatchMove() {},
+              dispatchDelete() {},
+              dispatchCreateFolder() {},
+              dispatchCreateDoc() {},
+              dispatchCreateFile() {},
+            },
+          },
+          createElement(FigureModalProvider, null, createElement(ProjectFiles))
+        )
+      )
+    )
+  }
+
+  it('keeps Upload reachable even with no project images', function () {
+    const screen = mount(true)
+    expect(screen.getByDisplayValue('No image files found')).to.exist
+    fireEvent.click(screen.getByRole('button', { name: 'Upload from computer' }))
+    expect(screen.getByRole('status').textContent).to.equal(
+      `${FigureModalSource.FILE_UPLOAD}:false`
+    )
+  })
+
+  it('does not offer Upload without write permission', function () {
+    const screen = mount(false)
+    expect(screen.queryByRole('button', { name: 'Upload from computer' })).to.be
+      .null
+  })
+})
+
 describe('slash insert completions', function () {
+  it('opens Figure in project files after removing the slash query', function () {
+    const view = new EditorView({ state: cursorState('/Figure') })
+    let detail: { source: FigureModalSource } | undefined
+    let sourceAtOpen: string | undefined
+    const listener = (event: Event) => {
+      detail = (event as CustomEvent).detail
+      sourceAtOpen = view.state.doc.toString()
+    }
+    window.addEventListener('figure-modal:open', listener)
+    try {
+      const result = slashInsert(
+        new CompletionContext(view.state, 7, false, view)
+      )!
+      const figure = result.options.find(option => option.label === 'Figure')!
+      if (typeof figure.apply !== 'function') {
+        throw new Error('Expected a Figure command completion')
+      }
+      figure.apply(view, figure, result.from, 7)
+      expect(sourceAtOpen).to.equal('')
+      expect(view.state.selection.main.head).to.equal(0)
+      expect(detail?.source).to.equal(FigureModalSource.FILE_TREE)
+    } finally {
+      window.removeEventListener('figure-modal:open', listener)
+      view.destroy()
+    }
+  })
+
   it('offers four options after a slash on an otherwise blank line', function () {
     const result = complete(cursorState('hello\n/\nworld', 7))
     expect(result?.from).to.equal(7)
