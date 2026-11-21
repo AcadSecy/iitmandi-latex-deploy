@@ -2,8 +2,8 @@
 
 ## Scope
 
-Refs #7. This document prepares a synthetic local rehearsal. It contains no
-acceptance measurements and approves no deployment change. The Institute amd64
+Refs #7. This document records a local synthetic rehearsal and prepares later
+acceptance measurements. It approves no deployment change. The Institute amd64
 test stack is the primary acceptance target; Pi measurements must remain separate.
 Real-document acceptance needs owner consent and an isolated window approved by
 Track E or the authorized maintainer. Do not occupy all live slots or change limits.
@@ -192,19 +192,135 @@ stops preserve compile files; abrupt stops clear them
 
 CSV, Markdown and JSON contain measurement metadata. Keep private manifests,
 credentials, fingerprints and event files outside Git and public screenshots.
-The main thread runs the commands in the task report; no server was accessed here.
+The main thread ran the local measurements below. The documentation update did
+not access a running app or server. Private measurement files remain outside the repo.
 
-## Results (empty; awaiting measurements)
+## Results: local synthetic rehearsal
 
-| Environment / architecture | Deployed SHA | Document code / expected pages | Year / image digest | Phase / concurrent jobs | Effective slots / turn / timeout / paused cap | Start UTC | End UTC | HTTP / compile status | Response timeout / editor timeout | Wall s | Queue wait s (approx.) | Container running s | Paused s / pause count | Cache retained / rewritten or new / removed | PDF downloaded / pages | Full 126-page PDF arrives? |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+The main thread used the disposable local `deploy/pi` stack on an amd64 laptop,
+described in its brief as a Ryzen 7 7445HS with 6 cores/12 threads and 14 GB RAM.
+The measurement bundle does not contain a hardware inventory. These results are
+neither Institute amd64 acceptance nor measurements on a physical Pi.
+
+The running app was `iitmandi-latex:staging628`, source revision
+`628a88ae1e235d7770f5aea541c4edcd2e1723ce` (`acadsecy/staging`, including
+`0266908fbc`). `pr-proof/issue7/run1/deployed.txt` records the image/revision and,
+in its final six lines, settings read from the running container's environment:
+
+| Local synthetic rehearsal setting | Observed value |
+| --- | --- |
+| Compile timeout | 120 s |
+| Slots / turn duration / paused count cap | 2 / 60 s / 2 |
+| Initial wait / request scheduling budget | 300 s / 540 s |
+| Editor-reported timeout | 120 s for all three separate accounts |
+
+Recorded Docker events identify compile image `iitmandi/texlive-pi:2026.1`.
+The compile resource configuration is 1.5 GiB and 1 CPU per container
+(`deploy/pi/pi.env:73`); the bundle does not independently record container
+resource-limit inspection. Use this stack's measured behavior only for this rehearsal.
+
+The fixture was generated from the thesis template by `make-fig-thesis.py` with
+60 pgfplots figures, 1500 samples each and `--flush 20`: a `\clearpage` after every
+20 figures. Every successful PDF had 39 pages. The main thread reports that the
+unflushed fixture exhausted its queued floats with
+“Output loop---100 consecutive dead cycles” and an emergency stop without a PDF.
+No failed-run log was retained in this bundle, so the exact float count and timing
+are unverified and omitted from the measured results. The reported failure concerns the
+fixture's unprocessed floats, not evidence that a compile limit was reached. The
+unflushed 60-plot runs in #5 should be checked for the same error before interpreting
+them as timeout evidence.
+
+### Run 1: local synthetic rehearsal
+
+All times are seconds. Container running/paused time comes from Docker events;
+queue wait comes from polling. All rows returned HTTP 200 / `success`, downloaded
+39-page PDFs and had no recorded pauses. Single-project phases were sequential.
+
+| Phase / job | Wall s | Container running s | Queue wait s (approx.) | LaTeX runs |
+| --- | --- | --- | --- | --- |
+| Cold | 63.5 | 63.3 | 0.0 | 4 |
+| Warm, unchanged | 1.6 | 1.5 | 0.0 | 1 |
+| Small edit, one plot changed | 4.7 | 4.6 | 0.0 | 3 |
+| Two concurrent: warm / cold | 1.5 / 57.7 | 1.4 / 57.5 | 0.0 / 0.0 | 1 / 4 |
+| Three concurrent: warm / warm / cold | 1.6 / 1.6 / 67.5 | 1.5 / 1.4 / 65.8 | 0.0 / 0.0 / 1.0 | 1 / 1 / 4 |
+
+The cold run's polling estimate was 62.46 s running, versus 63.282 s from events.
+For the third job in the last row, polling estimated 65.488 s running; events
+recorded 65.769 s running and 1.689 s before container start. These measures include
+different overheads and must not share an unqualified “running” label.
+
+The measurement bundle is outside Git under `pr-proof/issue7/`. Run 1 sources:
+`run1/cold.json`, `warm.json`, `small-edit.json`, `concurrent-2.json`,
+`one-beyond-slots.json`, and their `-events.json` / `.md` counterparts. Request
+start/end UTC and source SHA are retained in those records. The cold request ran
+from `2026-11-21T20:53:47.159705+00:00` to
+`2026-11-21T20:54:50.632405+00:00`.
+
+### Run 2: local synthetic rehearsal, cold contention
+
+Three fresh copies and three accounts submitted together to two slots. All three
+returned HTTP 200 / `success`, downloaded all 39 pages and took four LaTeX runs.
+
+| Job | Wall s | Container running s | Queue wait s (polling) | Pre-container wall s (events) | Container paused s / pause count |
+| --- | --- | --- | --- | --- | --- |
+| A, started immediately | 66.3 | 62.9 | 0.0 | 0.143 | 3.234 / 1 |
+| B, started immediately | 63.3 | 63.1 | 0.0 | 0.143 | 0.022 / 1 |
+| C, initially queued | 122.9 | 62.7 | 59.3 | 60.161 | 0.000 / 0 |
+
+At about the 60-second boundary, A paused for 3.234 s and resumed; B also had a
+brief 0.022 s pause/resume that polling missed. C's 60.161 s pre-container interval
+includes setup as well as waiting. The worst wall time was 122.943 s (about
+123 s), below the configured 540 s scheduling budget in this run. This does not
+establish a hard request deadline or a guarantee for longer documents.
+
+Sources: `pr-proof/issue7/run2/cold-contention-3.json`,
+`cold-contention-3-events.json`, their `.md` files and `events.jsonl`. C's request
+ran from `2026-11-21T21:01:22.747815+00:00` to
+`2026-11-21T21:03:25.690711+00:00`.
+
+All compile-response timeouts were absent; editor metadata reported 120 s.
+Host cache-retention/regeneration counts remain unknown. HTTP hashes showed
+198 unchanged / 4 changed-or-new output files on the warm repeat, and
+193 unchanged / 12 changed-or-new after the small edit; identical content is not
+proof that a file was not regenerated. No timed-out real document was tested.
+
+Still open: the real 126-page thesis (owner consent pending), Institute amd64 and
+physical Pi runs (Track E's isolated window pending), production project counts
+per year, rollback timing and real-document cache reuse after a timeout.
 
 ## TeX Live 2025 versus 2026
 
+### Local synthetic rehearsal: direct image compiles
+
+The same 39-page fixture was compiled directly in each amd64 image, bypassing
+the web queue, with 1 CPU, 1.5 GiB and no network. `pr-proof/issue7/years.sh:15`
+records those resource flags and the compile command:
+`latexmk -cd -jobname=output -auxdir=/compile -outdir=/compile -synctex=1 -interaction=batchmode -f -pdf main.tex`.
+These are the recorded latexmk flags, not a claim that every environment flag
+or the service user matched an end-to-end web compile.
+
+| Local synthetic rehearsal image | Cold s | Warm s | Pages | Recorded LaTeX errors / warnings | TeX Live / latexmk | memoize |
+| --- | --- | --- | --- | --- | --- | --- |
+| `iitmandi/texlive:2025.1` | 82.1 | 0.9 | 39 | 0 / 0 | 2025 / 4.87 | Present |
+| `iitmandi/texlive:2026.1` | 66.2 | 0.3 | 39 | 0 / 0 | 2026 / 4.88 | Present |
+
+Source: `pr-proof/issue7/years/years.csv` and `years/2025.1-versions.txt` /
+`years/2026.1-versions.txt`. All four direct compiles exited 0. A single synthetic
+document does not test real older theses, all templates or all engines.
+
+### Local synthetic rehearsal: image sizes and retention evidence
+
 | Year / local image | Archive size (bytes) | Installed size (bytes; shared/unique separately) | Dependent projects (maintainer inventory) | Compatibility notes | Rollback cost |
 | --- | --- | --- | --- | --- | --- |
-| 2025 / `iitmandi/texlive:2025.1` | Not measured | Not measured | Unknown | Test engines, bibliography, memoize, fonts and final pages on synthetic fixtures first; consenting older theses later | Measure verified archive load time, disk headroom and restoring the exact project alias/digest; no migration authorized |
-| 2026 / `iitmandi/texlive:2026.1` | Not measured | Not measured | Unknown | Same cases; compare with 2025 on the same amd64 host | Same measurements; preserve the 2025 path while comparing |
+| 2025 / `iitmandi/texlive:2025.1` | 2,547,199,855; export 68 s | 8,659,157,105; unique 8.539 GB; shared 120.2 MB | Unknown; no production inventory | Synthetic fixture passed; real older theses untested | Restore/rollback time not measured |
+| 2026 / `iitmandi/texlive:2026.1` | 2,698,669,420; export 72 s | 9,019,353,281; unique 8.899 GB; shared 120.2 MB | Unknown; no production inventory | Synthetic fixture passed; real older theses untested | Restore/rollback time not measured |
+
+Sources: `pr-proof/issue7/sizes/installed.txt`, `sizes/df.txt` and
+`sizes/archive.txt`. Both inspected images were amd64; their recorded digests
+match the pinned 2025/2026 manifest entries in the inventory. Archive format was
+`docker save | gzip --rsyncable`, matching `texlive-images.sh:91`. Shared and
+unique sizes are rounded decimal display values from Docker, not exact byte counts.
+An export duration is not a restore duration.
 
 For each additional year, add actual project counts and reasons for dependence,
 compatibility results, archive and installed bytes, unique/shared layers, archive
@@ -212,8 +328,10 @@ checksum verification, restore duration, and alias/migration reversal cost befor
 proposing retention. Use anonymous project codes in shared evidence. An image's
 inspect size is cumulative; it is not the incremental disk cost of keeping that
 year. Record Docker version/storage backend and `docker system df -v` alongside it.
-Retention decision: pending explicit approval; retain existing images and aliases
-through evaluation. No evidence currently supports deleting a year.
+Proposal for explicit approval: keep 2025 and 2026 for now; decide after real old
+theses compile on both. This is not a production retention decision. Retain
+existing images and aliases through evaluation; no evidence currently supports
+deleting a year.
 
 ## Consent and request checklist
 
