@@ -360,7 +360,13 @@ export class CompileQueue {
     }
     const elapsed = Date.now() - entry.turnStartedAt
     entry.turnTimer = setTimeout(
-      () => this.#dispatch(),
+      () => {
+        if (Date.now() - entry.turnStartedAt < this.#turnMs) {
+          this.#startTurnTimer(entry)
+        } else {
+          this.#dispatch()
+        }
+      },
       Math.max(0, this.#turnMs - elapsed)
     )
     entry.turnTimer.unref?.()
