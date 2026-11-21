@@ -4,7 +4,7 @@ const LATEX_WARNING_REGEX = /^LaTeX(?:3| Font)? Warning: (.*)$/
 const HBOX_WARNING_REGEX = /^(Over|Under)full \\(v|h)box/
 // A glyph the font lacks; TeX leaves a gap in the PDF and does not stop
 const MISSING_CHARACTER_REGEX =
-  /^Missing character: There is no (.+?) in font (.+)$/
+  /^Missing character: There is no (.+?) in font ([^!]*!)/
 // Characters named in a grouped missing character warning
 const MISSING_CHARACTER_EXAMPLES = 5
 const PACKAGE_WARNING_REGEX = /^((?:Package|Class|Module) \b.+\b Warning:.*)$/
@@ -233,6 +233,17 @@ export default class LatexParser {
       return
     }
     const [line, char, font] = match
+    // A file closing right after a full-width line is joined onto it
+    this.currentLine = this.currentLine.slice(line.length)
+    this.addMissingCharacter(char, font, line)
+    if (MISSING_CHARACTER_REGEX.test(this.currentLine)) {
+      this.parseMissingCharacterLine()
+    } else {
+      this.parseParensForFilenames()
+    }
+  }
+
+  addMissingCharacter(char: string, font: string, line: string) {
     const key = `${this.currentFilePath}\n${font}`
     let group = this.missingCharacters.get(key)
     if (!group) {

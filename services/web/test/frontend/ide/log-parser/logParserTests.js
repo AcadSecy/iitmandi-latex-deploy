@@ -243,6 +243,39 @@ describe('logParser', function () {
     ])
   })
 
+  it('should close a file right after a full-width missing character line', function () {
+    // A 79 character line is joined with the next, so the ) closing
+    // child.tex lands on the same line as the warning
+    const prefix = 'Missing character: There is no A in font cmr10-'
+    const missing = prefix + 'a'.repeat(78 - prefix.length) + '!'
+    const log = [
+      'This is XeTeX',
+      '(./main.tex',
+      '(./child.tex',
+      missing,
+      ')',
+      "LaTeX Warning: Reference `x' on page 1 undefined on input line 3.",
+      ')',
+    ].join('\n')
+    const { warnings } = new LatexLogParser(log).parse()
+    expect(warnings.map(w => [w.file, w.message])).to.deep.equal([
+      ['./child.tex', missing],
+      ['./main.tex', "Reference `x' on page 1 undefined on input line 3."],
+    ])
+  })
+
+  it('should read full-width missing character lines joined together', function () {
+    const prefix = 'Missing character: There is no A in font cmr10-'
+    const missing = prefix + 'a'.repeat(78 - prefix.length) + '!'
+    const log = ['This is XeTeX', missing, missing.replace(' A ', ' B ')].join(
+      '\n'
+    )
+    const { warnings } = new LatexLogParser(log).parse()
+    expect(warnings.map(w => w.message)).to.deep.equal([
+      missing.replace(' A ', ' A, B '),
+    ])
+  })
+
   it('should parse Runaway Arguments', function () {
     const { errors } = parseLatexLog('runaway-arguments.log')
     expect(errors.map(e => [e.line, e.message, e.file])).to.deep.equal([
