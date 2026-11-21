@@ -196,20 +196,50 @@ describe('logParser', function () {
     ])
   })
 
-  it('should parse missing characters as warnings', function () {
-    // XeLaTeX log of a Hindi section title set in a font without Devanagari
+  it('should group missing characters into one warning per file and font', function () {
+    // XeLaTeX log of Hindi and Arabic text set in fonts without those
+    // scripts: 83 lines, 53 distinct, in a heading and the bibliography
     const { warnings } = parseLatexLog('missing-character.log', {
       ignoreDuplicates: true,
     })
-    expect(warnings.length).to.equal(53)
-    expect([
-      warnings[0].line,
-      warnings[0].message,
-      warnings[0].file,
-    ]).to.deep.equal([
-      null,
-      'Missing character: There is no म (U+092E) in font [lmroman12-bold]:mapping=tex-text;!',
-      './main.tex',
+    expect(warnings.map(w => [w.line, w.message, w.file])).to.deep.equal([
+      [
+        null,
+        'Missing character: There is no म (U+092E), ि (U+093F), श (U+0936), ् (U+094D), र (U+0930) or 4 other characters in font [lmroman12-bold]:mapping=tex-text;!',
+        './main.tex',
+      ],
+      [
+        null,
+        'Missing character: There is no ل (U+0644), ي (U+064A), ى (U+0649), ح (U+062D), د (U+062F) or 22 other characters in font [lmroman10-regular]:mapping=tex-text;!',
+        './main.bbl',
+      ],
+      [
+        null,
+        'Missing character: There is no ह (U+0939), ि (U+093F), ं (U+0902), द (U+0926), ी (U+0940) or 12 other characters in font [lmroman10-italic]:mapping=tex-text;!',
+        './main.bbl',
+      ],
+    ])
+    expect(warnings[0].raw.split('\n')).to.have.length(9)
+  })
+
+  it('should keep other warnings next to grouped missing characters', function () {
+    // Wrapped at 79 characters, as in the log
+    const log = [
+      'Missing character: There is no ह (U+0939) in font [lmroman10-regular]:mapping=t',
+      'ex-text;!',
+      'Missing character: There is no ह (U+0939) in font [lmroman10-regular]:mapping=t',
+      'ex-text;!',
+      "LaTeX Warning: Reference `fig:one' on page 1 undefined on input line 12.",
+      'Missing character: There is no न (U+0928) in font [lmroman10-regular]:mapping=t',
+      'ex-text;!',
+    ].join('\n')
+    const { warnings } = new LatexLogParser(log).parse()
+    expect(warnings.map(w => [w.line, w.message])).to.deep.equal([
+      [
+        null,
+        'Missing character: There is no ह (U+0939), न (U+0928) in font [lmroman10-regular]:mapping=tex-text;!',
+      ],
+      [12, "Reference `fig:one' on page 1 undefined on input line 12."],
     ])
   })
 
