@@ -52,6 +52,22 @@ describe('IIT Mandi logo insertion', function () {
     )
   })
 
+  it('ignores a commented or second \\end{document}', function () {
+    const doc =
+      '\\documentclass{article}\n\\usepackage{graphicx}\n\\begin{document}\nA\\\\% \\end{document}\nB \\\\end{document}\nHello\n\\end{document}\nNotes\n% \\end{document}\n\\end{document}\n'
+    expect(insertAt(doc, doc.length)).to.equal(
+      doc.replace('Hello\n', `Hello\n${BLOCK}\n`)
+    )
+  })
+
+  it('keeps the logo inside a document written on one line', function () {
+    const doc =
+      '\\documentclass{article}\\usepackage{graphicx}\\begin{document}Hi\\end{document}'
+    expect(insertAt(doc, doc.length)).to.equal(
+      doc.replace('Hi', `Hi\n${BLOCK}\n`)
+    )
+  })
+
   it('only inserts the logo in a file that is not the main file', function () {
     const chapter = 'Some text\n'
     expect(insertAt(chapter, chapter.length)).to.equal(`Some text\n${BLOCK}\n`)

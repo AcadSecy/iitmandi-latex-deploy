@@ -35,9 +35,9 @@ export function logoInsertion(
     const newline = doc.indexOf('\n', bodyStart)
     at = newline === -1 ? doc.length : newline + 1
   }
-  const end = doc.lastIndexOf('\\end{document}')
-  if (bodyStart !== -1 && end !== -1 && at > end) {
-    at = doc.lastIndexOf('\n', end - 1) + 1
+  const end = bodyStart === -1 ? -1 : documentEnd(doc, bodyStart)
+  if (end !== -1 && at > end) {
+    at = end
   }
   const lineStart = doc.lastIndexOf('\n', at - 1) + 1
   const newline = doc.indexOf('\n', at)
@@ -50,4 +50,22 @@ export function logoInsertion(
     (textAfter || at === lineStart ? '\n' : '')
 
   return [...changes, { from: at, to: at, insert }]
+}
+
+/** Where the first \end{document} outside a comment starts, or -1 */
+function documentEnd(doc: string, from: number) {
+  const pattern = /\\end\{document\}/g
+  pattern.lastIndex = from
+  for (let match; (match = pattern.exec(doc)); ) {
+    const lineStart = doc.lastIndexOf('\n', match.index - 1) + 1
+    const before = doc.slice(lineStart, match.index)
+    // a % or \end after an even run of backslashes is not escaped
+    if (
+      !/(^|[^\\])(\\\\)*%/.test(before) &&
+      !/(^|[^\\])\\(\\\\)*$/.test(before)
+    ) {
+      return match.index
+    }
+  }
+  return -1
 }
