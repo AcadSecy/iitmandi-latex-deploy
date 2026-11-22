@@ -156,6 +156,7 @@ const FigureModalContent = () => {
   )
 
   const insert = useCallback(async () => {
+    const completionInsertion = insertFromCompletion.current
     const replaceGraphicsCommand = (
       figure: FigureData,
       changes: ChangeSpec[],
@@ -273,14 +274,14 @@ const FigureModalContent = () => {
           pos
         )
       }
-      if (insertFromCompletion.current) {
-        insertFromCompletion.current(apply)
+      if (completionInsertion) {
+        completionInsertion(apply)
       } else {
         apply(view)
       }
     }
 
-    const figure = insertFromCompletion.current
+    const figure = completionInsertion
       ? null
       : view.state.field<FigureData>(editFigureData, false)
 
@@ -291,9 +292,12 @@ const FigureModalContent = () => {
     try {
       path = await getPath()
     } catch (error) {
-      dispatch({ error: String(error) })
+      if (completionInsertion === insertFromCompletion.current) {
+        dispatch({ error: String(error) })
+      }
       return
     }
+    if (completionInsertion !== insertFromCompletion.current) return
 
     const isSvg = isSvgFile(path)
     // For SVG files, strip the .svg extension as \includesvg expects it without

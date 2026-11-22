@@ -44,6 +44,7 @@ import {
   FigureModalSource,
   useFigureModalContext,
 } from '@/features/source-editor/components/figure-modal/figure-modal-context'
+import * as figureModalContext from '@/features/source-editor/components/figure-modal/figure-modal-context'
 import { FigureModalCurrentProjectSource } from '@/features/source-editor/components/figure-modal/file-sources/figure-modal-project-source'
 import { FileTreeDataContext } from '@/shared/context/file-tree-data-context'
 import { PermissionsContext } from '@/features/ide-react/context/permissions-context'
@@ -255,6 +256,83 @@ describe('slash Figure project files', function () {
         expect(view.state.doc.toString()).to.equal(saved)
       } finally {
         cleanup()
+        view.destroy()
+      }
+    })
+  }
+
+  for (const replacement of [false, true]) {
+    it(`ignores a ${replacement ? 'replaced' : 'canceled'} Figure insertion while its file path is pending`, async function () {
+      let setPath!: ReturnType<typeof useFigureModalContext>['dispatch']
+      const originalContext = figureModalContext.useFigureModalContext
+      const contextStub = sinon
+        .stub(figureModalContext, 'useFigureModalContext')
+        .callsFake(() => {
+          const context = originalContext()
+          setPath = context.dispatch
+          return context
+        })
+      const original = '/Figure'
+      const view = new EditorView({
+        state: cursorState(original, original.length, [history(), figureModal()]),
+      })
+      const screen = mount(
+        true,
+        createElement(
+          CodeMirrorViewContext.Provider,
+          { value: view },
+          createElement(SplitTestProvider, null, createElement(FigureModal))
+        )
+      )
+      try {
+        act(() => applyOption(view, 'Figure'))
+        await waitFor(() => expect(setPath).to.be.a('function'))
+        let resolvePath!: (path: string) => void
+        const pendingPath = new Promise<string>(resolve => {
+          resolvePath = resolve
+        })
+        const getPath = sinon.spy(() => pendingPath)
+        act(() => setPath({ getPath }))
+        fireEvent.click(screen.getByRole('button', { name: 'Insert figure' }))
+        expect(getPath).to.have.been.calledOnce
+
+        if (replacement) {
+          act(() => {
+            view.dispatch({
+              changes: { from: 0, insert: original },
+              selection: { anchor: original.length },
+              userEvent: 'input.type',
+            })
+            applyOption(view, 'Figure')
+            setPath({ getPath: async () => 'new.png' })
+          })
+        } else {
+          fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+        }
+        const doc = view.state.doc.toString()
+        const selection = view.state.selection
+        await act(async () => {
+          resolvePath('old.png')
+          await pendingPath
+        })
+        expect(view.state.doc.toString()).to.equal(doc)
+        expect(view.state.selection.eq(selection)).to.be.true
+
+        if (replacement) {
+          expect(screen.getByRole('dialog')).to.exist
+          fireEvent.click(screen.getByRole('button', { name: 'Insert figure' }))
+          await waitFor(() =>
+            expect(view.state.doc.toString()).to.include('{new.png}')
+          )
+          expect(view.state.doc.toString()).not.to.include('old.png')
+        } else {
+          expect(screen.queryByRole('dialog')).to.be.null
+          undo(view)
+          expect(view.state.doc.toString()).to.equal(original)
+        }
+      } finally {
+        cleanup()
+        contextStub.restore()
         view.destroy()
       }
     })
