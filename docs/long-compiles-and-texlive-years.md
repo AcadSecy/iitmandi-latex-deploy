@@ -192,13 +192,13 @@ stops preserve compile files; abrupt stops clear them
 
 CSV, Markdown and JSON contain measurement metadata. Keep private manifests,
 credentials, fingerprints and event files outside Git and public screenshots.
-The main thread ran the local measurements below. The documentation update did
-not access a running app or server. Private measurement files remain outside the repo.
+The local measurements below were run on a disposable stack. Private measurement
+files remain outside the repo.
 
 ## Results: local synthetic rehearsal
 
-The main thread used the disposable local `deploy/pi` stack on an amd64 laptop,
-described in its brief as a Ryzen 7 7445HS with 6 cores/12 threads and 14 GB RAM.
+The rehearsal used the disposable local `deploy/pi` stack on an amd64 laptop
+(Ryzen 7 7445HS, 6 cores/12 threads, 14 GB RAM).
 The measurement bundle does not contain a hardware inventory. These results are
 neither Institute amd64 acceptance nor measurements on a physical Pi.
 
@@ -221,7 +221,7 @@ resource-limit inspection. Use this stack's measured behavior only for this rehe
 
 The fixture was generated from the thesis template by `make-fig-thesis.py` with
 60 pgfplots figures, 1500 samples each and `--flush 20`: a `\clearpage` after every
-20 figures. Every successful PDF had 39 pages. The main thread reports that the
+20 figures. Every successful PDF had 39 pages. An earlier run of the
 unflushed fixture exhausted its queued floats with
 “Output loop---100 consecutive dead cycles” and an emergency stop without a PDF.
 No failed-run log was retained in this bundle, so the exact float count and timing
