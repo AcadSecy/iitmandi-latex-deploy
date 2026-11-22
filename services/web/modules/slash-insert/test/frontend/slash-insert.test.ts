@@ -70,6 +70,8 @@ import {
   figureModal,
 } from '@/features/source-editor/extensions/figure-modal'
 import slashInsert from '../../frontend/completions/slash-insert'
+import { keymaps } from '@/features/source-editor/extensions/keymaps'
+import { shortcuts } from '@/features/source-editor/extensions/shortcuts'
 
 function cursorState(
   doc: string,
@@ -782,7 +784,10 @@ for (const doc of [
 
 describe('slash popup transitions', function () {
   let view: EditorView
+  let removeModalListener: (() => void) | undefined
   afterEach(function () {
+    removeModalListener?.()
+    removeModalListener = undefined
     view?.destroy()
     sinon.restore()
   })
@@ -801,6 +806,114 @@ describe('slash popup transitions', function () {
   async function open() {
     startCompletion(view)
     await waitFor(() => expect(completionStatus(view.state)).to.equal('active'))
+  }
+
+  for (const label of ['Display math', 'Table', 'Figure', 'Citation'] as const) {
+    it(`redoes the full typed ${label} insertion through the editor keymap`, async function () {
+      const query = label === 'Display math' ? '/Display' : `/${label}`
+      let lastEvent: string | undefined
+      let confirm: (
+        insert: (target: Pick<EditorView, 'state' | 'dispatch'>) => void
+      ) => void
+      const eventName =
+        label === 'Figure' ? 'figure-modal:open' : 'reference:openPicker'
+      const listener = (event: Event) => {
+        confirm = (event as CustomEvent).detail.insert
+      }
+      window.addEventListener(eventName, listener)
+      removeModalListener = () => window.removeEventListener(eventName, listener)
+      view = new EditorView({
+        state: cursorState('', 0, [
+          history({ newGroupDelay: 250 }),
+          keymaps,
+          shortcuts,
+          autoComplete({ enabled: true }),
+          LaTeXLanguage.data.of({ autocomplete: slashInsert }),
+          EditorView.updateListener.of(update => {
+            for (const tr of update.transactions) {
+              if (tr.docChanged) lastEvent = tr.annotation(Transaction.userEvent)
+            }
+          }),
+        ]),
+      })
+      for (const letter of query) {
+        const at = view.state.selection.main.head
+        view.dispatch({
+          changes: { from: at, insert: letter },
+          selection: { anchor: at + 1 },
+          userEvent: 'input.type',
+        })
+      }
+      await waitFor(() => expect(completionStatus(view.state)).to.equal('active'))
+      view.contentDOM.dispatchEvent(
+        new window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true })
+      )
+      if (label === 'Figure' || label === 'Citation') {
+        expect(view.state.doc.toString()).to.equal(
+          label === 'Figure' ? '' : '\\cite{}'
+        )
+        const clock = sinon.useFakeTimers({
+          now: Date.now() + 1000,
+          toFake: ['Date'],
+        })
+        try {
+          confirm!(target => {
+            if (label === 'Figure') {
+              snippet(
+                '\\begin{figure}\n\\includegraphics{example.png}\n\\end{figure}${}'
+              )(
+                target,
+                { label },
+                0,
+                0
+              )
+            } else {
+              target.dispatch({
+                changes: { from: 6, insert: 'sample2026' },
+                selection: { anchor: 16 },
+              })
+            }
+          })
+        } finally {
+          clock.restore()
+        }
+      }
+      const inserted = view.state.doc.toString()
+      const selection = view.state.selection
+      expect(inserted).to.include(
+        {
+          'Display math': '\\[',
+          Table: '\\begin{table}',
+          Figure: '\\includegraphics{example.png}',
+          Citation: '\\cite{sample2026}',
+        }[label]
+      )
+      view.contentDOM.dispatchEvent(
+        new window.KeyboardEvent('keydown', {
+          key: 'z',
+          code: 'KeyZ',
+          keyCode: 90,
+          ctrlKey: true,
+          bubbles: true,
+        })
+      )
+      expect(lastEvent).to.equal('undo')
+      expect(view.state.doc.toString()).to.equal(query)
+      // A physical shifted letter emits uppercase Z; lowercase z selects undo.
+      view.contentDOM.dispatchEvent(
+        new window.KeyboardEvent('keydown', {
+          key: 'Z',
+          code: 'KeyZ',
+          keyCode: 90,
+          ctrlKey: true,
+          shiftKey: true,
+          bubbles: true,
+        })
+      )
+      expect(lastEvent).to.equal('redo')
+      expect(view.state.doc.toString()).to.equal(inserted)
+      expect(view.state.selection.eq(selection)).to.be.true
+    })
   }
 
   it('Escape dismisses the real popup without changing any source byte or selection', async function () {
