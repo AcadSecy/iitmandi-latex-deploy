@@ -192,8 +192,9 @@ stops preserve compile files; abrupt stops clear them
 
 CSV, Markdown and JSON contain measurement metadata. Keep private manifests,
 credentials, fingerprints and event files outside Git and public screenshots.
-The local measurements below were run on a disposable stack. Private measurement
-files remain outside the repo.
+The local measurements below were run on a disposable stack. Paths starting with
+`pr-proof/` name files in the author's local measurement bundle, which is not in
+the repo; the scripts and sanitized results are available on issue #7 on request.
 
 ## Results: local synthetic rehearsal
 
