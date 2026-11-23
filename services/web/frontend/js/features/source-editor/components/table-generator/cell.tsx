@@ -1,4 +1,11 @@
-import { FC, MouseEventHandler, useCallback, useEffect, useRef } from 'react'
+import {
+  FC,
+  MouseEventHandler,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+} from 'react'
 import { CellData, ColumnDefinition, RowData } from './tabular'
 import classNames from 'classnames'
 import {
@@ -12,6 +19,7 @@ import { parser } from '../../lezer-latex/latex.mjs'
 import { useTableContext } from './contexts/table-context'
 import { CellInput, CellInputRef } from './cell-input'
 import { useCodeMirrorViewContext } from '../codemirror-context'
+import { filterTableCellInput } from './utils'
 
 export const Cell: FC<{
   cellData: CellData
@@ -41,6 +49,12 @@ export const Cell: FC<{
     commitCellData,
   } = useEditingContext()
   const inputRef = useRef<CellInputRef>(null)
+  const pendingSelection = useRef<{
+    input: HTMLTextAreaElement
+    start: number
+    end: number
+    direction: 'forward' | 'backward' | 'none'
+  } | null>(null)
   const view = useCodeMirrorViewContext()
 
   const editing =
@@ -126,19 +140,19 @@ export const Cell: FC<{
     if (editing && inputRef.current) {
       inputRef.current.focus()
     }
-  }, [editing, cellData.content.length])
+  }, [editing])
 
-  const filterInput = useCallback((input: string) => {
-    // TODO: Are there situations where we don't want to filter the input?
-    return input
-      .replaceAll(/(^&|[^\\]&)/g, match =>
-        match.length === 1 ? '\\&' : `${match[0]}\\&`
+  useLayoutEffect(() => {
+    const selection = pendingSelection.current
+    if (selection) {
+      selection.input.setSelectionRange(
+        selection.start,
+        selection.end,
+        selection.direction
       )
-      .replaceAll(/(^%|[^\\]%)/g, match =>
-        match.length === 1 ? '\\%' : `${match[0]}\\%`
-      )
-      .replaceAll('\\\\', '')
-  }, [])
+      pendingSelection.current = null
+    }
+  })
 
   const isFocused =
     selection?.to.row === rowIndex &&
@@ -177,9 +191,17 @@ export const Cell: FC<{
 
   const onInput = useCallback(
     (e: React.FormEvent<HTMLTextAreaElement>) => {
-      update(filterInput((e.target as HTMLTextAreaElement).value))
+      const input = e.currentTarget
+      const { content, offsets } = filterTableCellInput(input.value)
+      pendingSelection.current = {
+        input,
+        start: offsets[input.selectionStart],
+        end: offsets[input.selectionEnd],
+        direction: input.selectionDirection,
+      }
+      update(content)
     },
-    [update, filterInput]
+    [update]
   )
 
   let body = <div ref={renderDiv} className="table-generator-cell-render" />

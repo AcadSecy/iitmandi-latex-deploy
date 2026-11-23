@@ -391,6 +391,7 @@ export default async function (webRouter, privateApiRouter, publicApiRouter) {
       maxUploadSize: Settings.maxUploadSize,
       askAiUrl: Settings.askAi?.url || undefined,
       askAiName: Settings.askAi?.name,
+      askAiManaged: ['local', 'api'].includes(Settings.askAi?.managed?.mode),
       storageQuotaEnabled: Settings.storageQuota?.defaultMB > 0,
       shareLinksCanEdit: Settings.shareLinksCanEdit !== false,
       trashRetentionDays: Settings.retention?.trashDays || 0,
@@ -428,7 +429,7 @@ export default async function (webRouter, privateApiRouter, publicApiRouter) {
       cioWriteKey: Settings.analytics?.cio?.writeKey,
       cioSiteId: Settings.analytics?.cio?.siteId,
       linkedInInsightsPartnerId: Settings.analytics?.linkedIn?.partnerId,
-      githubSyncEnabled: !!Settings.githubSync?.clientID && !!Settings.githubSync?.clientSecret,
+      githubSyncEnabled: Features.hasFeature('github-sync'),
       zoteroEnabled: !!Settings.zotero?.clientKey && !!Settings.zotero?.clientSecret,
       enablePandocConversions: Settings.enablePandocConversions,
       mixpanelLabsToken:

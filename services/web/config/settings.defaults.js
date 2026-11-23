@@ -933,6 +933,27 @@ module.exports = {
   askAi: {
     url: process.env.ASK_AI_URL || '',
     name: process.env.ASK_AI_NAME || 'ChatGPT',
+    managed: {
+      mode: process.env.ASK_AI_MANAGED_MODE || 'off',
+      endpoint: process.env.ASK_AI_ENDPOINT || '',
+      model: process.env.ASK_AI_MODEL || '',
+      apiKey: process.env.ASK_AI_API_KEY || '',
+      policySummary: process.env.ASK_AI_POLICY_SUMMARY || '',
+      budgetEpoch: process.env.ASK_AI_BUDGET_EPOCH || '',
+      inputNanodollarsPerToken: Number(
+        process.env.ASK_AI_INPUT_NANODOLLARS_PER_TOKEN || 0
+      ),
+      outputNanodollarsPerToken: Number(
+        process.env.ASK_AI_OUTPUT_NANODOLLARS_PER_TOKEN || 0
+      ),
+      userDailyNanodollars: Number(
+        process.env.ASK_AI_USER_DAILY_NANODOLLARS || 0
+      ),
+      globalDailyNanodollars: Number(
+        process.env.ASK_AI_GLOBAL_DAILY_NANODOLLARS || 0
+      ),
+      priceValidUntil: process.env.ASK_AI_PRICE_VALID_UNTIL || '',
+    },
   },
 
   analytics: {
@@ -1367,6 +1388,7 @@ module.exports = {
     'iitmandi-logo',
     'retention',
     'chapter-compile',
+    'ask-ai',
   ],
   viewIncludes: {},
 
