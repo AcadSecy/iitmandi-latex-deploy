@@ -1,10 +1,15 @@
 import { FC, useMemo } from 'react'
 import { Select } from '../../../../../shared/components/select'
-import { useFigureModalContext } from '../figure-modal-context'
+import {
+  FigureModalSource,
+  useFigureModalContext,
+} from '../figure-modal-context'
 import { filterFiles, isImageFile } from '../../../utils/file'
 import { useTranslation } from 'react-i18next'
 import { useCurrentProjectFolders } from '@/features/source-editor/hooks/use-current-project-folders'
 import OLFormGroup from '@/shared/components/ol/ol-form-group'
+import OLButton from '@/shared/components/ol/ol-button'
+import { usePermissionsContext } from '@/features/ide-react/context/permissions-context'
 
 export const FigureModalCurrentProjectSource: FC = () => {
   const { t } = useTranslation()
@@ -14,6 +19,7 @@ export const FigureModalCurrentProjectSource: FC = () => {
     [rootFolder]
   )
   const { dispatch, selectedItemId } = useFigureModalContext()
+  const { write } = usePermissionsContext()
   const noFiles = files?.length === 0
   return (
     <OLFormGroup>
@@ -39,6 +45,20 @@ export const FigureModalCurrentProjectSource: FC = () => {
           })
         }}
       />
+      {write && (
+        <OLButton
+          variant="link"
+          onClick={() =>
+            dispatch({
+              source: FigureModalSource.FILE_UPLOAD,
+              getPath: undefined,
+              selectedItemId: undefined,
+            })
+          }
+        >
+          {t('upload_from_computer')}
+        </OLButton>
+      )}
     </OLFormGroup>
   )
 }
