@@ -162,6 +162,14 @@ jobs:
           node services/web/modules/page-setup/scripts/page-setup-variants.mjs \
             "$RUNNER_TEMP/templates" < "$RUNNER_TEMP/templates.txt" > "$RUNNER_TEMP/variants.txt"
           cat "$RUNNER_TEMP/variants.txt" >> "$RUNNER_TEMP/templates.txt"
+      - name: Add the table cell editor's output regression fixture
+        run: |
+          for compiler in pdflatex xelatex lualatex; do
+            id="table-cell-44-$compiler"
+            mkdir -p "$RUNNER_TEMP/templates/$id"
+            cp doc/testing/fixtures/table-cell-output-44.tex "$RUNNER_TEMP/templates/$id/main.tex"
+            printf '%s %s main.tex\n' "$id" "$compiler" >> "$RUNNER_TEMP/templates.txt"
+          done
       - name: Compile every template with the platform's TeX Live image
         run: |
           docker run --rm -v "$RUNNER_TEMP:/work" "$TEXLIVE_IMAGE" bash -c '
@@ -334,6 +342,7 @@ jobs:
           modules/iitmandi-logo/test/frontend/logo-insertion.test.ts
           modules/chapter-compile/test/frontend/chapter-compile-menu-items.test.tsx
           modules/reference-picker/test/frontend/advanced-reference-index.test.ts
+          test/frontend/features/source-editor/components/table-cell-input.test.ts
           test/frontend/ide/log-parser/logParserTests.js
           test/frontend/ide/human-readable-logs/human-readable-logs.test.js
           modules/slash-insert/test/frontend/slash-insert.test.ts
