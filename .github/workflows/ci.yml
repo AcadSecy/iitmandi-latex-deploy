@@ -281,6 +281,7 @@ jobs:
           test/unit/src/Compile/CompileQueue.test.mjs
           test/unit/src/Compile/CompileManager.test.mjs
           modules/iitmandi-templates/test/unit/src
+          modules/github-sync/test/unit
           test/unit/src/Email
           test/unit/src/Downloads/ProjectDownloadsController.test.mjs
           test/unit/src/User/UserDeleter.test.mjs
