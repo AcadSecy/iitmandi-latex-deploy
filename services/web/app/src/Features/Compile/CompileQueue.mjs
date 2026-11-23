@@ -87,6 +87,21 @@ export class CompileQueue {
     return this.#slots > 0
   }
 
+  // Aggregate only. No user IDs, project IDs or queue entries leave the queue.
+  getSummary() {
+    if (!this.enabled) {
+      return { enabled: false, slots: 0, running: null, queued: null, paused: null }
+    }
+    const paused = this.#waiting.filter(entry => entry.paused).length
+    return {
+      enabled: true,
+      slots: this.#slots,
+      running: this.#running.size,
+      queued: this.#waiting.length - paused,
+      paused,
+    }
+  }
+
   /**
    * Wait for a compile slot.
    *

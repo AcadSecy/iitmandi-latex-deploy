@@ -1,5 +1,13 @@
 # Server operations
 
+Site admins can open **Admin Panel → Capacity and usage** (`/admin/capacity`)
+for read-only editor-place counts, compile occupancy/outcomes and filesystem
+headroom. The same aggregate JSON is at `/admin/capacity/data`. Readings show
+timestamps and stale/unavailable states; effective configuration is distinct
+from measured capacity. No additional monitoring port or Docker access is
+required. [Sources, limits and verification](../../../doc/testing/capacity-dashboard-52.md)
+explain the single-process counters and storage coverage.
+
 The local capacity override survives deployments because the deployer replaces
 only docker-compose.yml, server.env and the replica-set init script. Install
 capacity.override.yml as `/srv/iitmandi-latex/compose/docker-compose.override.yml`.
