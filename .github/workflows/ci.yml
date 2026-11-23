@@ -162,6 +162,14 @@ jobs:
           node services/web/modules/page-setup/scripts/page-setup-variants.mjs \
             "$RUNNER_TEMP/templates" < "$RUNNER_TEMP/templates.txt" > "$RUNNER_TEMP/variants.txt"
           cat "$RUNNER_TEMP/variants.txt" >> "$RUNNER_TEMP/templates.txt"
+      - name: Add the table cell editor's output regression fixture
+        run: |
+          for compiler in pdflatex xelatex lualatex; do
+            id="table-cell-44-$compiler"
+            mkdir -p "$RUNNER_TEMP/templates/$id"
+            cp doc/testing/fixtures/table-cell-output-44.tex "$RUNNER_TEMP/templates/$id/main.tex"
+            printf '%s %s main.tex\n' "$id" "$compiler" >> "$RUNNER_TEMP/templates.txt"
+          done
       - name: Compile every template with the platform's TeX Live image
         run: |
           docker run --rm -v "$RUNNER_TEMP:/work" "$TEXLIVE_IMAGE" bash -c '
@@ -281,6 +289,7 @@ jobs:
           test/unit/src/Compile/CompileQueue.test.mjs
           test/unit/src/Compile/CompileManager.test.mjs
           modules/iitmandi-templates/test/unit/src
+          modules/github-sync/test/unit
           test/unit/src/Email
           test/unit/src/Downloads/ProjectDownloadsController.test.mjs
           test/unit/src/User/UserDeleter.test.mjs
@@ -318,7 +327,7 @@ jobs:
           test/unit/src/Compile/CompileController.test.mjs
           -t "chapter"
 
-      - name: Frontend tests (project list, welcome message, Ask AI, page setup, logo, chapter compile, report a problem)
+      - name: Frontend tests (project list, welcome message, Ask AI, page setup, logo, chapter compile, reference search, compile log, report a problem)
         working-directory: services/web
         env:
           NODE_ENV: test
@@ -333,6 +342,11 @@ jobs:
           modules/page-setup/test/frontend/preamble.test.ts
           modules/iitmandi-logo/test/frontend/logo-insertion.test.ts
           modules/chapter-compile/test/frontend/chapter-compile-menu-items.test.tsx
+          modules/reference-picker/test/frontend/advanced-reference-index.test.ts
+          test/frontend/features/source-editor/components/table-cell-input.test.ts
+          test/frontend/ide/log-parser/logParserTests.js
+          test/frontend/ide/human-readable-logs/human-readable-logs.test.js
+          modules/slash-insert/test/frontend/slash-insert.test.ts
           modules/support/test/frontend/report-problem-modal.test.tsx
 
   clsi:

@@ -252,6 +252,23 @@ describe('CompileQueue', function () {
       expect(queue.getStatus('p1', 'a').state).toBe('idle')
     })
 
+    it('still pauses a compile when its turn timer fires early', async function () {
+      vi.useFakeTimers()
+      const queue = new CompileQueue({ slots: 1, turnMs: 1000 })
+      await queue.acquire({ userKey: 'a', projectId: 'p1' })
+      const handlers = pauseHandlers()
+      queue.allowPausing('p1', 'a', handlers)
+      track(queue, { userKey: 'b', projectId: 'p2' }, started)
+
+      // the clock lags the timer by a millisecond, as real timers can
+      vi.setSystemTime(Date.now() - 1)
+      await vi.advanceTimersByTimeAsync(1000)
+      expect(handlers.suspend).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(1)
+      expect(handlers.suspend).toHaveBeenCalledOnce()
+      expect(started).toEqual(['b/p2'])
+    })
+
     it('lets a compile run on while nobody waits', async function () {
       vi.useFakeTimers()
       const queue = new CompileQueue({ slots: 1, turnMs: 1000 })

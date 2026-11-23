@@ -87,6 +87,21 @@ export class CompileQueue {
     return this.#slots > 0
   }
 
+  // Aggregate only. No user IDs, project IDs or queue entries leave the queue.
+  getSummary() {
+    if (!this.enabled) {
+      return { enabled: false, slots: 0, running: null, queued: null, paused: null }
+    }
+    const paused = this.#waiting.filter(entry => entry.paused).length
+    return {
+      enabled: true,
+      slots: this.#slots,
+      running: this.#running.size,
+      queued: this.#waiting.length - paused,
+      paused,
+    }
+  }
+
   /**
    * Wait for a compile slot.
    *
@@ -360,7 +375,13 @@ export class CompileQueue {
     }
     const elapsed = Date.now() - entry.turnStartedAt
     entry.turnTimer = setTimeout(
-      () => this.#dispatch(),
+      () => {
+        if (Date.now() - entry.turnStartedAt < this.#turnMs) {
+          this.#startTurnTimer(entry)
+        } else {
+          this.#dispatch()
+        }
+      },
       Math.max(0, this.#turnMs - elapsed)
     )
     entry.turnTimer.unref?.()

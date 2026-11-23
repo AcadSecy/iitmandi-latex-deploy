@@ -78,4 +78,15 @@ describe('HumanReadableLogs', function () {
       })
     })
   })
+
+  describe('Missing characters', function () {
+    it('Gives each grouped missing character warning its hint', async function () {
+      const { warnings } = await parse('missing-character.log')
+      expect(warnings.map(w => w.ruleId)).to.deep.equal([
+        'hint_missing_character_there_is_no_in_font',
+        'hint_missing_character_there_is_no_in_font',
+        'hint_missing_character_there_is_no_in_font',
+      ])
+    })
+  })
 })

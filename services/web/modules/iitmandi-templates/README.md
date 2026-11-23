@@ -38,9 +38,12 @@ These files live in the image under `/overleaf/services/web/modules/iitmandi-tem
 Turn on the gallery first (`OVERLEAF_TEMPLATE_GALLERY=true`). Then, inside the app container, run this as the user who should own the templates: an admin, or the user in `OVERLEAF_TEMPLATES_USER_ID`.
 
 ```sh
+. /etc/container_environment.sh
 cd /overleaf/services/web
 node modules/iitmandi-templates/scripts/publish-templates.mjs --owner=templates@iitmandi.ac.in
 ```
+
+The first line loads the container's settings, which a `docker exec` shell does not have. Without them, templates with image files fail with `request failed`.
 
 With the Toolkit: `bin/run-script modules/iitmandi-templates/scripts/publish-templates.mjs --owner=...`.
 

@@ -2,12 +2,22 @@ import logger from '@overleaf/logger'
 import UserListController from './UserListController.mjs'
 import ProjectListController from './ProjectListController.mjs'
 import AdminToolsController from './AdminToolsController.mjs'
+import CapacityDashboardController from './CapacityDashboardController.mjs'
 import AuthorizationMiddleware from '../../../../app/src/Features/Authorization/AuthorizationMiddleware.mjs'
 import AuthenticationController from '../../../../app/src/Features/Authentication/AuthenticationController.mjs'
 
 export default {
   apply(webRouter) {
     logger.debug({}, 'Init AdminTools router')
+
+    webRouter.get('/admin/capacity',
+      AuthenticationController.requireLogin(),
+      CapacityDashboardController.page
+    )
+    webRouter.get('/admin/capacity/data',
+      AuthenticationController.requireLogin(),
+      CapacityDashboardController.json
+    )
 
     webRouter.get('/user/activate', UserListController.activateAccountPage)
     AuthenticationController.addEndpointToLoginWhitelist('/user/activate')

@@ -12,7 +12,11 @@ import {
   useFigureModalExistingFigureContext,
 } from './figure-modal-context'
 import { FigureModalFooter } from './figure-modal-footer'
-import { lazy, memo, Suspense, useCallback, useEffect } from 'react'
+import { lazy, memo, Suspense, useCallback, useEffect, useRef } from 'react'
+import type {
+  ModalInsertion,
+  InsertionTarget,
+} from '@modules/slash-insert/frontend/completions/transactions'
 import { useCodeMirrorViewContext } from '../codemirror-context'
 import { ChangeSpec } from '@codemirror/state'
 import { snippet } from '@codemirror/autocomplete'
@@ -41,6 +45,7 @@ export const FigureModal = memo(function FigureModal() {
 })
 
 const FigureModalContent = () => {
+  const insertFromCompletion = useRef<ModalInsertion>()
   const { t } = useTranslation()
   const themed = useFeatureFlag('themed-modals')
 
@@ -81,7 +86,10 @@ const FigureModalContent = () => {
         source: FigureModalSource
         fileId?: string
         filePath?: string
+        insert?: ModalInsertion
       }>
+      insertFromCompletion.current?.cancel()
+      insertFromCompletion.current = detail.insert
       dispatch({
         source: detail.source,
         selectedItemId: detail.fileId,
@@ -105,6 +113,8 @@ const FigureModalContent = () => {
   const view = useCodeMirrorViewContext()
 
   const hide = useCallback(() => {
+    insertFromCompletion.current?.cancel()
+    insertFromCompletion.current = undefined
     dispatch({ source: FigureModalSource.NONE })
     view.requestMeasure()
     // Wait for the modal to close before focusing the editor
@@ -146,6 +156,7 @@ const FigureModalContent = () => {
   )
 
   const insert = useCallback(async () => {
+    const completionInsertion = insertFromCompletion.current
     const replaceGraphicsCommand = (
       figure: FigureData,
       changes: ChangeSpec[],
@@ -241,31 +252,38 @@ const FigureModalContent = () => {
     }
 
     const insertNewFigure = (insertPath: string, isSvg: boolean) => {
-      const { pos, suffix } = ensureEmptyLine(
-        view.state,
-        view.state.selection.main
-      )
+      const apply = ({ state, dispatch }: InsertionTarget) => {
+        if (state.readOnly) return
+        const { pos, suffix } = ensureEmptyLine(state, state.selection.main)
 
-      const widthArgument =
-        width !== undefined ? `[width=${width}\\linewidth]` : ''
-      const caption = includeCaption ? `\n\t\\caption{\${Enter Caption}}` : ''
-      const label = includeLabel ? `\n\t\\label{\${fig:placeholder}}` : ''
-      const graphicsCommand = isSvg ? 'includesvg' : 'includegraphics'
+        const widthArgument =
+          width !== undefined ? `[width=${width}\\linewidth]` : ''
+        const caption = includeCaption ? `\n\t\\caption{\${Enter Caption}}` : ''
+        const label = includeLabel ? `\n\t\\label{\${fig:placeholder}}` : ''
+        const graphicsCommand = isSvg ? 'includesvg' : 'includegraphics'
 
-      snippet(
-        `\\begin{figure}
+        snippet(
+          `\\begin{figure}
 \t\\centering
 \t\\${graphicsCommand}${widthArgument}{${insertPath}}${caption}${label}
 \\end{figure}${suffix}\${}`
-      )(
-        { state: view.state, dispatch: view.dispatch },
-        { label: 'figure' },
-        pos,
-        pos
-      )
+        )(
+          { state, dispatch },
+          { label: 'figure' },
+          pos,
+          pos
+        )
+      }
+      if (completionInsertion) {
+        completionInsertion(apply)
+      } else {
+        apply(view)
+      }
     }
 
-    const figure = view.state.field<FigureData>(editFigureData, false)
+    const figure = completionInsertion
+      ? null
+      : view.state.field<FigureData>(editFigureData, false)
 
     if (!getPath) {
       throw new Error('Cannot insert figure without a file path')
@@ -274,9 +292,12 @@ const FigureModalContent = () => {
     try {
       path = await getPath()
     } catch (error) {
-      dispatch({ error: String(error) })
+      if (completionInsertion === insertFromCompletion.current) {
+        dispatch({ error: String(error) })
+      }
       return
     }
+    if (completionInsertion !== insertFromCompletion.current) return
 
     const isSvg = isSvgFile(path)
     // For SVG files, strip the .svg extension as \includesvg expects it without
