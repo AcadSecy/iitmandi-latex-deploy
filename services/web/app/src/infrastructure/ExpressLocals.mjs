@@ -391,6 +391,7 @@ export default async function (webRouter, privateApiRouter, publicApiRouter) {
       maxUploadSize: Settings.maxUploadSize,
       askAiUrl: Settings.askAi?.url || undefined,
       askAiName: Settings.askAi?.name,
+      askAiManaged: ['local', 'api'].includes(Settings.askAi?.managed?.mode),
       storageQuotaEnabled: Settings.storageQuota?.defaultMB > 0,
       shareLinksCanEdit: Settings.shareLinksCanEdit !== false,
       trashRetentionDays: Settings.retention?.trashDays || 0,

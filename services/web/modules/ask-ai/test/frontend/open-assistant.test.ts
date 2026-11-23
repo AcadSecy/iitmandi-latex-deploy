@@ -61,7 +61,9 @@ describe('Ask AI', function () {
         'https://chatgpt.com/?q=' + encodeURIComponent('fix \\section{A & B}')
       )
       expect(name).to.equal('ask-ai')
-      expect(features).to.match(/^popup,width=\d+,height=\d+,left=-?\d+,top=-?\d+$/)
+      expect(features).to.match(
+        /^popup,width=\d+,height=\d+,left=-?\d+,top=-?\d+,noopener,noreferrer$/
+      )
     })
 
     it('stops the assistant from navigating this page', function () {
@@ -70,10 +72,25 @@ describe('Ask AI', function () {
       expect(opened.focus.calledOnce).to.equal(true)
     })
 
-    it('shortens very long prompts', function () {
-      openAssistant('https://chatgpt.com/?q=', 'x'.repeat(10000))
-      const [url] = openStub.firstCall.args
-      expect(url).to.equal('https://chatgpt.com/?q=' + 'x'.repeat(6000))
+    it('rejects oversized URLs without sending or truncating', function () {
+      expect(() =>
+        openAssistant('https://chatgpt.com/?q=', 'x'.repeat(10000))
+      ).to.throw('context_too_large')
+      expect(openStub.called).to.equal(false)
+    })
+
+    it('rejects unsafe destinations before opening a window', function () {
+      expect(() => openAssistant('javascript:alert(1)', 'text')).to.throw(
+        'invalid_destination'
+      )
+      expect(openStub.called).to.equal(false)
+    })
+
+    it('handles an unpaired Unicode surrogate', function () {
+      openAssistant('https://chatgpt.com/?q=', String.fromCharCode(0xd800))
+      expect(openStub.firstCall.args[0]).to.include(
+        encodeURIComponent(String.fromCharCode(0xfffd))
+      )
     })
   })
 
@@ -84,7 +101,7 @@ describe('Ask AI', function () {
       )
     })
 
-    it('includes the error, its file and its line', function () {
+    it('includes the error without adding its filename', function () {
       const entry = {
         raw: 'raw log',
         level: 'error',
@@ -95,7 +112,7 @@ describe('Ask AI', function () {
         content: 'l.12 \\foo',
       } as LogEntry
       const prompt = errorPrompt(entry)
-      expect(prompt).to.include('(in main.tex, line 12)')
+      expect(prompt).not.to.include('main.tex')
       expect(prompt).to.include('Undefined control sequence.\nl.12 \\foo')
     })
 

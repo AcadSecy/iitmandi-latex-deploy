@@ -1,23 +1,29 @@
 import { useTranslation } from 'react-i18next'
+import { useContext } from 'react'
+import { PermissionsContext } from '@/features/ide-react/context/permissions-context'
 import OLButton from '@/shared/components/ol/ol-button'
 import OLTooltip from '@/shared/components/ol/ol-tooltip'
 import { useCodeMirrorViewContext } from '@/features/source-editor/components/codemirror-context'
 import { useAskAi } from '../use-ask-ai'
-import { selectionPrompt } from '../open-assistant'
+import { captureSelection } from '../selection-target'
 
-// Editor toolbar button: opens the assistant beside the editor with the
-// selected text, or with an empty prompt when nothing is selected
+// Review an explicitly selected excerpt. Readers can ask for an explanation;
+// only writers can request an applicable replacement.
 function AskAiToolbarButton() {
   const { t } = useTranslation()
   const view = useCodeMirrorViewContext()
   const { settings, ask, modal } = useAskAi()
+  const permissions = useContext(PermissionsContext)
 
   if (!settings) return null
 
   const askAboutSelection = () => {
-    const { from, to } = view.state.selection.main
-    const text = view.state.sliceDoc(from, to).trim()
-    ask(text ? selectionPrompt(text) : '')
+    const target = captureSelection(view)
+    ask(
+      target.text,
+      permissions?.write ? 'selection' : 'error',
+      permissions?.write ? target : undefined
+    )
   }
 
   return (
