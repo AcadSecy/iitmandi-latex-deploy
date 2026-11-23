@@ -196,6 +196,86 @@ describe('logParser', function () {
     ])
   })
 
+  it('should group missing characters into one warning per file and font', function () {
+    // XeLaTeX log of Hindi and Arabic text set in fonts without those
+    // scripts: 83 lines, 53 distinct, in a heading and the bibliography
+    const { warnings } = parseLatexLog('missing-character.log', {
+      ignoreDuplicates: true,
+    })
+    expect(warnings.map(w => [w.line, w.message, w.file])).to.deep.equal([
+      [
+        null,
+        'Missing character: There is no म (U+092E), ि (U+093F), श (U+0936), ् (U+094D), र (U+0930) or 4 other characters in font [lmroman12-bold]:mapping=tex-text;!',
+        './main.tex',
+      ],
+      [
+        null,
+        'Missing character: There is no ل (U+0644), ي (U+064A), ى (U+0649), ح (U+062D), د (U+062F) or 22 other characters in font [lmroman10-regular]:mapping=tex-text;!',
+        './main.bbl',
+      ],
+      [
+        null,
+        'Missing character: There is no ह (U+0939), ि (U+093F), ं (U+0902), द (U+0926), ी (U+0940) or 12 other characters in font [lmroman10-italic]:mapping=tex-text;!',
+        './main.bbl',
+      ],
+    ])
+    expect(warnings[0].raw.split('\n')).to.have.length(9)
+  })
+
+  it('should keep other warnings next to grouped missing characters', function () {
+    // Wrapped at 79 characters, as in the log
+    const log = [
+      'Missing character: There is no ह (U+0939) in font [lmroman10-regular]:mapping=t',
+      'ex-text;!',
+      'Missing character: There is no ह (U+0939) in font [lmroman10-regular]:mapping=t',
+      'ex-text;!',
+      "LaTeX Warning: Reference `fig:one' on page 1 undefined on input line 12.",
+      'Missing character: There is no न (U+0928) in font [lmroman10-regular]:mapping=t',
+      'ex-text;!',
+    ].join('\n')
+    const { warnings } = new LatexLogParser(log).parse()
+    expect(warnings.map(w => [w.line, w.message])).to.deep.equal([
+      [
+        null,
+        'Missing character: There is no ह (U+0939), न (U+0928) in font [lmroman10-regular]:mapping=tex-text;!',
+      ],
+      [12, "Reference `fig:one' on page 1 undefined on input line 12."],
+    ])
+  })
+
+  it('should close a file right after a full-width missing character line', function () {
+    // A 79 character line is joined with the next, so the ) closing
+    // child.tex lands on the same line as the warning
+    const prefix = 'Missing character: There is no A in font cmr10-'
+    const missing = prefix + 'a'.repeat(78 - prefix.length) + '!'
+    const log = [
+      'This is XeTeX',
+      '(./main.tex',
+      '(./child.tex',
+      missing,
+      ')',
+      "LaTeX Warning: Reference `x' on page 1 undefined on input line 3.",
+      ')',
+    ].join('\n')
+    const { warnings } = new LatexLogParser(log).parse()
+    expect(warnings.map(w => [w.file, w.message])).to.deep.equal([
+      ['./child.tex', missing],
+      ['./main.tex', "Reference `x' on page 1 undefined on input line 3."],
+    ])
+  })
+
+  it('should read full-width missing character lines joined together', function () {
+    const prefix = 'Missing character: There is no A in font cmr10-'
+    const missing = prefix + 'a'.repeat(78 - prefix.length) + '!'
+    const log = ['This is XeTeX', missing, missing.replace(' A ', ' B ')].join(
+      '\n'
+    )
+    const { warnings } = new LatexLogParser(log).parse()
+    expect(warnings.map(w => w.message)).to.deep.equal([
+      missing.replace(' A ', ' A, B '),
+    ])
+  })
+
   it('should parse Runaway Arguments', function () {
     const { errors } = parseLatexLog('runaway-arguments.log')
     expect(errors.map(e => [e.line, e.message, e.file])).to.deep.equal([

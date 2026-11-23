@@ -45,6 +45,84 @@ describe('IIT Mandi logo insertion', function () {
     )
   })
 
+  it('moves a cursor after \\end{document} to just before it', function () {
+    const withGraphicx = main.replace('amsmath', 'graphicx')
+    expect(insertAt(withGraphicx, withGraphicx.length)).to.equal(
+      withGraphicx.replace('\\end{document}', `${BLOCK}\n\\end{document}`)
+    )
+  })
+
+  it('ignores a commented or second \\end{document}', function () {
+    const doc =
+      '\\documentclass{article}\n\\usepackage{graphicx}\n\\begin{document}\nA\\\\% \\end{document}\nB \\\\end{document}\nHello\n\\end{document}\nNotes\n% \\end{document}\n\\end{document}\n'
+    expect(insertAt(doc, doc.length)).to.equal(
+      doc.replace('Hello\n', `Hello\n${BLOCK}\n`)
+    )
+  })
+
+  for (const environment of [
+    'verbatim',
+    'verbatim*',
+    'lstlisting',
+    'minted',
+    'comment',
+  ]) {
+    it(`ignores \\end{document} inside ${environment}`, function () {
+      const language = environment === 'minted' ? '{latex}' : ''
+      const doc =
+        '\\documentclass{article}\n\\usepackage{graphicx}\n\\begin{document}\n' +
+        `\\begin{${environment}}${language}\n% literal text\n\\end{document}\n\\end{${environment}}\n` +
+        'Hello\n\\end{document}\nNotes\n'
+      expect(insertAt(doc, doc.length)).to.equal(
+        doc.replace('Hello\n', `Hello\n${BLOCK}\n`)
+      )
+      const cursor = doc.indexOf('Hello')
+      expect(insertAt(doc, cursor)).to.equal(
+        doc.replace('Hello\n', `${BLOCK}\nHello\n`)
+      )
+    })
+  }
+
+  for (const literal of [
+    '\\verb|\\end{document}|',
+    '\\verb*+\\end{document}+',
+    '\\verb%\\end{document}%',
+  ]) {
+    it(`ignores the inline literal ${literal}`, function () {
+      const doc =
+        '\\documentclass{article}\\usepackage{graphicx}\\begin{document}' +
+        `${literal}Hello\\end{document}Notes`
+      expect(insertAt(doc, doc.length)).to.equal(
+        doc.replace('Hello', `Hello\n${BLOCK}\n`)
+      )
+    })
+  }
+
+  it('ignores commented and escaped literal openers', function () {
+    const doc =
+      '\\documentclass{article}\n\\usepackage{graphicx}\n\\begin{document}\n' +
+      '% \\begin{verbatim}\n\\\\begin{minted}\n% \\verb|\n\\\\verb|\n' +
+      'Hello\n\\end{document}\nNotes\n'
+    expect(insertAt(doc, doc.length)).to.equal(
+      doc.replace('Hello\n', `Hello\n${BLOCK}\n`)
+    )
+  })
+
+  it('does not clamp the cursor when only literal terminators exist', function () {
+    const doc =
+      '\\documentclass{article}\n\\usepackage{graphicx}\n\\begin{document}\n' +
+      '\\begin{verbatim}\n\\end{document}\n\\end{verbatim}\nHello\n'
+    expect(insertAt(doc, doc.length)).to.equal(`${doc}${BLOCK}\n`)
+  })
+
+  it('keeps the logo inside a document written on one line', function () {
+    const doc =
+      '\\documentclass{article}\\usepackage{graphicx}\\begin{document}Hi\\end{document}'
+    expect(insertAt(doc, doc.length)).to.equal(
+      doc.replace('Hi', `Hi\n${BLOCK}\n`)
+    )
+  })
+
   it('only inserts the logo in a file that is not the main file', function () {
     const chapter = 'Some text\n'
     expect(insertAt(chapter, chapter.length)).to.equal(`Some text\n${BLOCK}\n`)

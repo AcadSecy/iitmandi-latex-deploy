@@ -1143,7 +1143,12 @@ module.exports = {
       ),
     ],
     diagnosticActions: [],
-    sourceEditorCompletionSources: [],
+    sourceEditorCompletionSources: [
+      Path.resolve(
+        __dirname,
+        '../modules/slash-insert/frontend/completions/slash-insert.ts'
+      ),
+    ],
     sourceEditorSymbolPalette: [
       Path.resolve(
         __dirname,
@@ -1345,6 +1350,7 @@ module.exports = {
     'sandboxed-compiles',
     'symbol-palette',
     'reference-picker',
+    'slash-insert',
     'track-changes',
     'authentication/ldap',
     'authentication/saml',

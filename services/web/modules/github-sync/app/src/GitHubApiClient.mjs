@@ -364,11 +364,15 @@ function createCommit(token, repoFullName, { tree, message, parents = [] }) {
   }, 'createCommit').then(r => r.sha)
 }
 
-function getCommitTree(token, repoFullName, commit) {
+function getCommit(token, repoFullName, commit) {
   return fetchGitHubJson(`${GITHUB_API_BASE}/repos/${repoFullName}/git/commits/${commit}`, {
     headers: buildHeaders(token),
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
-  }, 'getCommitTree').then(r => r.tree.sha)
+  }, 'getCommit')
+}
+
+function getCommitTree(token, repoFullName, commit) {
+  return getCommit(token, repoFullName, commit).then(r => r.tree.sha)
 }
 
 function listBlobsAtCommit(token, repoFullName, commit) {
@@ -426,11 +430,11 @@ function createBranch(token, repoFullName, branchName, sha) {
   }, 'createBranch')
 }
 
-function updateBranch(token, repoFullName, branchName, sha, force = false) {
+function updateBranch(token, repoFullName, branchName, sha) {
   return fetchGitHubJson(`${GITHUB_API_BASE}/repos/${repoFullName}/git/refs/heads/${encodeURIComponent(branchName)}`, {
     method: 'PATCH',
     headers: buildHeaders(token),
-    json: { sha, force },
+    json: { sha, force: false },
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
   }, 'updateBranch')
 }
@@ -482,6 +486,7 @@ export default {
   getBlobStream,
   createTree,
   createCommit,
+  getCommit,
   getCommitTree,
   listBlobsAtCommit,
   listNewCommitsWithStatus,
