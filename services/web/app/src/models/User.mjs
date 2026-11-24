@@ -53,6 +53,7 @@ export const UserSchema = new Schema(
     role: { type: String, default: '' },
     institution: { type: String, default: '' },
     hashedPassword: String,
+    campusLdapId: { type: String, immutable: true },
     enrollment: {
       sso: [
         {

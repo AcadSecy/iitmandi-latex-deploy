@@ -22,8 +22,19 @@ block content
 								| #{translate('reset_password_link')}
 						+customFormMessageNewStyle('password-compromised')
 							| !{translate('password_compromised_try_again_or_use_known_device_or_reset', {}, [{name: 'a', attrs: {href: 'https://haveibeenpwned.com/passwords', rel: 'noopener noreferrer', target: '_blank'}}, {name: 'a', attrs: {href: '/user/password/reset', target: '_blank'}}])}.
+						if settings.ldap && settings.ldap.campusEnabled
+							.form-group
+								label(for='ldap-provider') #{translate('login_account')}
+								select#ldap-provider.form-select(name='ldapProvider' required)
+									option(value='' disabled selected) #{translate('login_choose_account')}
+									option(value='campus') #{translate('login_iit_mandi_account')}
+									option(value='existing') #{translate('login_existing_account')}
 						.form-group
-							label(for='email') #{translate("email")}
+							label(for='email')
+								if settings.ldap && settings.ldap.campusEnabled
+									| #{translate('login_username_or_email')}
+								else
+									| #{translate('email')}
 							input#email.form-control(
 								name='email'
 								type=(settings.ldap && settings.ldap.enable) ? 'text' : 'email'

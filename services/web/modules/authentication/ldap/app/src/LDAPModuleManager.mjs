@@ -6,11 +6,13 @@ import PermissionsManager from '../../../../../app/src/Features/Authorization/Pe
 import { readFilesContentFromEnv, numFromEnv, boolFromEnv } from '../../../utils.mjs'
 import LDAPAuthenticationController from './LDAPAuthenticationController.mjs'
 import fetchLDAPContacts from './LDAPContacts.mjs'
+import { campusLDAPOptions } from './CampusLDAPOptions.mjs'
 
 const LDAPModuleManager = {
   initSettings() {
     Settings.ldap = {
       enable: true,
+      campusEnabled: false,
       placeholder:  process.env.OVERLEAF_LDAP_PLACEHOLDER || 'Username',
       attEmail:     process.env.OVERLEAF_LDAP_EMAIL_ATT || 'mail',
       attFirstName: process.env.OVERLEAF_LDAP_FIRST_NAME_ATT,
@@ -53,6 +55,23 @@ const LDAPModuleManager = {
           LDAPAuthenticationController.doPassportLogin
         )
       )
+      const campusOptions = campusLDAPOptions(process.env)
+      if (campusOptions) {
+        passport.use(
+          'campus-ldap',
+          new LDAPStrategy(
+            {
+              server: campusOptions,
+              passReqToCallback: true,
+              usernameField: 'email',
+              passwordField: 'password',
+              handleErrorsAsFailures: true,
+            },
+            LDAPAuthenticationController.doCampusPassportLogin
+          )
+        )
+        Settings.ldap.campusEnabled = true
+      }
       callback(null)
     } catch (error) {
       callback(error)
