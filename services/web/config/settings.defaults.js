@@ -1130,7 +1130,12 @@ module.exports = {
         '../modules/zotero/frontend/js/components/tpr-file-view-not-original-importer'
       ),
     ],
-    contactUsModal: [],
+    contactUsModal: [
+      Path.resolve(
+        __dirname,
+        '../modules/support/frontend/js/components/report-problem-modal.tsx'
+      ),
+    ],
     sourceEditorExtensions: [],
     sourceEditorVisualExtensions: [],
     sourceEditorComponents: [
@@ -1389,6 +1394,7 @@ module.exports = {
     'retention',
     'chapter-compile',
     'ask-ai',
+    'support',
   ],
   viewIncludes: {},
 
