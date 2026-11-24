@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import ReferencePickerModal from './reference-picker-modal'
 import { useEditorViewContext } from '@/features/ide-react/context/editor-view-context'
+import { useReindexOnBibChange } from './reindex-on-bib-change'
 import type {
   ModalInsertion,
   InsertionTarget,
@@ -8,6 +9,7 @@ import type {
 
 export default function ReferencePickerController() {
   const { view } = useEditorViewContext()
+  useReindexOnBibChange()
 
   const [open, setOpen] = useState(false)
   const [from, setFrom] = useState<number | null>(null)

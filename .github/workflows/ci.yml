@@ -343,6 +343,7 @@ jobs:
           modules/iitmandi-logo/test/frontend/logo-insertion.test.ts
           modules/chapter-compile/test/frontend/chapter-compile-menu-items.test.tsx
           modules/reference-picker/test/frontend/advanced-reference-index.test.ts
+          modules/reference-picker/test/frontend/reindex-on-bib-change.test.ts
           test/frontend/features/source-editor/components/table-cell-input.test.ts
           test/frontend/ide/log-parser/logParserTests.js
           test/frontend/ide/human-readable-logs/human-readable-logs.test.js

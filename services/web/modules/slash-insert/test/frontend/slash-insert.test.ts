@@ -47,6 +47,7 @@ import {
 import * as figureModalContext from '@/features/source-editor/components/figure-modal/figure-modal-context'
 import { FigureModalCurrentProjectSource } from '@/features/source-editor/components/figure-modal/file-sources/figure-modal-project-source'
 import { FileTreeDataContext } from '@/shared/context/file-tree-data-context'
+import { IdeContext } from '@/shared/context/ide-context'
 import { PermissionsContext } from '@/features/ide-react/context/permissions-context'
 import { createElement, Fragment, ReactNode, useEffect } from 'react'
 import {
@@ -740,7 +741,30 @@ describe('slash insertion transactions', function () {
               },
             },
           },
-          createElement(ReferencePickerController)
+          createElement(
+            IdeContext.Provider,
+            {
+              value: {
+                socket: { on() {}, removeListener() {} },
+                unstableStore: {},
+              } as never,
+            },
+            createElement(
+              FileTreeDataContext.Provider,
+              {
+                value: {
+                  fileTreeData: {
+                    _id: 'root',
+                    name: 'rootFolder',
+                    docs: [],
+                    folders: [],
+                    fileRefs: [],
+                  },
+                } as never,
+              },
+              createElement(ReferencePickerController)
+            )
+          )
         )
       )
     )
