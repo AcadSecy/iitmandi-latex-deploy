@@ -7,7 +7,7 @@ function TrashRetentionNotice() {
   const days = getMeta('ol-ExposedSettings').trashRetentionDays
   if (!days) return null
   return (
-    <p className="text-muted small mb-2">
+    <p className="small mb-2">
       {t('trash_retention_notice', { days })}
     </p>
   )

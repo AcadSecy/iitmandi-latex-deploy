@@ -1,4 +1,8 @@
-# Test deployment on the Raspberry Pi
+# Previous test deployment on the Raspberry Pi
+
+LaTeX is moving to the Institute x86_64 server: see [deploy/server](../server/README.md).
+The deployment workflow now builds amd64 images. This folder remains for the shared
+TeX Live Dockerfile, smoke tests, and recovery of the original Pi deployment.
 
 Before the DCS server is ready, the platform runs in **test mode** on our Raspberry Pi, so that changes can be tried by real people as soon as they are merged. This is not production: the Pi is small, shared with other apps, and has no backups. For production, see [`deploy/iitmandi`](../iitmandi/README.md).
 

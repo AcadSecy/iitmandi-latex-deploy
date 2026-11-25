@@ -1,9 +1,15 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import ReferencePickerModal from './reference-picker-modal'
 import { useEditorViewContext } from '@/features/ide-react/context/editor-view-context'
+import { useReindexOnBibChange } from './reindex-on-bib-change'
+import type {
+  ModalInsertion,
+  InsertionTarget,
+} from '../../../slash-insert/frontend/completions/transactions'
 
 export default function ReferencePickerController() {
   const { view } = useEditorViewContext()
+  useReindexOnBibChange()
 
   const [open, setOpen] = useState(false)
   const [from, setFrom] = useState<number | null>(null)
@@ -11,39 +17,52 @@ export default function ReferencePickerController() {
   const [braceFrom, setBraceFrom] = useState<number | null>(null)
   const [braceTo, setBraceTo] = useState<number | null>(null)
   const [initialKeys, setInitialKeys] = useState<string[]>([])
+  const insertFromCompletion = useRef<ModalInsertion>()
 
-  const onClose = useCallback(() => setOpen(false), [])
+  const onClose = useCallback(() => {
+    insertFromCompletion.current?.cancel()
+    insertFromCompletion.current = undefined
+    setOpen(false)
+  }, [])
 
   const onApply = useCallback(
     (selectedKeys: string[]) => {
       if (!view || from == null || to == null) return
 
-      const doc = view.state.doc
-      const bFrom = braceFrom ?? from
-      const bTo = braceTo ?? to
+      const apply = (target: InsertionTarget) => {
+        if (target.state.readOnly) return
+        const doc = target.state.doc
+        const bFrom = braceFrom ?? from
+        const bTo = braceTo ?? to
 
-      let insertCore = selectedKeys.join(', ')
+        let insertCore = selectedKeys.join(', ')
 
-      // Expand over spaces/tabs and commas around selection
-      let start = from
-      let end = to
-      while (start > bFrom && /[ \t,]/.test(doc.sliceString(start - 1, start))) start--
-      while (end < bTo && /[ \t,]/.test(doc.sliceString(end, end + 1))) end++
+        // Expand over spaces/tabs and commas around selection
+        let start = from
+        let end = to
+        while (start > bFrom && /[ \t,]/.test(doc.sliceString(start - 1, start))) start--
+        while (end < bTo && /[ \t,]/.test(doc.sliceString(end, end + 1))) end++
 
-      let prefix = ''
-      let suffix = ''
-      if (start > bFrom && doc.sliceString(start - 1, start) !== '\n') prefix = ', '
-      if (end < bTo && insertCore) suffix = ', '
+        let prefix = ''
+        let suffix = ''
+        if (start > bFrom && doc.sliceString(start - 1, start) !== '\n') prefix = ', '
+        if (end < bTo && insertCore) suffix = ', '
 
-      const insert = prefix + insertCore + suffix
+        const insert = prefix + insertCore + suffix
 
-      // Compute cursor position after inserted tokens
-      const cursorPos = start + prefix.length + insertCore.length + (end === bTo ? 0 : 1)
+        // Compute cursor position after inserted tokens
+        const cursorPos = start + prefix.length + insertCore.length + (end === bTo ? 0 : 1)
 
-      view.dispatch({
-        changes: { from: start, to: end, insert },
-        selection: { anchor: cursorPos },
-      })
+        target.dispatch({
+          changes: { from: start, to: end, insert },
+          selection: { anchor: cursorPos },
+        })
+      }
+      if (insertFromCompletion.current) {
+        insertFromCompletion.current(apply)
+      } else {
+        apply(view)
+      }
       view.focus()
     },
     [view, from, to, braceFrom, braceTo]
@@ -52,6 +71,8 @@ export default function ReferencePickerController() {
   useEffect(() => {
     const handler = (evt: CustomEvent) => {
       const detail = evt.detail || {}
+      insertFromCompletion.current?.cancel()
+      insertFromCompletion.current = detail.insert
 
       if (detail.insertFrom == null) {
         if (!view) return

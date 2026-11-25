@@ -1,0 +1,11 @@
+{
+  "test": "Roundtrip ZIP import/export",
+  "expected_files": 10,
+  "actual_files": 10,
+  "identical_files": 10,
+  "missing": [],
+  "extra": [],
+  "modified": [],
+  "duplicates": [],
+  "status": "PASS"
+}

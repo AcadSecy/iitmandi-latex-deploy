@@ -2,6 +2,11 @@
 const LOG_WRAP_LIMIT = 79
 const LATEX_WARNING_REGEX = /^LaTeX(?:3| Font)? Warning: (.*)$/
 const HBOX_WARNING_REGEX = /^(Over|Under)full \\(v|h)box/
+// A glyph the font lacks; TeX leaves a gap in the PDF and does not stop
+const MISSING_CHARACTER_REGEX =
+  /^Missing character: There is no (.+?) in font ([^!]*!)/
+// Characters named in a grouped missing character warning
+const MISSING_CHARACTER_EXAMPLES = 5
 const PACKAGE_WARNING_REGEX = /^((?:Package|Class|Module) \b.+\b Warning:.*)$/
 // This is used to parse the line number from common latex warnings
 const LINES_REGEX = /lines? ([0-9]+)/
@@ -60,6 +65,7 @@ export default class LatexParser {
   currentLine: string
   currentFilePath: string | undefined
   currentError: LatexLogEntry | undefined
+  missingCharacters: Map<string, { entry: LatexLogEntry; chars: Set<string> }>
 
   constructor(text: string, options: LatexParserOptions = {}) {
     this.state = STATE.NORMAL
@@ -73,6 +79,7 @@ export default class LatexParser {
     this.packageWarningRegex = PACKAGE_WARNING_REGEX
     this.packageRegex = PACKAGE_REGEX
     this.currentLine = ''
+    this.missingCharacters = new Map()
     this.log = new LogText(text)
   }
 
@@ -102,6 +109,8 @@ export default class LatexParser {
           this.parseHboxLine()
         } else if (this.currentLineIsPackageWarning()) {
           this.parseMultipleWarningLine()
+        } else if (MISSING_CHARACTER_REGEX.test(this.currentLine)) {
+          this.parseMissingCharacterLine()
         } else {
           this.parseParensForFilenames()
         }
@@ -215,6 +224,53 @@ export default class LatexParser {
       message: warning,
       raw: warning,
     })
+  }
+
+  // One warning per file and font, not one per character the font lacks
+  parseMissingCharacterLine() {
+    const match = this.currentLine.match(MISSING_CHARACTER_REGEX)
+    if (!match) {
+      return
+    }
+    const [line, char, font] = match
+    // A file closing right after a full-width line is joined onto it
+    this.currentLine = this.currentLine.slice(line.length)
+    this.addMissingCharacter(char, font, line)
+    if (MISSING_CHARACTER_REGEX.test(this.currentLine)) {
+      this.parseMissingCharacterLine()
+    } else {
+      this.parseParensForFilenames()
+    }
+  }
+
+  addMissingCharacter(char: string, font: string, line: string) {
+    const key = `${this.currentFilePath}\n${font}`
+    let group = this.missingCharacters.get(key)
+    if (!group) {
+      group = {
+        entry: {
+          line: null,
+          file: this.currentFilePath,
+          level: 'warning',
+          message: '',
+          raw: '',
+        },
+        chars: new Set(),
+      }
+      this.missingCharacters.set(key, group)
+      this.data.push(group.entry)
+    }
+    if (group.chars.has(char)) {
+      return
+    }
+    group.chars.add(char)
+    const chars = [...group.chars]
+    const shown = chars.slice(0, MISSING_CHARACTER_EXAMPLES).join(', ')
+    const more = chars.length - MISSING_CHARACTER_EXAMPLES
+    group.entry.message = `Missing character: There is no ${shown}${
+      more > 0 ? ` or ${more} other character${more > 1 ? 's' : ''}` : ''
+    } in font ${font}`
+    group.entry.raw += (group.entry.raw ? '\n' : '') + line
   }
 
   parseMultipleWarningLine() {

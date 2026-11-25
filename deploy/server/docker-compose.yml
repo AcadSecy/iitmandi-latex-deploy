@@ -1,0 +1,108 @@
+# IIT Mandi LaTeX on the x86_64 server. Only HTTP is published.
+name: iitmandi-latex
+
+x-logging: &logging
+  driver: local
+  options:
+    max-size: 10m
+    max-file: "3"
+
+services:
+  sharelatex:
+    image: ${LATEX_IMAGE:?LATEX_IMAGE is set in .env by the server deployer}
+    container_name: iitmandi-latex
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    ports:
+      - ${LATEX_PORT:-8080}:80
+    networks:
+      default:
+        ipv4_address: 10.213.5.2
+    extra_hosts:
+      - mongo:10.213.5.10
+      - redis:10.213.5.11
+      - ldap:10.213.5.12
+    stop_grace_period: 60s
+    env_file:
+      - path: server.env
+      - path: secrets.env
+      - path: site-url.env
+        required: false
+      - path: ldap.env
+        required: false
+    environment:
+      OVERLEAF_MONGO_URL: mongodb://mongo/sharelatex
+      OVERLEAF_REDIS_HOST: redis
+      REDIS_HOST: redis
+      SANDBOXED_COMPILES: "true"
+      SANDBOXED_COMPILES_SIBLING_CONTAINERS: "true"
+      SANDBOXED_COMPILES_HOST_DIR_COMPILES: ${LATEX_DATA:-/srv/iitmandi-latex/data}/app/data/compiles
+      SANDBOXED_COMPILES_HOST_DIR_OUTPUT: ${LATEX_DATA:-/srv/iitmandi-latex/data}/app/data/output
+    volumes:
+      - ${LATEX_DATA:-/srv/iitmandi-latex/data}/app:/var/lib/overleaf
+      - ${LATEX_DOCKER_SOCKET:-/var/run/docker.sock}:/var/run/docker.sock
+    tmpfs:
+      - /var/lib/overleaf/data/cache:size=256m,uid=33,gid=33,mode=0755
+    mem_limit: 8g
+    cpus: ${LATEX_APP_CPUS:-8}
+    logging: *logging
+
+  mongo:
+    image: mongo:8.0
+    container_name: iitmandi-latex-mongo
+    restart: unless-stopped
+    command: --replSet overleaf --wiredTigerCacheSizeGB 2
+    environment:
+      MONGO_INITDB_DATABASE: sharelatex
+    networks:
+      default:
+        ipv4_address: 10.213.5.10
+    extra_hosts:
+      - mongo:127.0.0.1
+    volumes:
+      - ${LATEX_DATA:-/srv/iitmandi-latex/data}/mongo:/data/db
+      - ./mongodb-init-replica-set.js:/docker-entrypoint-initdb.d/mongodb-init-replica-set.js:ro
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "quit(db.hello().isWritablePrimary ? 0 : 1)"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    mem_limit: 4g
+    logging: *logging
+
+  ldap:
+    image: glauth/glauth:v2.5.4
+    container_name: iitmandi-latex-ldap
+    restart: unless-stopped
+    networks:
+      default:
+        ipv4_address: 10.213.5.12
+    volumes:
+      - ./ldap.cfg:/app/config/config.cfg:ro
+    mem_limit: 64m
+    logging: *logging
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: iitmandi-latex-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --appendfsync everysec
+    networks:
+      default:
+        ipv4_address: 10.213.5.11
+    volumes:
+      - ${LATEX_DATA:-/srv/iitmandi-latex/data}/redis:/data
+    logging: *logging
+
+networks:
+  default:
+    driver_opts:
+      com.docker.network.bridge.name: br-latex
+    ipam:
+      config:
+        - subnet: 10.213.5.0/24

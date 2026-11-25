@@ -1,0 +1,56 @@
+{
+  "root_document": "chapters/main.tex",
+  "compiler": "pdfLaTeX",
+  "files": [
+    {
+      "path": "README.txt",
+      "size_bytes": 102,
+      "sha256": "be0c513ef581bb2af9a6500ab9254ce67863d0fbb2219ea85066f9fece7e4f1a"
+    },
+    {
+      "path": "chapters/introduction.tex",
+      "size_bytes": 116,
+      "sha256": "127ff5a48c07e412ece09e4c0eb37e4b689e65ebfbc79983a0eaf3667a4c3d72"
+    },
+    {
+      "path": "chapters/main.tex",
+      "size_bytes": 717,
+      "sha256": "3220fba84c8a32aae52eafd35bbb4c148431b05eaff1af44eaf3b811a589f6a3"
+    },
+    {
+      "path": "data files/notes with spaces.txt",
+      "size_bytes": 32,
+      "sha256": "ea10d14079caba54badc989dfbb4c19ef131c6beadad2fe324de678428b97158"
+    },
+    {
+      "path": "data files/नमस्ते-notes.txt",
+      "size_bytes": 51,
+      "sha256": "9c1c1ea029b4bf568c4f0d16a0891c04cf9f98c9b7e41db9535a7d028ce159e4"
+    },
+    {
+      "path": "images/figure.png",
+      "size_bytes": 4238,
+      "sha256": "ea2215e4a47559255a6cc0ff496ce1d7d4a130cb01eda4a0db47f0ce16e442a6"
+    },
+    {
+      "path": "images/included-figure.pdf",
+      "size_bytes": 474,
+      "sha256": "6236b1cc1bcfe75a9162b6e2b18dc090447fd6099d3241a6524f5b11c7dedc6d"
+    },
+    {
+      "path": "references/sources.bib",
+      "size_bytes": 188,
+      "sha256": "0cbfae81a08050d1628e52a020458c03e92d9d8c555b6b5866b322bc01edfe23"
+    },
+    {
+      "path": "styles/custom.cls",
+      "size_bytes": 102,
+      "sha256": "9f1450d0bc9c58199e55fd21de4cdb7637e31e5a38f764b569c87f659ebd9fe6"
+    },
+    {
+      "path": "styles/custom.sty",
+      "size_bytes": 136,
+      "sha256": "5fc953b638b262d6ca21a3c5299a29d9768ebf7e5f74952a9959722085e12fb3"
+    }
+  ]
+}
