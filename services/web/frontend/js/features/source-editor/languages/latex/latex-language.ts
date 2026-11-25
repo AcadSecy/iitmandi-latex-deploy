@@ -152,7 +152,10 @@ export const LaTeXLanguage = LRLanguage.define({
           ['ListEnvironment', 'BeginEnv'],
         ],
         ShortTextArgument: [['Date'], ['SetLengthCommand']],
-        TextArgument: [['TabularEnvironment', 'BeginEnv']],
+        TextArgument: [
+          ['TabularEnvironment', 'BeginEnv'],
+          ['TextTeletypeCommand'],
+        ],
       }),
       // TODO: does this override groups defined in the grammar?
       NodeProp.group.add(type => {
