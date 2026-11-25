@@ -9,7 +9,6 @@ import fetchLDAPContacts from './LDAPContacts.mjs'
 
 const LDAPModuleManager = {
   initSettings() {
-    const passwordServiceUrl = process.env.OVERLEAF_LDAP_PASSWORD_SERVICE_URL
     Settings.ldap = {
       enable: true,
       placeholder:  process.env.OVERLEAF_LDAP_PLACEHOLDER || 'Username',
@@ -20,9 +19,6 @@ const LDAPModuleManager = {
       attAdmin:     process.env.OVERLEAF_LDAP_IS_ADMIN_ATT,
       valAdmin:     process.env.OVERLEAF_LDAP_IS_ADMIN_ATT_VALUE,
       updateUserDetailsOnLogin: boolFromEnv(process.env.OVERLEAF_LDAP_UPDATE_USER_DETAILS_ON_LOGIN),
-      passwordServiceUrl: passwordServiceUrl?.startsWith('https://')
-        ? passwordServiceUrl
-        : undefined,
     }
   },
   passportSetup(passport, callback) {

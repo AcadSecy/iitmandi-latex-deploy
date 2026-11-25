@@ -44,15 +44,7 @@ block content
 							button.btn-primary.btn(type='submit' data-ol-disabled-inflight)
 								span(data-ol-inflight='idle') #{translate("login")}
 								span(hidden data-ol-inflight='pending') #{translate("logging_in")}…
-							a.float-end(href='/user/password/reset')
-								if settings.ldap && settings.ldap.passwordServiceUrl
-									= translate('reset_latex_password')
-								else
-									| #{translate("forgot_your_password")}?
-						if settings.ldap && settings.ldap.passwordServiceUrl
-							p.mt-3
-								a(href=settings.ldap.passwordServiceUrl rel='noreferrer')= translate('reset_campus_ldap_password')
-								|  #{translate('choose_forgot_password_on_dcs_page')}
+							a.float-end(href='/user/password/reset') #{translate("forgot_your_password")}?
 						if login_support_text
 							hr
 							p.text-center !{login_support_text}
