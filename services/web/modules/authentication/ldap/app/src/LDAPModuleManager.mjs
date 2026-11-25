@@ -9,8 +9,12 @@ import fetchLDAPContacts from './LDAPContacts.mjs'
 
 const LDAPModuleManager = {
   initSettings() {
+    const passwordServiceUrl = process.env.OVERLEAF_LDAP_PASSWORD_SERVICE_URL
     Settings.ldap = {
       enable: true,
+      passwordServiceUrl: passwordServiceUrl?.startsWith('https://')
+        ? passwordServiceUrl
+        : undefined,
       placeholder:  process.env.OVERLEAF_LDAP_PLACEHOLDER || 'Username',
       attEmail:     process.env.OVERLEAF_LDAP_EMAIL_ATT || 'mail',
       attFirstName: process.env.OVERLEAF_LDAP_FIRST_NAME_ATT,
