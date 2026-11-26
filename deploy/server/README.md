@@ -60,6 +60,41 @@ compiles. Redis retains AOF persistence and has no eviction or memory cap.
 MongoDB, Redis and LDAP publish no host ports. Each compile has no network
 and sees only its project's files.
 
+## Campus LDAP alongside test login
+
+The optional campus LDAP profile adds an **IIT Mandi account** choice to the
+existing login form. The **Existing test or local account** choice continues
+to use the local test directory and app passwords. Leave the current
+`compose/ldap.env` in place.
+
+Ask DCS for an LDAPS or StartTLS endpoint reachable from the app container,
+its CA if needed, and the search access to read `entryUUID`, `mail`,
+`givenName` and `sn` in the eligible directory branches. The campus strategy
+verifies the server certificate and hostname. The host at
+`users.iitmandi.ac.in` accepted TCP on 389 on 2026-11-25, but rejected StartTLS
+and timed out on 636 from the production container.
+
+Once DCS supplies these settings, install a private copy of
+[`campus-ldap.env.example`](campus-ldap.env.example) as
+`compose/campus-ldap.env`. If DCS uses a private CA, use a read-only mount for
+the CA certificate and set the corresponding container path in the profile.
+After the application version with this provider is deployed, recreate only
+the `sharelatex` container under the deployment lock. Use a DCS-approved
+test account to verify campus login and the existing synthetic or pilot
+account to verify test login. Run the local config and identity policy checks
+with `node --test deploy/server/test-campus-ldap.mjs`.
+
+An existing account with the same email keeps its current credentials and
+projects. The campus provider refuses it until account ownership has been
+verified and the directory identity linked through a reviewed migration.
+New campus accounts require a single verified institute directory email and
+its immutable `entryUUID`. If the Institute changes an email or reassigns an
+address, reconcile the account and directory identity before reusing that
+address. Keep the existing test directory's allowlist as-is during the pilot.
+For rollback, disable the campus profile in `campus-ldap.env` and keep an
+application image with the account separation checks after any campus
+accounts have been created.
+
 ## Operations
 
 ```

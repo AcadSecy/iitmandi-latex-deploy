@@ -1,26 +1,45 @@
 import logger from '@overleaf/logger'
 import passport from 'passport'
+import Settings from '@overleaf/settings'
 import EmailHelper from '../../../../../app/src/Features/Helpers/EmailHelper.mjs'
 import { handleAuthenticateErrors } from '../../../../../app/src/Features/Authentication/AuthenticationErrors.mjs'
 import AuthenticationController from '../../../../../app/src/Features/Authentication/AuthenticationController.mjs'
 import LDAPAuthenticationManager from './LDAPAuthenticationManager.mjs'
+
+function campusLoginFailure(req, res, status = 401) {
+  return res.status(status).json({
+    message: {
+      type: 'error',
+      text: req.i18n.translate('email_or_password_wrong_try_again'),
+    },
+  })
+}
 
 const LDAPAuthenticationController = {
   passportLogin(req, res, next) {
     // This function is middleware which wraps the passport.authenticate middleware,
     // so we can send back our custom `{message: {text: "", type: ""}}` responses on failure,
     // and send a `{redir: ""}` response on success
+    const campus = req.body.ldapProvider === 'campus'
+    if (campus && !Settings.ldap.campusEnabled) {
+      return campusLoginFailure(req, res)
+    }
+    const method = campus ? 'Campus LDAP password login' : 'LDAP password login'
+    let finished = false
     passport.authenticate(
-      'ldapauth',
+      campus ? 'campus-ldap' : 'ldapauth',
       { keepSessionInfo: true },
       async function (err, user, info, status) {
+        // A directory connection failure can reach Passport through two callbacks.
+        if (finished) return
+        finished = true
         if (err) { //we cannot be here as long as errors are treated as fails
           return next(err)
         }
         if (user) {
           // `user` is either a user object or false
           AuthenticationController.setAuditInfo(req, {
-            method: 'LDAP password login',
+            method,
           })
 
           try {
@@ -31,10 +50,20 @@ const LDAPAuthenticationController = {
             return next(err)
           }
         } else {
-          if (status != 401) {
+          info ??= {}
+          if (!campus && status != 401) {
             logger.warn(status, 'LDAP: ' + info.message)
           }
-          if (EmailHelper.parseEmail(req.body.email)) return next() //Try local authentication
+          if (!campus && EmailHelper.parseEmail(req.body.email)) return next()
+          if (campus) {
+            if (info.errorReason === 'cannot_verify_user_not_robot') {
+              return res.status(400).json({
+                message: { text: info.text, type: 'error' },
+                errorReason: info.errorReason,
+              })
+            }
+            return campusLoginFailure(req, res, info.status === 429 ? 429 : 401)
+          }
           if (info.redir != null) {
             return res.json({ redir: info.redir })
           } else {
@@ -54,28 +83,33 @@ const LDAPAuthenticationController = {
       }
     )(req, res, next)
   },
-  async doPassportLogin(req, profile, done) {
+  doCampusPassportLogin(req, profile, done) {
+    return LDAPAuthenticationController.doPassportLogin(req, profile, done, true)
+  },
+  async doPassportLogin(req, profile, done, campus = false) {
     let user, info
     try {
       ;({ user, info } = await LDAPAuthenticationController._doPassportLogin(
         req,
-        profile
+        profile,
+        campus
       ))
     } catch (error) {
       return done(error)
     }
     return done(undefined, user, info)
   },
-  async _doPassportLogin(req, profile) {
+  async _doPassportLogin(req, profile, campus) {
+    const method = campus ? 'Campus LDAP password login' : 'LDAP password login'
     const { fromKnownDevice } = AuthenticationController.getAuditInfo(req)
     const auditLog = {
       ipAddress: req.ip,
-      info: { method: 'LDAP password login', fromKnownDevice },
+      info: { method, fromKnownDevice },
     }
 
-    let user, isPasswordReused
+    let user
     try {
-      user = await LDAPAuthenticationManager.promises.findOrCreateUser(profile, auditLog)
+      user = await LDAPAuthenticationManager.promises.findOrCreateUser(profile, auditLog, campus)
     } catch (error) {
       return {
         user: false,
@@ -95,14 +129,13 @@ const LDAPAuthenticationController = {
     } else if (user) {
       user.externalAuth = 'ldap'
       return { user, info: undefined }
-    } else { //we cannot be here, something is terribly wrong
-      logger.debug({ email : profile.mail }, 'failed LDAP log in')
+    } else {
       return {
         user: false,
         info: {
           type: 'error',
-          text: 'Unknown error',
-          status: 500,
+          text: req.i18n.translate('email_or_password_wrong_try_again'),
+          status: 401,
         },
       }
     }

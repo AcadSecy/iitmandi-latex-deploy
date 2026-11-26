@@ -34,6 +34,8 @@ services:
         required: false
       - path: ldap.env
         required: false
+      - path: campus-ldap.env
+        required: false
     environment:
       OVERLEAF_MONGO_URL: mongodb://mongo/sharelatex
       OVERLEAF_REDIS_HOST: redis

@@ -64,7 +64,7 @@ const AuthenticationManager = {
     // between the user returned by Mongoose vs mongodb (such as default values)
     const user = await User.findOne(query).exec()
 
-    if (!user || !user.hashedPassword) {
+    if (!user || !user.hashedPassword || user.campusLdapId) {
       return { user: null, match: null }
     }
 

@@ -4,9 +4,10 @@ import UserCreator from '../../../../../app/src/Features/User/UserCreator.mjs'
 import { ParallelLoginError } from '../../../../../app/src/Features/Authentication/AuthenticationErrors.mjs'
 import { User } from '../../../../../app/src/models/User.mjs'
 import { splitFullName } from '../../../utils.mjs'
+import { campusLDAPIdentity, mayUseLDAPAccount } from './CampusLDAPOptions.mjs'
 
 const LDAPAuthenticationManager = {
-  async findOrCreateUser(profile, auditLog) {
+  async findOrCreateUser(profile, auditLog, campus = false) {
     //user is already authenticated in LDAP
     const {
       attEmail,
@@ -18,24 +19,28 @@ const LDAPAuthenticationManager = {
       updateUserDetailsOnLogin,
     } = Settings.ldap
 
-    const email = Array.isArray(profile[attEmail])
-                    ? profile[attEmail][0].toLowerCase()
-                    : profile[attEmail].toLowerCase()
+    const campusIdentity = campus ? campusLDAPIdentity(profile) : null
+    if (campus && !campusIdentity) return null
+    const rawEmail = profile[attEmail]
+    const email = campusIdentity?.email ??
+      (Array.isArray(rawEmail) ? rawEmail[0] : rawEmail)?.toLowerCase()
+    if (!email) return null
     let nameParts = ["",""]
     if ((!attFirstName || !attLastName) && attName) {
       nameParts = splitFullName(profile[attName] || "")
     }
-    const firstName = attFirstName ? (profile[attFirstName] || "") : nameParts[0]
-    let   lastName  = attLastName  ? (profile[attLastName]  || "") : nameParts[1]
+    const firstName = profile[campus ? 'givenName' : attFirstName] || nameParts[0]
+    let lastName = profile[campus ? 'sn' : attLastName] || nameParts[1]
     if (!firstName && !lastName) lastName = email
     let isAdmin = false
-    if( attAdmin && valAdmin ) {
+    if( !campus && attAdmin && valAdmin ) {
       isAdmin = Array.isArray(profile[attAdmin]) ? profile[attAdmin].includes(valAdmin) :
                                                    profile[attAdmin] === valAdmin
     }
-    let user = await User.findOne({ 'email': email }).exec()
+    let user = await User.findOne(campus ? { 'emails.email': email } : { email }).exec()
+    if (user && !mayUseLDAPAccount(user, campusIdentity)) return null
 
-    if( !user ) {
+    if (!user) {
       user = await UserCreator.promises.createNewUser(
         {
           email: email,
@@ -44,6 +49,7 @@ const LDAPAuthenticationManager = {
           isAdmin: isAdmin,
           holdingAccount: false,
           analyticsId: crypto.randomUUID(),
+          ...(campusIdentity && { campusLdapId: campusIdentity.id }),
         }
       )
       await User.updateOne(
@@ -52,12 +58,16 @@ const LDAPAuthenticationManager = {
       ).exec() //email of ldap user is confirmed
     }
     let userDetails = updateUserDetailsOnLogin ? { first_name : firstName, last_name: lastName } : {}
-    if( attAdmin && valAdmin ) {
+    if( !campus && attAdmin && valAdmin ) {
       user.isAdmin = isAdmin
       userDetails.isAdmin = isAdmin
     }
     const result = await User.updateOne(
-      { _id: user._id, loginEpoch: user.loginEpoch },
+      {
+        _id: user._id,
+        loginEpoch: user.loginEpoch,
+        campusLdapId: campusIdentity?.id ?? { $exists: false },
+      },
       {
         $inc: { loginEpoch: 1 },
         $set: userDetails,
