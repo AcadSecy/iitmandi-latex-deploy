@@ -206,7 +206,10 @@ jobs:
             sleep 5
           done
           curl -fsS http://127.0.0.1:8080/status
-          curl -fsS http://127.0.0.1:8080/login | grep -q 'IIT Mandi LaTeX'
+          curl -fsS http://127.0.0.1:8080/login > "$RUNNER_TEMP/login.html"
+          grep -q 'IIT Mandi LaTeX' "$RUNNER_TEMP/login.html"
+          grep -q 'href="https://dcs.iitmandi.ac.in/ldap/"' "$RUNNER_TEMP/login.html"
+          grep -q 'href="/user/password/reset"' "$RUNNER_TEMP/login.html"
           code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/register)
           echo "sign-up page: HTTP $code"
           [ "$code" != 200 ]
