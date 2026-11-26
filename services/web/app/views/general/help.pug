@@ -15,7 +15,7 @@ block content
 
 					h2.h3#first-project Start your first project
 					ol
-						li Log in with your IIT Mandi Google account.
+						li Sign in using the account provided for #{settings.appName}.
 						li Click <strong>New project</strong> (on your first visit, <strong>Create a new project</strong>), then <strong>Blank project</strong>. Give the project a name.
 						li Type in the editor on the left. A LaTeX file is plain text; the commands in it start with a backslash, such as <code>\section{Introduction}</code>.
 						li Click <strong>Recompile</strong>. The PDF appears on the right.
@@ -58,7 +58,7 @@ block content
 							strong IIT Mandi Resume
 							|  — a one-page resume for placements and internships.
 					p
-						| The thesis, project report and resume templates follow the best sources available, not an official circular. Check the current guidelines of the Academic Section or the Career and Placement Cell before you submit.
+						| These templates are drafts: the Institute has not yet approved any of them as an official format. The thesis, project report and resume templates follow the best sources available, not an official circular. Check the current guidelines of the Academic Section or the Career and Placement Cell before you submit.
 
 					h2.h3#faq Common questions
 					if settings.compileQueue && settings.compileQueue.slots > 0 && settings.compileQueue.turnMs > 0
@@ -389,7 +389,7 @@ block content
 								|
 								| command it shows and run it in a terminal.
 							li
-								| When git asks for a password, paste the token. Your Google password does not work here.
+								| When git asks for a password, paste the token. Your sign-in password does not work here.
 							li
 								| Work as with any git repository. After
 								|
